@@ -1,0 +1,542 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-project-contact-persistence@1",
+    "project": {
+      "schema": "intent-mcu-project@3",
+      "metadata": {
+        "name": "Active-low common-anode RGB LED"
+      },
+      "catalogue": {
+        "schema": "intent-mcu-catalogue-ref@1",
+        "version": "intent-mcu-catalogue@2"
+      },
+      "controller": {
+        "profile": "board.atmega328p-16mhz-v1",
+        "adapterContract": "intent-mcu-controller-adapter@1",
+        "status": "simulated",
+        "capabilities": [
+          {
+            "id": "gpio",
+            "status": "simulated"
+          },
+          {
+            "id": "adc",
+            "status": "simulated"
+          },
+          {
+            "id": "pwm",
+            "status": "simulated"
+          },
+          {
+            "id": "uart0",
+            "status": "simulated"
+          },
+          {
+            "id": "timers",
+            "status": "partial"
+          },
+          {
+            "id": "interrupts",
+            "status": "partial"
+          },
+          {
+            "id": "spi",
+            "status": "unsupported"
+          },
+          {
+            "id": "i2c",
+            "status": "unsupported"
+          },
+          {
+            "id": "eeprom",
+            "status": "unsupported"
+          },
+          {
+            "id": "watchdog",
+            "status": "unsupported"
+          }
+        ]
+      },
+      "source": {
+        "files": [
+          {
+            "name": "main.ino",
+            "content": "void setup() { pinMode(3, OUTPUT); pinMode(5, OUTPUT); pinMode(6, OUTPUT); Serial.begin(115200); }\nvoid loop() { analogWrite(3, 0); analogWrite(5, 128); analogWrite(6, 255); delay(120); }\n"
+          }
+        ]
+      },
+      "circuit": {
+        "schema": "teach-lab-circuit@2",
+        "components": [
+          {
+            "id": "board-1",
+            "type": "board.atmega328p-16mhz-v1",
+            "label": "ATmega328P board",
+            "properties": {},
+            "controls": {}
+          },
+          {
+            "id": "rgb-common-anode-1",
+            "type": "led.basic-v1",
+            "label": "Common-anode RGB LED (R)",
+            "properties": {
+              "color": "red"
+            },
+            "controls": {}
+          },
+          {
+            "id": "rgb-common-anode-1-blue",
+            "type": "led.basic-v1",
+            "label": "Common-anode RGB LED (B)",
+            "properties": {
+              "color": "blue"
+            },
+            "controls": {}
+          },
+          {
+            "id": "rgb-common-anode-1-green",
+            "type": "led.basic-v1",
+            "label": "Common-anode RGB LED (G)",
+            "properties": {
+              "color": "green"
+            },
+            "controls": {}
+          },
+          {
+            "id": "rgb-ca-resistor-1",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          },
+          {
+            "id": "rgb-ca-resistor-2",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          },
+          {
+            "id": "rgb-ca-resistor-3",
+            "type": "resistor.fixed-v1",
+            "label": "Axial fixed resistor",
+            "properties": {
+              "ohms": 330
+            },
+            "controls": {}
+          }
+        ],
+        "nets": [
+          {
+            "id": "net-rgb-ca-b-gpio",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D6"
+              },
+              {
+                "component": "rgb-ca-resistor-3",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-rgb-ca-b-led",
+            "endpoints": [
+              {
+                "component": "rgb-ca-resistor-3",
+                "pin": "A"
+              },
+              {
+                "component": "rgb-common-anode-1-blue",
+                "pin": "CATHODE"
+              }
+            ]
+          },
+          {
+            "id": "net-rgb-ca-common",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "5V"
+              },
+              {
+                "component": "rgb-common-anode-1-blue",
+                "pin": "ANODE"
+              },
+              {
+                "component": "rgb-common-anode-1-green",
+                "pin": "ANODE"
+              },
+              {
+                "component": "rgb-common-anode-1",
+                "pin": "ANODE"
+              }
+            ]
+          },
+          {
+            "id": "net-rgb-ca-g-gpio",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D5"
+              },
+              {
+                "component": "rgb-ca-resistor-2",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-rgb-ca-g-led",
+            "endpoints": [
+              {
+                "component": "rgb-ca-resistor-2",
+                "pin": "A"
+              },
+              {
+                "component": "rgb-common-anode-1-green",
+                "pin": "CATHODE"
+              }
+            ]
+          },
+          {
+            "id": "net-rgb-ca-r-gpio",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D3"
+              },
+              {
+                "component": "rgb-ca-resistor-1",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-rgb-ca-r-led",
+            "endpoints": [
+              {
+                "component": "rgb-ca-resistor-1",
+                "pin": "A"
+              },
+              {
+                "component": "rgb-common-anode-1",
+                "pin": "CATHODE"
+              }
+            ]
+          }
+        ],
+        "junctions": []
+      },
+      "layout": {
+        "positions": {
+          "board-1": {
+            "x": 0.12,
+            "y": 0.2,
+            "rotation": 0
+          },
+          "rgb-ca-resistor-1": {
+            "x": 0.55,
+            "y": 0.35,
+            "rotation": 0
+          },
+          "rgb-ca-resistor-2": {
+            "x": 0.55,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "rgb-ca-resistor-3": {
+            "x": 0.55,
+            "y": 0.61,
+            "rotation": 0
+          },
+          "rgb-common-anode-1": {
+            "x": 0.76,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "rgb-common-anode-1-blue": {
+            "x": 0.76,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "rgb-common-anode-1-green": {
+            "x": 0.76,
+            "y": 0.48,
+            "rotation": 0
+          }
+        },
+        "wireRoutes": {},
+        "wireStyles": {
+          "net-rgb-ca-b-gpio": {
+            "color": "#39dff2"
+          },
+          "net-rgb-ca-b-led": {
+            "color": "#39dff2"
+          },
+          "net-rgb-ca-common": {
+            "color": "#f04f5f"
+          },
+          "net-rgb-ca-g-gpio": {
+            "color": "#39dff2"
+          },
+          "net-rgb-ca-g-led": {
+            "color": "#39dff2"
+          },
+          "net-rgb-ca-r-gpio": {
+            "color": "#39dff2"
+          },
+          "net-rgb-ca-r-led": {
+            "color": "#39dff2"
+          }
+        },
+        "viewport": {
+          "zoom": 1,
+          "panX": 0,
+          "panY": 0
+        }
+      },
+      "instruments": {
+        "logicChannels": [
+          "D13",
+          "D2"
+        ],
+        "selectedPin": "D13",
+        "serial": {
+          "baud": 9600,
+          "encoding": "utf-8",
+          "historyLimit": 512
+        }
+      },
+      "artifact": {
+        "schema": "intent-mcu-project-artifact-ref@1",
+        "status": "dirty",
+        "profile": null,
+        "inputIdentitySha256": null,
+        "artifactIdentitySha256": null
+      }
+    },
+    "candidateCircuit": {
+      "schema": "teach-lab-circuit@2",
+      "components": [
+        {
+          "id": "board-1",
+          "type": "board.atmega328p-16mhz-v1",
+          "label": "ATmega328P board",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "rgb-common-anode-1",
+          "type": "output.rgb-led-common-anode-v1",
+          "label": "Common-anode RGB LED",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "rgb-ca-resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        },
+        {
+          "id": "rgb-ca-resistor-2",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        },
+        {
+          "id": "rgb-ca-resistor-3",
+          "type": "resistor.fixed-v1",
+          "label": "Axial fixed resistor",
+          "properties": {
+            "ohms": 330
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-rgb-ca-b-gpio",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D6"
+            },
+            {
+              "component": "rgb-ca-resistor-3",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-rgb-ca-b-led",
+          "endpoints": [
+            {
+              "component": "rgb-ca-resistor-3",
+              "pin": "A"
+            },
+            {
+              "component": "rgb-common-anode-1",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-rgb-ca-common",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "5V"
+            },
+            {
+              "component": "rgb-common-anode-1",
+              "pin": "COM"
+            }
+          ]
+        },
+        {
+          "id": "net-rgb-ca-g-gpio",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D5"
+            },
+            {
+              "component": "rgb-ca-resistor-2",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-rgb-ca-g-led",
+          "endpoints": [
+            {
+              "component": "rgb-ca-resistor-2",
+              "pin": "A"
+            },
+            {
+              "component": "rgb-common-anode-1",
+              "pin": "G"
+            }
+          ]
+        },
+        {
+          "id": "net-rgb-ca-r-gpio",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D3"
+            },
+            {
+              "component": "rgb-ca-resistor-1",
+              "pin": "B"
+            }
+          ]
+        },
+        {
+          "id": "net-rgb-ca-r-led",
+          "endpoints": [
+            {
+              "component": "rgb-ca-resistor-1",
+              "pin": "A"
+            },
+            {
+              "component": "rgb-common-anode-1",
+              "pin": "R"
+            }
+          ]
+        }
+      ],
+      "junctions": []
+    },
+    "candidateLayout": {
+      "schema": "intent-mcu-candidate-layout@1",
+      "positions": {
+        "board-1": {
+          "x": 0.12,
+          "y": 0.2,
+          "rotation": 0
+        },
+        "rgb-ca-resistor-1": {
+          "x": 0.55,
+          "y": 0.35,
+          "rotation": 0
+        },
+        "rgb-ca-resistor-2": {
+          "x": 0.55,
+          "y": 0.48,
+          "rotation": 0
+        },
+        "rgb-ca-resistor-3": {
+          "x": 0.55,
+          "y": 0.61,
+          "rotation": 0
+        },
+        "rgb-common-anode-1": {
+          "x": 0.76,
+          "y": 0.48,
+          "rotation": 0
+        }
+      },
+      "wireRoutes": {},
+      "viewport": {
+        "zoom": 1,
+        "panX": 0,
+        "panY": 0
+      }
+    },
+    "compiledFixture": {
+      "schema": "intent-mcu-compiled-fixture-ref@1",
+      "id": "button-pullup",
+      "profile": "board.atmega328p-16mhz-v1",
+      "toolchainImageId": "sha256:f04aa7a8c37699d16a965fb374870ff147ca776ba6386f81e7700e350ed3d89f",
+      "source": {
+        "sha256": "84ceea4f298483f4696a3672ac1fff97b046b9e35c65aaa6155b20140a66f518",
+        "bytes": 209
+      },
+      "executable": {
+        "format": "intel-hex",
+        "sha256": "247f94bb051e9eebb4dfe8099278d810e04ccbf097f1b3ddb53b904e26ea8ebc",
+        "bytes": 2525
+      },
+      "debug": {
+        "format": "elf",
+        "sha256": "23a37eff7f7c5b1d0626e12a3f31e00d9b79466eab374cd0d74c46e3667150bd",
+        "bytes": 14632
+      },
+      "artifactIdentitySha256": "69ad0bc87ba02a2d33ac4c5ba1d9bd07e28636b631cd007f4b9423889e76bd3b"
+    }
+  }
+}

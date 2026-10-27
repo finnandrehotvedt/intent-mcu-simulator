@@ -143,7 +143,8 @@ function buildManualProject() {
 test('C-01 catalog and canonical graph support branching nets and independent instances', () => {
   assert.deepEqual(Object.keys(COMPONENT_CATALOG), [
     'board.atmega328p-16mhz-v1', 'led.basic-v1', 'resistor.fixed-v1',
-    'button.momentary-v1', 'potentiometer.linear-v1', 'terminal.serial-uart-v1',
+    'button.momentary-v1', 'potentiometer.linear-v1', 'potentiometer.trimmer-v1',
+    'terminal.serial-uart-v1',
   ]);
   const result = validateCircuit(DEFAULT_CIRCUIT);
   assert.equal(result.ok, true);
@@ -264,7 +265,7 @@ test('W-07/W-08 catalogue filtering covers practical metadata and remains bounde
   assert.equal(filterCatalog(splitVoltageFixture, { supplyVoltage: '3.3', pinVoltage: '3.3' }).length, 1_000);
   const elapsed = performance.now() - started;
   assert.ok(elapsed < 250, `1,000-record catalogue filtering took ${elapsed.toFixed(2)} ms`);
-  assert.equal(catalogEntries({ selectableOnly: true }).length, 5);
+  assert.equal(catalogEntries({ selectableOnly: true }).length, 6);
   const actual = catalogEntries({ selectableOnly: true });
   assert.deepEqual(
     filterCatalog(actual, { supplyVoltage: '5', pinVoltage: '5' }).map((entry) => entry.type),
@@ -273,7 +274,7 @@ test('W-07/W-08 catalogue filtering covers practical metadata and remains bounde
   assert.deepEqual(
     filterCatalog(actual, { category: 'inputs', supplyVoltage: '3.3', pinVoltage: 'undeclared' })
       .map((entry) => entry.type).sort(),
-    ['button.momentary-v1', 'potentiometer.linear-v1'],
+    ['button.momentary-v1', 'potentiometer.linear-v1', 'potentiometer.trimmer-v1'],
   );
 });
 

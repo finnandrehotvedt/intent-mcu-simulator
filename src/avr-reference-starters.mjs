@@ -7,11 +7,16 @@ import { createDigitalLightThresholdComponent } from '../expansion-drafts/digita
 import { createLightAnalogueSensorComponent } from '../expansion-drafts/light-analogue-sensor-v1.mjs';
 import { canonicalContactPersistenceDraftJson } from '../expansion-drafts/project-v3-contact-persistence.mjs';
 import { createSevenSegmentComponent } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
+import { createFourDigitSevenSegmentComponent } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
+import { createTrafficLightComponent } from '../expansion-drafts/traffic-light-module-v1.mjs';
 import { createComponent } from './circuit-engine.mjs';
 import { createCandidateUiComponent, openCandidateUiSession } from './candidate-existing-ui-adapter.mjs';
 
 const SEGMENTS = Object.freeze(['a', 'b', 'c', 'd', 'e', 'f', 'g']);
 const SEGMENT_PINS = Object.freeze(['D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9']);
+const FOUR_DIGIT_SEGMENTS = Object.freeze(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp']);
+const FOUR_DIGIT_SEGMENT_PINS = Object.freeze(['D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9']);
+const FOUR_DIGIT_SELECT_PINS = Object.freeze(['D10', 'D11', 'D12', 'D13']);
 const endpoint = (component, pin) => ({ component, pin });
 
 const CARDS = Object.freeze([
@@ -24,6 +29,16 @@ const CARDS = Object.freeze([
     observe: 'D2 and D13 change while Serial reports GROUNDED or OPEN.',
     limits: 'The symbol is topology authority, not an executable peripheral.',
     next: 'Load SPST toggle input to keep an input state without holding a button.',
+  },
+  {
+    id: 'avr-ground-power-references', name: 'Ground and 5 V references', model: 'reference.power-5v-v1',
+    focus: 'Explicit 0 V and fixed 5 V', partsLabel: 'Controller · 0 V reference · 5 V source · button · LED',
+    description: 'Use separate reference symbols for circuit common and the AVR board 5 V output.',
+    learn: 'Why 0 V reference and a fixed voltage source have different electrical roles.',
+    try: 'Build and Run, then press the D2 button while D3 remains tied to the fixed source.',
+    observe: 'Serial reports the D2 ground path and compiled D3 HIGH state independently.',
+    limits: 'AVR-only topology projection; not a bench supply, regulator, current or fault model.',
+    next: 'Load SPST toggle input to replace a momentary ground path with a maintained contact.',
   },
   {
     id: 'avr-toggle-input', name: 'SPST toggle input', model: 'switch.toggle-spst-v1',
@@ -73,7 +88,17 @@ const CARDS = Object.freeze([
     try: 'Build and Run the alternating enabled/disabled sequence.',
     observe: 'D8 and the silent visual indicator change with Serial BUZZER ON/OFF.',
     limits: 'Partial: silent logical indicator; no sound, current or acoustic accuracy.',
-    next: 'Load Seven-segment digits to coordinate several digital outputs.',
+    next: 'Load Traffic light sequence to coordinate three current-limited outputs.',
+  },
+  {
+    id: 'avr-traffic-light', name: 'Traffic light sequence', model: 'output.traffic-light-module-v1',
+    focus: 'Three current-limited outputs', partsLabel: 'Controller · traffic light · three resistors',
+    description: 'Drive a distinct common-cathode red/amber/green module from compiled firmware.',
+    learn: 'How a safe traffic-light sequence coordinates three independent digital outputs.',
+    try: 'Build and Run the red, red+amber, green and amber sequence.',
+    observe: 'The three visible lamps and Serial phase labels follow D3, D5 and D6.',
+    limits: 'Ideal AVR-only indicator; no physical optics, load, fault or road-signal timing compliance.',
+    next: 'Load Seven-segment digits to coordinate a larger group of outputs.',
   },
   {
     id: 'avr-seven-segment', name: 'Seven-segment digits', model: 'output.seven-segment-common-cathode-v1',
@@ -83,6 +108,18 @@ const CARDS = Object.freeze([
     try: 'Build and Run the 0, 1, 2, 8 sequence.',
     observe: 'Compiled D3–D9 patterns and Serial digit labels agree.',
     limits: 'One ideal digit only; no decimal point, multiplexing or physical brightness.',
+    next: 'Load Four-digit multiplex to coordinate shared segments and digit selection.',
+  },
+  {
+    id: 'avr-four-digit-seven-segment', name: 'Four-digit multiplex',
+    model: 'output.seven-segment-four-digit-common-cathode-v1',
+    focus: 'Eight shared segments · four digit selects',
+    partsLabel: 'Controller · four-digit display · eight resistors',
+    description: 'Drive a distinct common-cathode four-digit display through twelve GPIO lines.',
+    learn: 'How shared segment lines and active-low digit selection form a multiplexed display.',
+    try: 'Build and Run the deliberately slowed 1-2-3-4 scan.',
+    observe: 'The latched visible digits and Serial DISPLAY 1234 label agree.',
+    limits: 'Ideal sampled AVR multiplex observer; no driver transistor, package-current or refresh-rate fidelity.',
     next: 'Load PWM pulse to compare switched outputs with duty-cycle output.',
   },
   {
@@ -101,6 +138,9 @@ const SOURCES = Object.freeze({
   'avr-ground-reference-input': `void setup() { pinMode(2, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
 void loop() { bool grounded = digitalRead(2) == LOW; digitalWrite(13, grounded); Serial.println(grounded ? "GROUNDED" : "OPEN"); delay(120); }
 `,
+  'avr-ground-power-references': `void setup() { pinMode(2, INPUT_PULLUP); pinMode(3, INPUT); pinMode(13, OUTPUT); Serial.begin(115200); }
+void loop() { bool grounded = digitalRead(2) == LOW; bool powered = digitalRead(3) == HIGH; digitalWrite(13, grounded && powered); Serial.print(grounded ? "GROUND CLOSED" : "GROUND OPEN"); Serial.println(powered ? " POWER HIGH" : " POWER LOW"); delay(120); }
+`,
   'avr-toggle-input': `void setup() { pinMode(3, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
 void loop() { bool closed = digitalRead(3) == LOW; digitalWrite(13, closed); Serial.println(closed ? "TOGGLE CLOSED" : "TOGGLE OPEN"); delay(120); }
 `,
@@ -116,11 +156,24 @@ void loop() { bool active = digitalRead(7) == LOW; digitalWrite(13, active); Ser
   'avr-active-buzzer': `void setup() { pinMode(8, OUTPUT); Serial.begin(115200); }
 void loop() { digitalWrite(8, HIGH); Serial.println("BUZZER ON"); delay(240); digitalWrite(8, LOW); Serial.println("BUZZER OFF"); delay(240); }
 `,
+  'avr-traffic-light': `const byte RED=3, AMBER=5, GREEN=6;
+void phase(bool red, bool amber, bool green, const char* label) { digitalWrite(RED, red); digitalWrite(AMBER, amber); digitalWrite(GREEN, green); Serial.println(label); delay(240); }
+void setup() { pinMode(RED, OUTPUT); pinMode(AMBER, OUTPUT); pinMode(GREEN, OUTPUT); Serial.begin(115200); }
+void loop() { phase(HIGH,LOW,LOW,"RED"); phase(HIGH,HIGH,LOW,"RED AMBER"); phase(LOW,LOW,HIGH,"GREEN"); phase(LOW,HIGH,LOW,"AMBER"); }
+`,
   'avr-seven-segment': `const byte pins[7] = {3,4,5,6,7,8,9};
 const byte digits[4][7] = {{1,1,1,1,1,1,0},{0,1,1,0,0,0,0},{1,1,0,1,1,0,1},{1,1,1,1,1,1,1}};
 const char labels[4] = {'0','1','2','8'};
 void setup() { for (byte i=0;i<7;i++) pinMode(pins[i], OUTPUT); Serial.begin(115200); }
 void loop() { for (byte d=0;d<4;d++) { for (byte i=0;i<7;i++) digitalWrite(pins[i], digits[d][i]); Serial.println(labels[d]); delay(240); } }
+`,
+  'avr-four-digit-seven-segment': `const byte segments[8]={2,3,4,5,6,7,8,9};
+const byte selects[4]={10,11,12,13};
+const byte patterns[4][8]={{0,1,1,0,0,0,0,0},{1,1,0,1,1,0,1,0},{1,1,1,1,0,0,1,0},{0,1,1,0,0,1,1,0}};
+void blank(){for(byte d=0;d<4;d++)digitalWrite(selects[d],HIGH);}
+void show(byte digit){blank();for(byte s=0;s<8;s++)digitalWrite(segments[s],patterns[digit][s]);digitalWrite(selects[digit],LOW);delay(60);}
+void setup(){for(byte s=0;s<8;s++)pinMode(segments[s],OUTPUT);for(byte d=0;d<4;d++){pinMode(selects[d],OUTPUT);digitalWrite(selects[d],HIGH);}Serial.begin(115200);}
+void loop(){for(byte d=0;d<4;d++)show(d);Serial.println("DISPLAY 1234");}
 `,
   'avr-rotary-encoder': `int lastA = HIGH; int lastB = HIGH;
 void setup() { pinMode(2, INPUT_PULLUP); pinMode(3, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
@@ -161,6 +214,11 @@ function construct(card) {
   if (card.id === 'avr-ground-reference-input') {
     add(session, createCandidateUiComponent(card.model, 'ground-reference-1'), { x: 0.78, y: 0.78 });
     branch(session, 'net-ground-branch', 'ground-reference-1', 'REF', 'junction-starter-ground-reference');
+  } else if (card.id === 'avr-ground-power-references') {
+    add(session, createCandidateUiComponent('reference.ground-v1', 'ground-reference-1'), { x: 0.74, y: 0.78 });
+    branch(session, 'net-ground-branch', 'ground-reference-1', 'REF', 'junction-starter-ground-power-ground');
+    add(session, createCandidateUiComponent(card.model, 'power-reference-1'), { x: 0.86, y: 0.58 });
+    wire(session, 'net-starter-power-reference-d3', 'power-reference-1', 'OUT', 'board-1', 'D3');
   } else if (card.id === 'avr-toggle-input') {
     add(session, createCandidateUiComponent(card.model, 'toggle-switch-1'), { x: 0.72, y: 0.7 });
     branch(session, 'net-ground-branch', 'toggle-switch-1', 'B', 'junction-starter-toggle-ground');
@@ -185,6 +243,19 @@ function construct(card) {
     branch(session, 'net-5v', 'active-buzzer-1', 'VCC', 'junction-starter-buzzer-vcc');
     branch(session, 'net-ground-branch', 'active-buzzer-1', 'GND', 'junction-starter-buzzer-ground');
     wire(session, 'net-starter-buzzer-d8', 'active-buzzer-1', 'EN', 'board-1', 'D8');
+  } else if (card.id === 'avr-traffic-light') {
+    add(session, createTrafficLightComponent('traffic-light-1', 'Workshop traffic light'), { x: 0.79, y: 0.68 });
+    const channels = [['RED', 'D3'], ['AMBER', 'D5'], ['GREEN', 'D6']];
+    channels.forEach(([channel, boardPin], index) => {
+      add(session, createComponent(`traffic-resistor-${index + 1}`, 'resistor.fixed-v1', {
+        label: `${channel} lamp resistor`, properties: { ohms: 220 },
+      }), { x: 0.48, y: 0.48 + index * 0.12 });
+      wire(session, `net-starter-traffic-${channel.toLowerCase()}-lamp`, 'traffic-light-1', channel,
+        `traffic-resistor-${index + 1}`, 'B');
+      wire(session, `net-starter-traffic-${channel.toLowerCase()}-drive`, `traffic-resistor-${index + 1}`, 'A',
+        'board-1', boardPin);
+    });
+    branch(session, 'net-ground-branch', 'traffic-light-1', 'COM', 'junction-starter-traffic-common');
   } else if (card.id === 'avr-seven-segment') {
     add(session, createSevenSegmentComponent('seven-segment-1', 'Workshop digit'), { x: 0.78, y: 0.72 });
     SEGMENTS.forEach((segment, index) => add(session, createComponent(`resistor-${index + 3}`, 'resistor.fixed-v1', {
@@ -194,6 +265,27 @@ function construct(card) {
     SEGMENTS.forEach((segment, index) => {
       wire(session, `net-starter-seven-${segment}-anode`, 'seven-segment-1', segment, `resistor-${index + 3}`, 'B');
       wire(session, `net-starter-seven-${segment}-output`, `resistor-${index + 3}`, 'A', 'board-1', SEGMENT_PINS[index]);
+    });
+  } else if (card.id === 'avr-four-digit-seven-segment') {
+    ['button-1', 'led-1', 'led-2', 'resistor-1', 'resistor-2'].forEach((componentId) => {
+      apply(session, { type: 'component.remove', componentId });
+    });
+    add(session, createFourDigitSevenSegmentComponent(
+      'four-digit-seven-segment-1', 'Workshop four-digit display',
+    ), { x: 0.73, y: 0.66 });
+    FOUR_DIGIT_SEGMENTS.forEach((segment, index) => {
+      const resistorId = `four-digit-resistor-${index + 1}`;
+      add(session, createComponent(resistorId, 'resistor.fixed-v1', {
+        label: `${segment} shared segment resistor`, properties: { ohms: 220 },
+      }), { x: 0.39 + (index % 4) * 0.1, y: 0.43 + Math.floor(index / 4) * 0.12 });
+      wire(session, `net-starter-four-digit-${segment}-anode`,
+        'four-digit-seven-segment-1', segment, resistorId, 'B');
+      wire(session, `net-starter-four-digit-${segment}-drive`,
+        resistorId, 'A', 'board-1', FOUR_DIGIT_SEGMENT_PINS[index]);
+    });
+    FOUR_DIGIT_SELECT_PINS.forEach((boardPin, index) => {
+      wire(session, `net-starter-four-digit-select-${index + 1}`,
+        'four-digit-seven-segment-1', `DIG${index + 1}`, 'board-1', boardPin);
     });
   } else if (card.id === 'avr-rotary-encoder') {
     apply(session, { type: 'component.remove', componentId: 'button-1' });

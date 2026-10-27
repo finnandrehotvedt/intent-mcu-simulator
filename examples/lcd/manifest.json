@@ -1,0 +1,307 @@
+{
+  "schema": "intent-mcu-lcd-example-manifest@3",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "entries": [
+    {
+      "id": "character-lcd-16x2-4bit",
+      "requirementIds": [
+        "CMP-050"
+      ],
+      "file": "parallel-hd44780-16x2.intent-mcu.json",
+      "previousProjectSha256": "ad89013c070a7b4b41639a2d725255dd79459ba427838c491a98fa4b8a94ed7b",
+      "sourceSha256": "b44d1fb8110182417c70fc39e85153d7e557c673eecb201c72acab2a4fd8b07c",
+      "namedPins": {
+        "VCC": "5V",
+        "GND": "GND1",
+        "RW": "GND1",
+        "RS": "D3",
+        "E": "D4",
+        "D4": "D7",
+        "D5": "D8",
+        "D6": "D10",
+        "D7": "D12"
+      },
+      "expectedBehavior": "LCD text, RGB colour and Serial agree at the threshold.",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "component unavailable",
+        "board.esp32-c3-devmodule-v1": "component unavailable",
+        "board.stm32f429zi-nucleo144-v1": "component unavailable"
+      },
+      "firmwareLimits": "Ideal sensor, display and RGB subset; no physical timing or current model.",
+      "provenance": "Original project-owned direct 4-bit LCD example generated from the committed factory and canonical common project envelope.",
+      "participatingComponentIds": [
+        "board-1",
+        "character-lcd-1"
+      ],
+      "electricallyConnectedComponentIds": [
+        "board-1",
+        "character-lcd-1",
+        "rgb-led-1",
+        "temperature-sensor-1"
+      ],
+      "participatingNets": [
+        {
+          "id": "net-example-5v",
+          "endpoints": [
+            "board-1.5V",
+            "character-lcd-1.VCC",
+            "temperature-sensor-1.VCC"
+          ]
+        },
+        {
+          "id": "net-example-ground",
+          "endpoints": [
+            "board-1.GND1",
+            "character-lcd-1.GND",
+            "character-lcd-1.RW",
+            "rgb-led-1.COM",
+            "temperature-sensor-1.GND"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d4",
+          "endpoints": [
+            "board-1.D7",
+            "character-lcd-1.D4"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d5",
+          "endpoints": [
+            "board-1.D8",
+            "character-lcd-1.D5"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d6",
+          "endpoints": [
+            "board-1.D10",
+            "character-lcd-1.D6"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d7",
+          "endpoints": [
+            "board-1.D12",
+            "character-lcd-1.D7"
+          ]
+        },
+        {
+          "id": "net-example-lcd-e",
+          "endpoints": [
+            "board-1.D4",
+            "character-lcd-1.E"
+          ]
+        },
+        {
+          "id": "net-example-lcd-rs",
+          "endpoints": [
+            "board-1.D3",
+            "character-lcd-1.RS"
+          ]
+        }
+      ],
+      "sourceFiles": [
+        {
+          "name": "main.ino",
+          "sha256": "b44d1fb8110182417c70fc39e85153d7e557c673eecb201c72acab2a4fd8b07c"
+        }
+      ],
+      "projectSha256": "274233d5da6e50cabbfe253cec2acb222ce06dacfcdd01c2d0fdca719765f377"
+    },
+    {
+      "id": "pcf8574-lcd-backpack",
+      "requirementIds": [
+        "CMP-051"
+      ],
+      "file": "pcf8574-0x27-lcd.intent-mcu.json",
+      "previousProjectSha256": "6d4c8d6a1f42a251c441ec6bc811066397c0a17be731be52a63c60e80d1e3e75",
+      "sourceSha256": "4fdce12246f4eb202259a492795ac93f5b59ce56678c357dbb30120ca3e6c809",
+      "namedPins": {
+        "VCC": "5V",
+        "GND": "GND1",
+        "SDA": "A4",
+        "SCL": "A5"
+      },
+      "expectedBehavior": "The display reads I2C LCD ready and Address 0x27 only after accepted writes.",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "component unavailable",
+        "board.esp32-c3-devmodule-v1": "component unavailable",
+        "board.stm32f429zi-nucleo144-v1": "component unavailable"
+      },
+      "firmwareLimits": "Partial: AVR-only, fixed address and mapping, write-only ASCII subset; no arbitrary Wire compatibility.",
+      "provenance": "Original project-owned fixed 0x27 PCF8574 example generated from the committed factory and canonical common project envelope.",
+      "participatingComponentIds": [
+        "board-1",
+        "pcf8574-lcd-1"
+      ],
+      "electricallyConnectedComponentIds": [
+        "board-1",
+        "button-1",
+        "led-1",
+        "led-2",
+        "pcf8574-lcd-1",
+        "pot-1"
+      ],
+      "participatingNets": [
+        {
+          "id": "net-5v",
+          "endpoints": [
+            "board-1.5V",
+            "pcf8574-lcd-1.VCC",
+            "pot-1.HIGH"
+          ]
+        },
+        {
+          "id": "net-ground-branch",
+          "endpoints": [
+            "board-1.GND1",
+            "button-1.B",
+            "led-1.CATHODE",
+            "led-2.CATHODE",
+            "pcf8574-lcd-1.GND",
+            "pot-1.LOW"
+          ]
+        },
+        {
+          "id": "net-pcf-example-scl",
+          "endpoints": [
+            "board-1.A5",
+            "pcf8574-lcd-1.SCL"
+          ]
+        },
+        {
+          "id": "net-pcf-example-sda",
+          "endpoints": [
+            "board-1.A4",
+            "pcf8574-lcd-1.SDA"
+          ]
+        }
+      ],
+      "sourceFiles": [
+        {
+          "name": "main.ino",
+          "sha256": "4fdce12246f4eb202259a492795ac93f5b59ce56678c357dbb30120ca3e6c809"
+        }
+      ],
+      "projectSha256": "2d7e11ef52bd72dcbcafe5361b35f2a3adf4c9e0e677eb93d5c1ac4d5708a9e2"
+    },
+    {
+      "id": "avr-character-lcd-20x4-cgram",
+      "requirementIds": [
+        "CMP-052",
+        "CMP-062"
+      ],
+      "file": "parallel-hd44780-20x4-cgram.intent-mcu.json",
+      "sourceSha256": "4950c66f1669022ffa91528ee5e557bd789833caa08e961bd374c1a8eea63f3e",
+      "namedPins": {
+        "VCC": "5V",
+        "GND": "GND1",
+        "RW": "GND1",
+        "RS": "D3",
+        "E": "D4",
+        "D4": "D7",
+        "D5": "D8",
+        "D6": "D10",
+        "D7": "D12"
+      },
+      "expectedBehavior": "Four exact 20-column rows render from DDRAM offsets 0x00, 0x40, 0x14 and 0x54, with custom character code 1 showing the programmed 5x8 heart.",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "component unavailable",
+        "board.esp32-c3-devmodule-v1": "component unavailable",
+        "board.stm32f429zi-nucleo144-v1": "component unavailable"
+      },
+      "firmwareLimits": "Partial: AVR-only write-only 4-bit GPIO, eight bounded CGRAM slots; no reads, busy flag, shifts, 8-bit mode, I2C, contrast, backlight or physical timing accuracy.",
+      "provenance": "Original project-owned 20x4/CGRAM example generated through the committed canonical envelope generator.",
+      "participatingComponentIds": [
+        "board-1",
+        "character-lcd-1"
+      ],
+      "electricallyConnectedComponentIds": [
+        "board-1",
+        "character-lcd-1",
+        "rgb-led-1",
+        "temperature-sensor-1"
+      ],
+      "participatingNets": [
+        {
+          "id": "net-example-5v",
+          "endpoints": [
+            "board-1.5V",
+            "character-lcd-1.VCC",
+            "temperature-sensor-1.VCC"
+          ]
+        },
+        {
+          "id": "net-example-ground",
+          "endpoints": [
+            "board-1.GND1",
+            "character-lcd-1.GND",
+            "character-lcd-1.RW",
+            "rgb-led-1.COM",
+            "temperature-sensor-1.GND"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d4",
+          "endpoints": [
+            "board-1.D7",
+            "character-lcd-1.D4"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d5",
+          "endpoints": [
+            "board-1.D8",
+            "character-lcd-1.D5"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d6",
+          "endpoints": [
+            "board-1.D10",
+            "character-lcd-1.D6"
+          ]
+        },
+        {
+          "id": "net-example-lcd-d7",
+          "endpoints": [
+            "board-1.D12",
+            "character-lcd-1.D7"
+          ]
+        },
+        {
+          "id": "net-example-lcd-e",
+          "endpoints": [
+            "board-1.D4",
+            "character-lcd-1.E"
+          ]
+        },
+        {
+          "id": "net-example-lcd-rs",
+          "endpoints": [
+            "board-1.D3",
+            "character-lcd-1.RS"
+          ]
+        }
+      ],
+      "sourceFiles": [
+        {
+          "name": "main.ino",
+          "sha256": "4950c66f1669022ffa91528ee5e557bd789833caa08e961bd374c1a8eea63f3e"
+        }
+      ],
+      "projectSha256": "fc893a1b9cc4f29535123c6b8ef2dcd193ef81bad6f5b1613dd626599dd37ec1"
+    }
+  ]
+}

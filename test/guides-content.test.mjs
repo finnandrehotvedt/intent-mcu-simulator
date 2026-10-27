@@ -25,6 +25,11 @@ test('public guides cover every narrow controller and the exact recovery boundar
   ]) assert(examples.includes(phrase) || support.includes(phrase) || components.includes(phrase), phrase);
   assert(components.includes('id="narrow-profile-parts"')
     && components.includes('resistor.fixed-v1') && components.includes('led.basic-v1'));
+  assert(components.includes('id="junction-points"')
+    && components.includes('A junction is authored topology')
+    && components.includes('MODEL_LIBRARY_COMPONENT_UNAVAILABLE'));
+  assert(llms.includes('CMP-019 treats a junction as graph topology')
+    && llms.includes('different net crossing the same drawing point remains separate'));
   assert(support.includes('all four profiles')
     && support.includes('<strong>Download copy</strong> requests one deterministic <code>.intent-mcu.json</code> download')
     && support.includes('cannot confirm a durable disk write'));
@@ -44,7 +49,7 @@ test('public guides cover every narrow controller and the exact recovery boundar
     && support.includes('between 160 and 350 virtual milliseconds'));
   assert(llms.includes('/examples.html#thermostat-boundary-test')
     && llms.includes('known-bad equality variant'));
-  assert.equal((sitemap.match(/<lastmod>2026-10-21<\/lastmod>/gu) ?? []).length, 6);
+  assert.equal((sitemap.match(/<lastmod>2026-10-27<\/lastmod>/gu) ?? []).length, 6);
   assert.doesNotMatch(sitemap, /<lastmod>2026-10-17<\/lastmod>/u);
   assert(llms.includes('Open never restores executable authority')
     && llms.includes('/examples.html#stm32-first-project'));

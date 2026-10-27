@@ -10,7 +10,19 @@ import {
 import { normalizeStoredRoute } from './route-model.mjs';
 import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
 import { exactKeys } from './strict-json.mjs';
-import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
+import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
+import { PASSIVE_ENERGY_STORAGE_DEFINITIONS,
+  validatePassiveEnergyStorageComponent } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import { DIODE_COMPONENT_DEFINITIONS,
+  validateDiodeComponent } from '../expansion-drafts/diode-components-v1.mjs';
+import { TRANSISTOR_COMPONENT_DEFINITIONS,
+  validateTransistorComponent } from '../expansion-drafts/transistor-components-v1.mjs';
+import { CIRCUIT_PROTECTION_DEFINITIONS,
+  validateCircuitProtectionComponent } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS,
+  validateConnectionHardwareComponent } from '../expansion-drafts/connection-hardware-components-v1.mjs';
+import { SEMICONDUCTOR_ACTIVE_DEFINITIONS,
+  validateSemiconductorActiveComponent } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 
 export const ESP32C3_PUBLIC_CIRCUIT_SCHEMA = 'intent-mcu-esp32c3-public-circuit@1';
 export const ESP32C3_PUBLIC_PROFILE = 'board.esp32-c3-devmodule-v1';
@@ -42,8 +54,8 @@ export const ESP32C3_BOARD_DEFINITION = Object.freeze({
       { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 4, strappingPin: true }),
     boardPin('GPIO3', 'GPIO3 · J1 physical pin 5 · authoring only', 'digital-io', ['digital.output'], 0.95, 0.35,
       { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 5, authoringOnly: true }),
-    boardPin('GPIO0', 'GPIO0 · J1 physical pin 9 · authoring only', 'digital-io', ['digital.output'], 0.95, 0.55,
-      { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 9, authoringOnly: true }),
+    boardPin('GPIO0', 'GPIO0 / ADC1_CH0 · J1 physical pin 9 · authoring only', 'digital-io', ['digital.output', 'analogue.input'], 0.95, 0.55,
+      { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 9, adcChannel: 0, authoringOnly: true }),
     boardPin('GPIO1', 'GPIO1 · J1 physical pin 10 · authoring only', 'digital-io', ['digital.output'], 0.95, 0.65,
       { voltageMin: 0, voltageMax: 3.3, connector: 'J1', physicalPin: 10, authoringOnly: true }),
     boardPin('GND', 'GND · J1 physical pin 6', 'ground', ['ground.reference'], 0.95, 0.75,
@@ -92,6 +104,19 @@ const TYPE_PINS = Object.freeze({
   [GROUND_REFERENCE_3V3_TYPE]: new Set(['GND']),
   [MOMENTARY_BUTTON_3V3_TYPE]: new Set(['A', 'B']),
   [TOGGLE_SWITCH_3V3_TYPE]: new Set(['A', 'B']),
+  [POTENTIOMETER_3V3_TYPE]: new Set(['HIGH', 'WIPER', 'LOW']),
+  ...Object.fromEntries(Object.values(PASSIVE_ENERGY_STORAGE_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(DIODE_COMPONENT_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(TRANSISTOR_COMPONENT_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(CIRCUIT_PROTECTION_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(CONNECTION_HARDWARE_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(SEMICONDUCTOR_ACTIVE_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
 });
 const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   profile: BOARD, boardId: 'c3-1', boardLabel: 'ESP32-C3 GPIO2 profile',
@@ -154,6 +179,31 @@ function normalizeComponent(value) {
   if (value.type === GROUND_REFERENCE_3V3_TYPE && !exactKeys(value.properties, [])) throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
   if ([MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE].includes(value.type)
       && (!exactKeys(value.properties, ['defaultClosed']) || typeof value.properties.defaultClosed !== 'boolean')) throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  if (value.type === POTENTIOMETER_3V3_TYPE
+      && (!exactKeys(value.properties, ['ohms', 'taper']) || !Number.isFinite(value.properties.ohms)
+        || value.properties.ohms < 1 || value.properties.ohms > 10_000_000 || value.properties.taper !== 'linear')) {
+    throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[value.type]
+      && !validatePassiveEnergyStorageComponent(value)) {
+    throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (DIODE_COMPONENT_DEFINITIONS[value.type] && !validateDiodeComponent(value)) {
+    throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[value.type] && !validateTransistorComponent(value)) {
+    throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (CIRCUIT_PROTECTION_DEFINITIONS[value.type] && !validateCircuitProtectionComponent(value)) {
+    throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (CONNECTION_HARDWARE_DEFINITIONS[value.type] && !validateConnectionHardwareComponent(value)) {
+    throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[value.type]
+      && !validateSemiconductorActiveComponent(value)) {
+    throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  }
   return clone(value);
 }
 

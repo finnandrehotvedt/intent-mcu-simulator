@@ -25,6 +25,10 @@ import {
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_X92_STM32_SOURCE_CURRENT_MODEL_LIBRARY_LOCK,
   RC113_CURRENT_MODEL_LIBRARY_LOCK,
   RC120_CURRENT_MODEL_LIBRARY_LOCK,
@@ -115,11 +119,11 @@ function lcdTrace(mapping, lines = ['TEMP 25 C', 'RETAINED RC72']) {
   return events;
 }
 
-test('trusted immutable snapshots have 25 exact cells and independently recomputable hashes', async () => {
+test('trusted immutable snapshots have exact cells and independently recomputable hashes', async () => {
   const manifests = trustedModelLibraryManifests();
   assert.equal(manifests.length, 2);
-  for (const manifest of manifests) {
-    assert.equal(manifest.entries.length, 25);
+  for (const [index, manifest] of manifests.entries()) {
+    assert.equal(manifest.entries.length, index === 0 ? 25 : 71);
     const aggregate = structuredClone(manifest); delete aggregate.manifestSha256;
     assert.equal(sha256(aggregate), manifest.manifestSha256);
     for (const entry of manifest.entries) {
@@ -145,6 +149,55 @@ test('locks resolve only against the trusted catalogue, never a supplied self-ha
     'MODEL_LIBRARY_LOCK_SHAPE');
   assert.equal(normalizeModelLibraryLock({ ...CURRENT_MODEL_LIBRARY_LOCK, manifestSha256: 'bad' }).code,
     'MODEL_LIBRARY_LOCK_SHAPE');
+});
+
+test('the immediately preceding LCD lock reopens losslessly as migration-only data', () => {
+  assert.equal(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+    '1e2e94a3d88ce7bcc50a058536858897578b6cc3e13f5b4936a7a6003b11fe1f');
+  assert.equal(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
+    'be66fe9d85d39c439540c979504ba762b3918811c05a8a540dffc83842c33b41');
+  const resolved = resolveModelLibrary(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.role, 'pre-lcd-api-duplicate-fix-current-migration');
+  assert.equal(resolved.implementation.migrationOnly, true);
+  assert.equal(modelLibraryExecutionIdentity(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+});
+
+test('the API-repaired LCD lock also remains finite migration-only data', () => {
+  assert.equal(PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+    '8ad3ab7f854764cb1974f2f893d0497cfe610a47335dcccfd1a1aac8ebbebb09');
+  assert.equal(PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
+    '667395a6aaa5fa4c1f7e4aa00853d55c30fd481d661fc8bd7d987a5a2945ca70');
+  const resolved = resolveModelLibrary(PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.role, 'pre-lcd-persistence-fix-current-migration');
+  assert.equal(modelLibraryExecutionIdentity(PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+});
+
+test('the pre-preserved-export lock remains finite migration-only data', () => {
+  assert.equal(PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+    'f12c5df8dd0ea3658e3c85e017d140011690a921c6eac613f2c6de680d69aa02');
+  assert.equal(PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
+    '423fa71c93c13293bb791a0970726e7e1b0470174507c376e3b2129a96270be6');
+  const resolved = resolveModelLibrary(PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.role, 'pre-preserved-draft-export-current-migration');
+  assert.equal(modelLibraryExecutionIdentity(PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+});
+
+test('the pre-component-image-parity lock remains finite migration-only data', () => {
+  assert.equal(PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+    'efbe40f7f8bdb3c62cf02d947ceff0e7101a985665b13bcbf820438d52e67efa');
+  assert.equal(PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
+    'a33c5af6fa01e8ffc22841e1e7a1fb60f80696ee4e481c09ba6252bd2710e3f0');
+  const resolved = resolveModelLibrary(PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.role, 'pre-component-image-parity-current-migration');
+  assert.equal(modelLibraryExecutionIdentity(PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_LOCK).code,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
 });
 
 test('self-rehashed mutations of every manifest identity class remain untrusted', () => {
@@ -185,7 +238,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
     [CURRENT_MODEL_LIBRARY_LOCK,
-      'intent-mcu-model-bundle-current-thumbnail-artwork-1@46'],
+      'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@50'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -210,7 +263,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 38);
+  assert.equal(historical.length, 47);
   for (const manifest of historical.slice(1)) {
     const lock = { schema: 'intent-mcu-model-library-lock@2', libraryId: manifest.libraryId,
       version: manifest.version, manifestSha256: manifest.manifestSha256,
@@ -296,9 +349,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(applyMigration.ok, true);
-  assert.equal(applyMigration.semanticChanges.length, 3);
+  assert.equal(applyMigration.semanticChanges.length, 50);
   assert.equal(applyMigration.rendererChanges.length, 0);
-  assert.equal(applyMigration.unchanged.length, 22);
+  assert.equal(applyMigration.unchanged.length, 21);
   const preMomentaryControl = historical.at(-2);
   assert.equal(preMomentaryControl.version, '2.0.0-x47-repeatable-inputs-candidate.2-current');
   assert.equal(normalizeModelLibraryLock(PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
@@ -309,9 +362,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X47_MOMENTARY_CONTROL_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(momentaryMigration.ok, true);
-  assert.equal(momentaryMigration.semanticChanges.length, 3);
+  assert.equal(momentaryMigration.semanticChanges.length, 50);
   assert.equal(momentaryMigration.rendererChanges.length, 0);
-  assert.equal(momentaryMigration.unchanged.length, 22);
+  assert.equal(momentaryMigration.unchanged.length, 21);
   const preRejection = historical.at(-3);
   assert.equal(preRejection.version, '2.0.0-x47-repeatable-inputs-candidate.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
@@ -322,9 +375,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X47_REPEATABLE_REJECTION_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(rejectionMigration.ok, true);
-  assert.equal(rejectionMigration.semanticChanges.length, 3);
+  assert.equal(rejectionMigration.semanticChanges.length, 50);
   assert.equal(rejectionMigration.rendererChanges.length, 0);
-  assert.equal(rejectionMigration.unchanged.length, 22);
+  assert.equal(rejectionMigration.unchanged.length, 21);
   const preRepeatable = historical.at(-4);
   assert.equal(preRepeatable.version, '2.0.0-x43-stack-hotpath-candidate.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
@@ -332,9 +385,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const repeatableMigration = modelLibraryMigrationPreview(PRE_X47_REPEATABLE_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(repeatableMigration.ok, true);
-  assert.equal(repeatableMigration.semanticChanges.length, 3);
+  assert.equal(repeatableMigration.semanticChanges.length, 50);
   assert.equal(repeatableMigration.rendererChanges.length, 0);
-  assert.equal(repeatableMigration.unchanged.length, 22);
+  assert.equal(repeatableMigration.unchanged.length, 21);
   const preHotpath = historical.find(({ version }) => version === '2.0.0-x43-observed-stack-candidate.1-current');
   assert.equal(preHotpath.version, '2.0.0-x43-observed-stack-candidate.1-current');
   assert.equal(normalizeModelLibraryLock(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_LOCK).ok, true);
@@ -342,9 +395,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const hotpathMigration = modelLibraryMigrationPreview(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(hotpathMigration.ok, true);
-  assert.equal(hotpathMigration.semanticChanges.length, 3);
+  assert.equal(hotpathMigration.semanticChanges.length, 50);
   assert.equal(hotpathMigration.rendererChanges.length, 0);
-  assert.equal(hotpathMigration.unchanged.length, 22);
+  assert.equal(hotpathMigration.unchanged.length, 21);
 
   const preStack = historical.find(({ version }) => version === '2.0.0-ux-public-isolation.1-current');
   assert.equal(preStack.version, '2.0.0-ux-public-isolation.1-current');
@@ -353,9 +406,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const stackMigration = modelLibraryMigrationPreview(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(stackMigration.ok, true);
-  assert.equal(stackMigration.semanticChanges.length, 3);
+  assert.equal(stackMigration.semanticChanges.length, 50);
   assert.equal(stackMigration.rendererChanges.length, 0);
-  assert.equal(stackMigration.unchanged.length, 22);
+  assert.equal(stackMigration.unchanged.length, 21);
 
   const preControlLabel = historical.find(({ version }) => version === '2.0.0-x55-resistor-appearance.1-current');
   assert.equal(preControlLabel.version, '2.0.0-x55-resistor-appearance.1-current');
@@ -368,9 +421,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     PRE_X55_CONTROL_LABEL_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(controlLabelMigration.ok, true);
-  assert.equal(controlLabelMigration.semanticChanges.length, 3);
+  assert.equal(controlLabelMigration.semanticChanges.length, 50);
   assert.equal(controlLabelMigration.rendererChanges.length, 0);
-  assert.equal(controlLabelMigration.unchanged.length, 22);
+  assert.equal(controlLabelMigration.unchanged.length, 21);
 
   const preX55 = historical.find(({ version }) => version === '2.0.0-x47-ui-async-epoch.1-current');
   assert.equal(preX55.version, '2.0.0-x47-ui-async-epoch.1-current');
@@ -379,9 +432,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const x55Migration = modelLibraryMigrationPreview(PRE_X55_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(x55Migration.ok, true);
-  assert.equal(x55Migration.semanticChanges.length, 3);
+  assert.equal(x55Migration.semanticChanges.length, 50);
   assert.equal(x55Migration.rendererChanges.length, 0);
-  assert.equal(x55Migration.unchanged.length, 22);
+  assert.equal(x55Migration.unchanged.length, 21);
 
   const prior = historical.find(({ version }) => version === '2.0.0-x56-current');
   assert.equal(prior.version, '2.0.0-x56-current');
@@ -393,9 +446,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   const migration = modelLibraryMigrationPreview(PRIOR_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(migration.ok, true);
   assert.equal(migration.migrationRequired, true);
-  assert.equal(migration.semanticChanges.length, 3);
+  assert.equal(migration.semanticChanges.length, 50);
   assert.equal(migration.rendererChanges.length, 0);
-  assert.equal(migration.unchanged.length, 22);
+  assert.equal(migration.unchanged.length, 21);
 
   const preX47 = historical.find(({ version }) => version === '2.0.0-pico-presentation.1-current');
   assert.equal(preX47.version, '2.0.0-pico-presentation.1-current');
@@ -409,9 +462,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
   const x47Migration = modelLibraryMigrationPreview(PRE_X47_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(x47Migration.ok, true);
   assert.equal(x47Migration.migrationRequired, true);
-  assert.equal(x47Migration.semanticChanges.length, 3);
+  assert.equal(x47Migration.semanticChanges.length, 50);
   assert.equal(x47Migration.rendererChanges.length, 0);
-  assert.equal(x47Migration.unchanged.length, 22);
+  assert.equal(x47Migration.unchanged.length, 21);
 
   const preValidation = historical.find(({ version }) => version === '2.0.0-x47-runtime-contract.1-current');
   assert.equal(preValidation.version, '2.0.0-x47-runtime-contract.1-current');
@@ -424,9 +477,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const validationMigration = modelLibraryMigrationPreview(PRE_X47_VALIDATION_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(validationMigration.ok, true);
-  assert.equal(validationMigration.semanticChanges.length, 3);
+  assert.equal(validationMigration.semanticChanges.length, 50);
   assert.equal(validationMigration.rendererChanges.length, 0);
-  assert.equal(validationMigration.unchanged.length, 22);
+  assert.equal(validationMigration.unchanged.length, 21);
 
   const preUi = historical.find(({ version }) => version === '2.0.0-x47-receipt-validation.1-current');
   assert.equal(preUi.version, '2.0.0-x47-receipt-validation.1-current');
@@ -439,9 +492,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const uiMigration = modelLibraryMigrationPreview(PRE_X47_UI_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(uiMigration.ok, true);
-  assert.equal(uiMigration.semanticChanges.length, 3);
+  assert.equal(uiMigration.semanticChanges.length, 50);
   assert.equal(uiMigration.rendererChanges.length, 0);
-  assert.equal(uiMigration.unchanged.length, 22);
+  assert.equal(uiMigration.unchanged.length, 21);
 
   const preAsync = historical.find(({ version }) => version === '2.0.0-x47-ui-integration.1-current');
   assert.equal(preAsync.version, '2.0.0-x47-ui-integration.1-current');
@@ -454,9 +507,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const asyncMigration = modelLibraryMigrationPreview(PRE_X47_ASYNC_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(asyncMigration.ok, true);
-  assert.equal(asyncMigration.semanticChanges.length, 3);
+  assert.equal(asyncMigration.semanticChanges.length, 50);
   assert.equal(asyncMigration.rendererChanges.length, 0);
-  assert.equal(asyncMigration.unchanged.length, 22);
+  assert.equal(asyncMigration.unchanged.length, 21);
 
   const preUx = historical.find(({ version }) => version === '2.0.0-x55-control-label-fix.1-current');
   assert.equal(preUx.version, '2.0.0-x55-control-label-fix.1-current');
@@ -467,9 +520,9 @@ test('prior current locks remain exact and data-migratable but cannot authorize 
     'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const uxMigration = modelLibraryMigrationPreview(PRE_UX_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(uxMigration.ok, true);
-  assert.equal(uxMigration.semanticChanges.length, 3);
+  assert.equal(uxMigration.semanticChanges.length, 50);
   assert.equal(uxMigration.rendererChanges.length, 0);
-  assert.equal(uxMigration.unchanged.length, 22);
+  assert.equal(uxMigration.unchanged.length, 21);
 });
 
 test('retained behavior is a dependency-closed historical source graph with no current imports', async () => {
@@ -523,7 +576,7 @@ test('all four profiles are admitted by their exact lock and invalid properties 
   }
 });
 
-test('all 25 cells admit exact defaults and all 19 model types execute through each bundle', () => {
+test('all cells admit exact defaults and all model types execute through each bundle', () => {
   const manifests = trustedModelLibraryManifests();
   const inputs = {
     'board.atmega328p-16mhz-v1': {}, 'board.rp2040-pico-v1': {},
@@ -532,22 +585,71 @@ test('all 25 cells admit exact defaults and all 19 model types execute through e
     'led.basic-v1': { volts: 3, color: 'red' },
     'button.momentary-v1': { pressed: true },
     'potentiometer.linear-v1': { supplyVolts: 5, position: 0.5 },
-    'reference.ground-v1': {}, 'switch.toggle-spst-v1': { closed: true },
+    'potentiometer.trimmer-v1': { supplyVolts: 5, position: 0.5 },
+    'reference.ground-v1': {}, 'reference.power-5v-v1': {},
+    'switch.toggle-spst-v1': { closed: true },
     'switch.changeover-spdt-v1': { selectedThrow: 'A' },
     'sensor.light-analogue-v1': { lightLevel: 0.5 },
     'sensor.temperature-analogue-v1': { temperatureC: 25 },
     'sensor.light-threshold-digital-v1': { lightLevelPercent: 60,
       thresholdPercent: 50, hysteresisPercentagePoints: 5, currentActive: false },
     'output.rgb-led-common-cathode-v1': { duties: { R: 1, G: 0.5, B: 0 } },
+    'output.traffic-light-module-v1': { levels: { RED: true, AMBER: false, GREEN: true } },
     'output.active-buzzer-module-v1': { level: true },
     'output.seven-segment-common-cathode-v1': { digit: 8 },
+    'output.seven-segment-four-digit-common-cathode-v1': {
+      digits: ['bc', 'abdeg', 'abcdg', 'bcfg'],
+      decimalPoints: [false, false, false, false],
+    },
     'output.character-lcd-16x2-4bit-v1': { lines: ['READY', '25 C'] },
+    'output.character-lcd-16x2-pcf8574-v1': { lines: ['READY', 'I2C 0x27'] },
+    'output.character-lcd-20x4-4bit-v1': { lines: ['ROW 1', 'ROW 2', 'ROW 3', 'ROW 4'] },
     'input.rotary-encoder-quadrature-v1': { direction: 'cw' },
+    'switch.slide-spdt-v1': { selectedThrow: 'A' },
+    'button.momentary-nc-v1': { pressed: true },
+    'switch.limit-spdt-v1': { actuated: true },
+    'switch.dip-4-v1': { switches: [false, true, false, true] },
+    'input.rotary-encoder-button-v1': { direction: 'cw', pressed: true },
+    'switch.reed-no-v1': { closed: true },
+    'switch.emergency-stop-nc-v1': { closed: false },
+    'switch.foot-pedal-no-v1': { closed: true },
+    'switch.float-no-v1': { closed: true },
+    'sensor.tilt-switch-no-v1': { closed: true },
+    'sensor.ball-vibration-switch-no-v1': { closed: true },
+    'switch.rotary-selector-4-v1': { position: 2 },
+    'output.rgb-led-common-anode-v1': { duties: { R: 1, G: 0.5, B: 0 } },
+    'output.led-bar-graph-10-v1': { segments: [true, true, true, false, false, false, false, false, false, false] },
+    'input.analog-joystick-2axis-v1': { x: 0.25, y: 0.75, pressed: true },
+    'input.matrix-keypad-3x4-v1': { pressedKey: 'R2C3' },
+    'input.matrix-keypad-4x4-v1': { pressedKey: 'R4C4' },
+    'input.capacitive-touch-button-v1': { active: true },
+    'sensor.pir-motion-v1': { active: true },
+    'sensor.hall-switch-digital-v1': { active: true },
+    'sensor.flow-pulse-digital-v1': { pulseHigh: true },
+    'sensor.wind-speed-pulse-digital-v1': { pulseHigh: true },
+    'sensor.ir-obstacle-reflective-v1': { active: true },
+    'sensor.line-tracking-reflective-v1': { active: true },
+    'sensor.soil-moisture-resistive-analogue-v1': { ratio: 0.25 },
+    'sensor.soil-moisture-capacitive-analogue-v1': { ratio: 0.6 },
+    'sensor.water-level-analogue-v1': { ratio: 0.8 },
+    'sensor.rain-analogue-v1': { ratio: 0.2 },
+    'sensor.sound-level-analogue-v1': { ratio: 0.55 },
+    'sensor.flame-analogue-v1': { ratio: 0.85 },
+    'sensor.mq-gas-analogue-v1': { ratio: 0.3 },
+    'sensor.co2-analogue-v1': { ratio: 0.65 },
+    'sensor.uv-analogue-v1': { ratio: 0.9 },
+    'sensor.wind-direction-analogue-v1': { directionDegrees: 135 },
+    'sensor.hall-magnetic-analogue-v1': { magneticFieldRatio: -0.4 },
+    'sensor.tmp36-temperature-analogue-v1': { temperatureC: 30 },
+    'sensor.lm35-temperature-analogue-v1': { temperatureC: 45 },
+    'sensor.ldr-divider-v1': { lightLevel: 0.6 },
+    'sensor.ntc-10k-divider-v1': { temperatureC: 30 },
+    'sensor.flex-divider-v1': { bendRatio: 0.4 },
   };
-  assert.equal(Object.keys(inputs).length, 19);
+  assert.equal(Object.keys(inputs).length, 65);
   for (const [manifest, lock] of [[manifests[0], RETAINED_MODEL_LIBRARY_LOCK],
     [manifests[1], CURRENT_MODEL_LIBRARY_LOCK]]) {
-    assert.equal(manifest.entries.length, 25);
+    assert.equal(manifest.entries.length, manifest === manifests[0] ? 25 : 71);
     for (const entry of manifest.entries) {
       const properties = Object.fromEntries(Object.entries(entry.semantic.properties)
         .map(([key, contract]) => [key, structuredClone(contract.default)]));
@@ -563,6 +665,7 @@ test('all 25 cells admit exact defaults and all 19 model types execute through e
     }
     const implementation = resolveModelLibrary(lock).implementation;
     for (const [type, input] of Object.entries(inputs)) {
+      if (!manifest.entries.some((entry) => entry.componentType === type)) continue;
       assert.equal(implementation.evaluateProduction(type, input).ok, true, type);
       assert.equal(implementation.evaluateProduction(type, { invalid: true }).ok, false, `${type}:invalid`);
     }
@@ -790,9 +893,9 @@ test('trusted migration reports unchanged real semantics while controlled test-o
   const preview = modelLibraryMigrationPreview(RETAINED_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.equal(preview.semanticChanges.length, 3);
+  assert.equal(preview.semanticChanges.length, 50);
   assert.equal(preview.rendererChanges.length, 0);
-  assert.equal(preview.unchanged.length, 22);
+  assert.equal(preview.unchanged.length, 21);
 
   const [retained] = trustedModelLibraryManifests();
   const semantic = structuredClone(retained.entries);

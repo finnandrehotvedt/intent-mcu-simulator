@@ -1,0 +1,40 @@
+{
+  "schema": "intent-mcu-power-reference-example-manifest@1",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "entries": [
+    {
+      "id": "avr-ground-power-references",
+      "requirementIds": [
+        "CMP-020"
+      ],
+      "file": "avr-ground-power-references.intent-mcu.json",
+      "componentTypes": [
+        "reference.ground-v1",
+        "reference.power-5v-v1"
+      ],
+      "namedPins": {
+        "ground": "REF → circuit 0 V",
+        "power": "OUT → D3",
+        "fixedVoltage": "5 V"
+      },
+      "expectedBehavior": "Compiled firmware observes the fixed 5 V source as D3 HIGH while the independent D2 ground path follows the button.",
+      "limits": "AVR-only topology projection to the board 5 V output; no independent supply, regulator, source impedance, current capacity, short-circuit, earth or chassis model.",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable topology projection available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "the exact 5 V source is unavailable; do not infer it from the separate 3.3 V ground authoring symbol",
+        "board.esp32-c3-devmodule-v1": "the exact 5 V source is unavailable; do not infer it from the separate 3.3 V ground authoring symbol",
+        "board.stm32f429zi-nucleo144-v1": "the exact 5 V source is unavailable; do not infer it from the separate 3.3 V ground authoring symbol"
+      },
+      "sourceSha256": "5854f593dc58d767ec91dc74ddb7741da8a1a7e05b304375cb6d3775a70566ba",
+      "projectSha256": "552ef23533424e407588ce7ecbe8858f1da4552e4af9b761e2da9aa5235687ca",
+      "provenance": "Original project-owned reference contracts, SVG artwork, circuit factory and canonical project envelope."
+    }
+  ]
+}

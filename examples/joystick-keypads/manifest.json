@@ -1,0 +1,79 @@
+{
+  "schema": "intent-mcu-joystick-keypad-example-manifest@1",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "entries": [
+    {
+      "id": "avr-analog-joystick",
+      "requirementIds": [
+        "CMP-028"
+      ],
+      "file": "avr-analog-joystick.intent-mcu.json",
+      "expectedBehavior": "A0 and A1 report the selected X/Y positions while D2 is an independent active-low push input.",
+      "namedPins": {
+        "VCC": "5V",
+        "GND": "GND",
+        "VRX": "A0",
+        "VRY": "A1",
+        "SW": "D2"
+      },
+      "projectSha256": "8eff2f5af01fdc219d7b8781ef3117f55f0639f2eb48ffeecfa63f0e0a14bd95",
+      "sourceSha256": "5a5f5bb333df911fefc01420d7536c1c72f14103fb15b3ebbe4168982d9520ff",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "unavailable",
+        "board.esp32-c3-devmodule-v1": "unavailable",
+        "board.stm32f429zi-nucleo144-v1": "unavailable"
+      },
+      "provenance": "Original project-owned model, SVG artwork, deterministic projection, firmware source and canonical project envelope."
+    },
+    {
+      "id": "avr-matrix-keypad-3x4",
+      "requirementIds": [
+        "CMP-029"
+      ],
+      "file": "avr-matrix-keypad-3x4.intent-mcu.json",
+      "expectedBehavior": "Firmware scans D2–D5 rows and reads D6–D8 columns; one selected key closes only its named row-column contact.",
+      "namedPins": {
+        "rows": "R1–R4 → D2–D5",
+        "columns": "C1–C3 → D6–D8"
+      },
+      "projectSha256": "088948bf0f67289c022055c6e9a20eed999b799757a69c1626f26b4ebecc4509",
+      "sourceSha256": "03b48b59570d505554dbc5f09832c77fdad40c506cae8914b747f0e9cef30df4",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "unavailable",
+        "board.esp32-c3-devmodule-v1": "unavailable",
+        "board.stm32f429zi-nucleo144-v1": "unavailable"
+      },
+      "provenance": "Original project-owned model, SVG artwork, deterministic projection, firmware source and canonical project envelope."
+    },
+    {
+      "id": "avr-matrix-keypad-4x4",
+      "requirementIds": [
+        "CMP-030"
+      ],
+      "file": "avr-matrix-keypad-4x4.intent-mcu.json",
+      "expectedBehavior": "Firmware scans D2–D5 rows and reads D6–D9 columns; one selected key closes only its named row-column contact.",
+      "namedPins": {
+        "rows": "R1–R4 → D2–D5",
+        "columns": "C1–C4 → D6–D9"
+      },
+      "projectSha256": "7c71809737cb30dbd6f6bc1c44f48459798354b8441539134e492d0e98523cf8",
+      "sourceSha256": "a0124b38860823ba5a1a14cd8144fcdac5e41b5df088b92e78e59ab99ff422ac",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "unavailable",
+        "board.esp32-c3-devmodule-v1": "unavailable",
+        "board.stm32f429zi-nucleo144-v1": "unavailable"
+      },
+      "provenance": "Original project-owned model, SVG artwork, deterministic projection, firmware source and canonical project envelope."
+    }
+  ]
+}

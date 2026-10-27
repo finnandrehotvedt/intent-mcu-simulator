@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createComponent } from '../src/circuit-engine.mjs';
 import { createEmptyProject, ProjectEditorReducer } from '../src/project-editor.mjs';
+import { prepareApiBatch } from '../src/browser-session-edit.mjs';
 
 const endpoint = (component, pin) => ({ component, pin });
 const transaction = 'transaction-api03-0001';
@@ -58,4 +59,14 @@ test('AVR duplicate honors the exact API-requested position', () => {
     sourceId: 'resistor-1', newId: 'resistor-2', position });
   assert.equal(result.ok, true);
   assert.deepEqual(result.project.layout.positions['resistor-2'], position);
+});
+
+test('long API branch identities remain bounded and collision resistant', () => {
+  const project = { profile: 'board.atmega328p-16mhz-v1', circuit: {} };
+  const command = (component) => ({ command: 'wire.branch.connect',
+    net_id: 'net-very-long-shared-prefix-for-branches', endpoint: { component, pin: 'GND' } });
+  const [left, right] = prepareApiBatch(project, [command('component-long-prefix-a'), command('component-long-prefix-b')]);
+  assert.match(left.junctionId, /^[a-z][a-z0-9-]{0,47}$/u);
+  assert.match(right.junctionId, /^[a-z][a-z0-9-]{0,47}$/u);
+  assert.notEqual(left.junctionId, right.junctionId);
 });

@@ -112,7 +112,14 @@ setInterval(verifyCompiler, 5_000).unref();
 const handler = createRequestHandler({ coordinator, root, publicOrigin, trustProxy, deploymentScope, readiness: () => readiness });
 const pageViewStore = process.env.PAGE_VIEW_STORE_PATH
   ? new AggregatePageViewCounter({ file: path.resolve(process.env.PAGE_VIEW_STORE_PATH) }) : null;
-const pageViewHandler = pageViewStore ? createPageViewHandler(pageViewStore, { publicOrigin }) : null;
+const pageViewHandler = pageViewStore
+  ? createPageViewHandler(pageViewStore, { publicOrigin })
+  : async (request, response) => {
+      if (request.method !== 'GET' || request.url !== '/api/page-views') return false;
+      response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      response.end('{"status":"unavailable"}\n');
+      return true;
+    };
 const browserSessionRelay = process.env.ENABLE_BROWSER_SESSION_API === '1'
   ? createBrowserSessionRelay() : null;
 const browserSessionHandler = browserSessionRelay

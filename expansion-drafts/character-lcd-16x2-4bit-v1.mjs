@@ -93,7 +93,7 @@ export const CHARACTER_LCD_DEFINITION = deepFreeze({
     limitations: [
       'Bounded HD44780-style write-only 4-bit decoder for one 16×2 display. VCC requires 5 V, GND and RW require ground, and RS, E and D4–D7 require six unique direct AVR D2–D13 outputs.',
       'Supported initialization is 0x3,0x3,0x3,0x2 followed by commands 0x28,0x0C,0x06,0x01 with enforced power-on, enable-pulse and instruction timing. Supported runtime commands are clear, home, 4-bit/2-line function set, display-on, increment entry mode and visible DDRAM addresses.',
-      'Printable ASCII 0x20–0x7E is rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, cursor or blink modes, display shifts, automatic line wrapping, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported.',
+      'Printable ASCII 0x20–0x7E, clear/home, visible DDRAM addressing, deterministic 16×2 wrapping, display on/off, cursor and blink state are rendered. Reads, busy flag, RW-high operation, custom glyphs/CGRAM, display shifts, 8-bit mode, I²C, backpacks, contrast, backlight, current and physical timing tolerances are unsupported.',
     ],
   },
 });
@@ -182,14 +182,18 @@ function inspectSignal(index, component, signal, netId) {
   return { ok: true, signal, netId, sourcePin };
 }
 
-export function projectCharacterLcdDisplays(value) {
+export function projectCharacterLcdDisplays(value, options = {}) {
+  const componentType = options.componentType ?? CHARACTER_LCD_TYPE;
+  const validateComponent = options.validateComponent ?? validateCharacterLcdComponent;
+  const supportedGeometry = options.supportedGeometry ?? { columns: 16, rows: 2 };
+  const decoder = options.decoder ?? CHARACTER_LCD_RUNTIME_ADAPTER;
   const graph = clone(value);
-  const components = graph.components.filter((component) => component.type === CHARACTER_LCD_TYPE);
+  const components = graph.components.filter((component) => component.type === componentType);
   if (!components.length) return { ok: true, runtimeGraph: graph, displays: [] };
   const index = indexes(graph);
   const displays = [];
   for (const component of components) {
-    if (!validateCharacterLcdComponent(component)) return fail('CHARACTER_LCD_STATE', [component.id]);
+    if (!validateComponent(component)) return fail('CHARACTER_LCD_STATE', [component.id]);
     const vccNet = index.endpointToNet.get(`${component.id}.VCC`) ?? null;
     const groundNet = index.endpointToNet.get(`${component.id}.GND`) ?? null;
     const rwNet = index.endpointToNet.get(`${component.id}.RW`) ?? null;
@@ -227,8 +231,8 @@ export function projectCharacterLcdDisplays(value) {
       rwNet,
       signals: clone(signals),
       busMode: 'write-only-4-bit',
-      decoder: CHARACTER_LCD_RUNTIME_ADAPTER,
-      supportedGeometry: { columns: 16, rows: 2 },
+      decoder,
+      supportedGeometry: clone(supportedGeometry),
       timing: clone(CHARACTER_LCD_TIMING),
     });
   }
@@ -249,21 +253,43 @@ function validSignalMap(mapping) {
     && new Set(Object.values(mapping)).size === CHARACTER_LCD_SIGNALS.length;
 }
 
-function blankRows() { return [Array(16).fill(' '), Array(16).fill(' ')]; }
+function normalizeLcdOptions(options = {}) {
+  const columns = options.columns ?? 16;
+  const rows = options.rows ?? 2;
+  const rowOffsets = options.rowOffsets ?? [0x00, 0x40];
+  const customGlyphs = options.customGlyphs ?? false;
+  if (!Number.isInteger(columns) || columns < 1 || columns > 40
+      || !Number.isInteger(rows) || rows < 1 || rows > 4
+      || !Array.isArray(rowOffsets) || rowOffsets.length !== rows
+      || rowOffsets.some((offset) => !Number.isInteger(offset) || offset < 0 || offset > 0x7f)
+      || new Set(rowOffsets).size !== rows || typeof customGlyphs !== 'boolean') {
+    throw new TypeError('CHARACTER_LCD_GEOMETRY');
+  }
+  return Object.freeze({ columns, rows, rowOffsets: Object.freeze([...rowOffsets]), customGlyphs });
+}
+
+function blankRows(geometry) {
+  return Array.from({ length: geometry.rows }, () => Array(geometry.columns).fill(0x20));
+}
 
 export class CharacterLcd4BitDecoder {
-  constructor(mapping) {
+  constructor(mapping, options = {}) {
     if (!validSignalMap(mapping)) throw new TypeError('CHARACTER_LCD_SIGNAL_MAP');
     this.mapping = Object.freeze({ ...mapping });
+    this.geometry = normalizeLcdOptions(options);
     this.reverse = new Map(Object.entries(mapping).map(([signal, pin]) => [Number(pin.slice(1)), signal]));
     this.reset();
   }
 
   reset() {
     this.levels = Object.fromEntries(CHARACTER_LCD_SIGNALS.map((signal) => [signal, false]));
-    this.rows = blankRows();
+    this.rows = blankRows(this.geometry);
+    this.cgram = Array.from({ length: 8 }, () => Array(8).fill(0));
+    this.addressSpace = 'ddram';
     this.address = 0;
     this.displayOn = false;
+    this.cursorOn = false;
+    this.blinkOn = false;
     this.status = 'awaiting-initialization';
     this.error = null;
     this.initNibbleIndex = 0;
@@ -342,8 +368,12 @@ export class CharacterLcd4BitDecoder {
         return this.#reject('CHARACTER_LCD_INIT_COMMAND', [this.initCommandIndex, expected, command]);
       }
       this.initCommandIndex += 1;
-      if (command === 0x0c) this.displayOn = true;
-      if (command === 0x01) { this.rows = blankRows(); this.address = 0; }
+      if ((command & 0xf8) === 0x08) {
+        this.displayOn = Boolean(command & 0x04);
+        this.cursorOn = Boolean(command & 0x02);
+        this.blinkOn = Boolean(command & 0x01);
+      }
+      if (command === 0x01) { this.rows = blankRows(this.geometry); this.address = 0; this.addressSpace = 'ddram'; }
       this.readyCycle = cycle + (command === 0x01
         ? CHARACTER_LCD_TIMING.clearHomeMinimumCycles
         : CHARACTER_LCD_TIMING.instructionMinimumCycles);
@@ -353,48 +383,76 @@ export class CharacterLcd4BitDecoder {
       return true;
     }
     if (command === 0x01) {
-      this.rows = blankRows(); this.address = 0;
+      this.rows = blankRows(this.geometry); this.address = 0; this.addressSpace = 'ddram';
       this.readyCycle = cycle + CHARACTER_LCD_TIMING.clearHomeMinimumCycles;
       return true;
     }
     if (command === 0x02) {
-      this.address = 0;
+      this.address = 0; this.addressSpace = 'ddram';
       this.readyCycle = cycle + CHARACTER_LCD_TIMING.clearHomeMinimumCycles;
       return true;
     }
-    if (command === 0x28 || command === 0x0c || command === 0x06) {
-      if (command === 0x0c) this.displayOn = true;
+    if (command === 0x28 || command === 0x06 || (command & 0xf8) === 0x08) {
+      if ((command & 0xf8) === 0x08) {
+        this.displayOn = Boolean(command & 0x04);
+        this.cursorOn = Boolean(command & 0x02);
+        this.blinkOn = Boolean(command & 0x01);
+      }
       this.readyCycle = cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles;
       return true;
     }
     if (command & 0x80) {
       const address = command & 0x7f;
-      if (!((address >= 0 && address <= 0x0f) || (address >= 0x40 && address <= 0x4f))) {
+      if (!this.#visiblePosition(address)) {
         return this.#reject('CHARACTER_LCD_DDRAM_ADDRESS_UNSUPPORTED', [address]);
       }
-      this.address = address;
+      this.address = address; this.addressSpace = 'ddram';
+      this.readyCycle = cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles;
+      return true;
+    }
+    if ((command & 0xc0) === 0x40) {
+      if (!this.geometry.customGlyphs) return this.#reject('CHARACTER_LCD_COMMAND_UNSUPPORTED', [command]);
+      this.address = command & 0x3f; this.addressSpace = 'cgram';
       this.readyCycle = cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles;
       return true;
     }
     return this.#reject('CHARACTER_LCD_COMMAND_UNSUPPORTED', [command]);
   }
 
+  #visiblePosition(address) {
+    for (let row = 0; row < this.geometry.rows; row += 1) {
+      const offset = this.geometry.rowOffsets[row];
+      if (address >= offset && address < offset + this.geometry.columns) {
+        return { row, column: address - offset };
+      }
+    }
+    return null;
+  }
+
+  #nextDdramAddress(row, column) {
+    if (column + 1 < this.geometry.columns) return this.geometry.rowOffsets[row] + column + 1;
+    return this.geometry.rowOffsets[(row + 1) % this.geometry.rows];
+  }
+
   #writeData(value, cycle) {
     if (this.status !== 'ready') return this.#reject('CHARACTER_LCD_DATA_BEFORE_READY', [value]);
-    if (value < 0x20 || value > 0x7e) {
+    if (this.addressSpace === 'cgram') {
+      const slot = Math.floor(this.address / 8);
+      const row = this.address % 8;
+      this.cgram[slot][row] = value & 0x1f;
+      this.address = (this.address + 1) & 0x3f;
+      this.readyCycle = cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles;
+      return true;
+    }
+    if ((value < 0x20 || value > 0x7e) && !(this.geometry.customGlyphs && value >= 0 && value <= 7)) {
       return this.#reject('CHARACTER_LCD_CHARACTER_UNSUPPORTED', [value]);
     }
-    let row;
-    let column;
-    if (this.address >= 0 && this.address <= 0x0f) {
-      row = 0; column = this.address;
-    } else if (this.address >= 0x40 && this.address <= 0x4f) {
-      row = 1; column = this.address - 0x40;
-    } else {
+    const position = this.#visiblePosition(this.address);
+    if (!position) {
       return this.#reject('CHARACTER_LCD_DDRAM_ADDRESS_UNSUPPORTED', [this.address]);
     }
-    this.rows[row][column] = String.fromCharCode(value);
-    this.address += 1;
+    this.rows[position.row][position.column] = value;
+    this.address = this.#nextDdramAddress(position.row, position.column);
     this.readyCycle = cycle + CHARACTER_LCD_TIMING.instructionMinimumCycles;
     return true;
   }
@@ -457,9 +515,15 @@ export class CharacterLcd4BitDecoder {
     return clone({
       status: this.status,
       error: this.error,
-      lines: this.rows.map((row) => row.join('')),
+      lines: this.rows.map((row) => row.map((value) => String.fromCharCode(value)).join('')),
+      cellCodes: this.rows,
+      customGlyphs: this.cgram,
+      addressSpace: this.addressSpace,
+      geometry: this.geometry,
       address: this.address,
       displayOn: this.displayOn,
+      cursorOn: this.cursorOn,
+      blinkOn: this.blinkOn,
       initialized: this.initCommandIndex === CHARACTER_LCD_INITIALIZATION.commands.length,
       initNibbleIndex: this.initNibbleIndex,
       initCommandIndex: this.initCommandIndex,
@@ -470,6 +534,6 @@ export class CharacterLcd4BitDecoder {
   }
 }
 
-export function createCharacterLcd4BitDecoder(mapping) {
-  return new CharacterLcd4BitDecoder(mapping);
+export function createCharacterLcd4BitDecoder(mapping, options = {}) {
+  return new CharacterLcd4BitDecoder(mapping, options);
 }

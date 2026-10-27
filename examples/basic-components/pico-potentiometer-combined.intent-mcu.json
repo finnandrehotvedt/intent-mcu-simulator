@@ -1,0 +1,187 @@
+{
+  "schema": "intent-mcu-rp2040-public-project@1",
+  "name": "pico combined potentiometer authoring",
+  "profile": "board.rp2040-pico-v1",
+  "source": "/* Intent MCU Simulator public RP2040 source v1 */\nint main(void)\n{\n  intent_gpio0_output(1u);\n  intent_uart0_text(\"PICO PUBLIC\");\n  intent_halt();\n}\n",
+  "circuit": {
+    "schema": "intent-mcu-rp2040-pico-circuit@1",
+    "boardProfile": "board.rp2040-pico-v1",
+    "components": [
+      {
+        "id": "led-1",
+        "type": "led.basic-v1",
+        "label": "External red LED",
+        "properties": {
+          "color": "red"
+        },
+        "controls": {}
+      },
+      {
+        "id": "pico-1",
+        "type": "board.rp2040-pico-v1",
+        "label": "RP2040 Pico profile",
+        "properties": {},
+        "controls": {}
+      },
+      {
+        "id": "potentiometer-1",
+        "type": "potentiometer.linear-3v3-v1",
+        "label": "10 kΩ linear potentiometer",
+        "properties": {
+          "ohms": 10000,
+          "taper": "linear"
+        },
+        "controls": {}
+      },
+      {
+        "id": "resistor-1",
+        "type": "resistor.fixed-v1",
+        "label": "220 Ω series resistor",
+        "properties": {
+          "ohms": 220
+        },
+        "controls": {}
+      }
+    ],
+    "nets": [
+      {
+        "id": "net-gpio0",
+        "endpoints": [
+          {
+            "component": "pico-1",
+            "pin": "GP0"
+          },
+          {
+            "component": "resistor-1",
+            "pin": "B"
+          }
+        ]
+      },
+      {
+        "id": "net-ground",
+        "endpoints": [
+          {
+            "component": "led-1",
+            "pin": "CATHODE"
+          },
+          {
+            "component": "pico-1",
+            "pin": "GND3"
+          }
+        ]
+      },
+      {
+        "id": "net-pico-1-gnd8-potentiometer-1-low",
+        "endpoints": [
+          {
+            "component": "pico-1",
+            "pin": "GND8"
+          },
+          {
+            "component": "potentiometer-1",
+            "pin": "LOW"
+          }
+        ]
+      },
+      {
+        "id": "net-pico-1-gp1-potentiometer-1-high",
+        "endpoints": [
+          {
+            "component": "pico-1",
+            "pin": "GP1"
+          },
+          {
+            "component": "potentiometer-1",
+            "pin": "HIGH"
+          }
+        ]
+      },
+      {
+        "id": "net-pico-1-gp26-potentiometer-1-wiper",
+        "endpoints": [
+          {
+            "component": "pico-1",
+            "pin": "GP26"
+          },
+          {
+            "component": "potentiometer-1",
+            "pin": "WIPER"
+          }
+        ]
+      },
+      {
+        "id": "net-series",
+        "endpoints": [
+          {
+            "component": "led-1",
+            "pin": "ANODE"
+          },
+          {
+            "component": "resistor-1",
+            "pin": "A"
+          }
+        ]
+      }
+    ],
+    "layout": {
+      "positions": {
+        "led-1": {
+          "x": 0.22,
+          "y": 0.48,
+          "rotation": 0
+        },
+        "pico-1": {
+          "x": 0.78,
+          "y": 0.52,
+          "rotation": 0
+        },
+        "potentiometer-1": {
+          "x": 0.44,
+          "y": 0.72,
+          "rotation": 0
+        },
+        "resistor-1": {
+          "x": 0.48,
+          "y": 0.27,
+          "rotation": 0
+        }
+      },
+      "wireStyles": {
+        "net-gpio0": "#f5c451",
+        "net-ground": "#303943",
+        "net-pico-1-gnd8-potentiometer-1-low": "#39dff2",
+        "net-pico-1-gp1-potentiometer-1-high": "#39dff2",
+        "net-pico-1-gp26-potentiometer-1-wiper": "#39dff2",
+        "net-series": "#f04f5f"
+      },
+      "wireRoutes": {},
+      "componentAppearance": {
+        "schema": "intent-mcu-component-appearance@1",
+        "components": {}
+      },
+      "idCounters": {
+        "breadboard": 0,
+        "button": 0,
+        "capacitor": 0,
+        "diode": 0,
+        "electrolytic": 0,
+        "fuse": 0,
+        "ground": 0,
+        "inductor": 0,
+        "led": 1,
+        "nmos": 0,
+        "npn": 0,
+        "optocoupler": 0,
+        "pmos": 0,
+        "pnp": 0,
+        "potentiometer": 1,
+        "ptc": 0,
+        "resistor": 1,
+        "schottky": 0,
+        "switch": 0,
+        "terminal-block": 0,
+        "zener": 0
+      }
+    }
+  }
+}

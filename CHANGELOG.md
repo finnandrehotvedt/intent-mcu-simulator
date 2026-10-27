@@ -2,6 +2,24 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.140 — 2026-10-27
+
+- Expands the AVR chooser to 20 visible choices: one empty circuit and 19
+  ready-made examples with concise Learn, Try, Observe, Limits and Next
+  guidance.
+- Adds guided trimmer-calibration, ground-and-5-V-reference, traffic-light and
+  four-digit multiplex examples, each backed by canonical project artifacts
+  and bounded AVR runtime evidence.
+- Publishes an 84-model four-profile component matrix with 71 executable, 72
+  additional authoring-only and 193 unavailable profile cells, keeping model
+  limitations and unsupported cross-controller combinations explicit.
+- Adds original component artwork and named-terminal authoring packages for
+  the expanded input, sensor, passive, semiconductor, protection, connection
+  and indicator catalogue without claiming a runtime model where none exists.
+- Synchronizes release identity, machine-readable X72 changes, documentation
+  and sitemap while preserving prior project-file migration anchors and
+  requiring a fresh Build after Open.
+
 ## 1.1.0-rc.139 — 2026-10-25
 
 - Adds a visible New empty circuit action for Pico, ESP32-C3 and STM32 that

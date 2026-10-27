@@ -165,6 +165,15 @@
       ]
     },
     {
+      "id": "X72",
+      "capabilities": [
+        "intent-mcu-example-progression@1"
+      ],
+      "contracts": [
+        "x72-example-progression-v1"
+      ]
+    },
+    {
       "id": "X74",
       "capabilities": [
         "intent-mcu-recipient-response@1"

@@ -9,9 +9,13 @@ import {
 } from './candidate-existing-ui-adapter.mjs';
 import { validateContactPersistenceDraft } from '../expansion-drafts/project-v3-contact-persistence.mjs';
 import { createCharacterLcd4BitDecoder } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
+import { createCharacterLcd20x4Decoder } from '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs';
+import { createPcf8574LcdDecoder } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
 import {
   nextRotaryEncoderDetent, rotaryEncoderDigitalSequence,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
+import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, resistiveDividerSensorResistance,
+  resistiveDividerSensorVoltage } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
 import { observeRp2040PicoCircuit, validateRp2040PicoCircuit } from './rp2040-pico-circuit.mjs';
 import { esp32C3RuntimeCircuit, validateEsp32C3Circuit } from './esp32c3-public-circuit.mjs';
 import { validateStm32Circuit } from './stm32-public-circuit.mjs';
@@ -25,6 +29,7 @@ const sevenDigits = Object.freeze({
   6: ['a', 'c', 'd', 'e', 'f', 'g'], 7: ['a', 'b', 'c'],
   8: ['a', 'b', 'c', 'd', 'e', 'f', 'g'], 9: ['a', 'b', 'c', 'd', 'f', 'g'],
 });
+const fourDigitPattern = /^a?b?c?d?e?f?g?$/u;
 const failure = (code, details = []) => ({ ok: false, code, details: structuredClone(details) });
 const exactInput = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
@@ -32,7 +37,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-thumbnail-artwork-1@46',
+  id: 'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@50',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -48,14 +53,25 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     return candidateContactControl(session, componentId, key, value);
   },
   createCharacterLcdDecoder(mapping) { return createCharacterLcd4BitDecoder(mapping); },
+  createCharacterLcd20x4Decoder(mapping) { return createCharacterLcd20x4Decoder(mapping); },
+  createPcf8574LcdDecoder(address) { return createPcf8574LcdDecoder(address); },
   rotaryEncoderSequence(projection, direction) { return rotaryEncoderDigitalSequence(projection, direction); },
   nextEncoderDetent(component, direction) { return nextRotaryEncoderDetent(component, direction); },
   observeRgb(duties) {
     return Object.fromEntries(['R', 'G', 'B'].map((key) =>
       [key, Math.max(0, Math.min(1, duties[key]))]));
   },
+  observeTrafficLight(levels) {
+    return Object.fromEntries(['RED', 'AMBER', 'GREEN'].map((key) => [key, Boolean(levels[key])]));
+  },
   observeBuzzer(level) { return { enabled: Boolean(level) }; },
   observeSevenSegment(activeSegments) { return [...new Set(activeSegments)].sort(); },
+  observeFourDigitSevenSegment(digits, decimalPoints = [false, false, false, false]) {
+    return {
+      digits: digits.map((segments) => [...new Set(segments)].sort().join('')),
+      decimalPoints: decimalPoints.map(Boolean),
+    };
+  },
   validateProfile(profile, value, options = {}) {
     if (profile === 'board.rp2040-pico-v1') return validateRp2040PicoCircuit(value, options);
     if (profile === 'board.esp32-c3-devmodule-v1') return validateEsp32C3Circuit(value, options);
@@ -87,7 +103,7 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       if (typeof input?.pressed !== 'boolean') return failure('MODEL_LIBRARY_REFERENCE_INPUT');
       return { ok: true, code: 'OK', result: { connected: input.pressed } };
     }
-    if (componentType === 'potentiometer.linear-v1') {
+    if (['potentiometer.linear-v1', 'potentiometer.trimmer-v1'].includes(componentType)) {
       if (!Number.isFinite(input?.supplyVolts) || !Number.isFinite(input?.position)
           || input.position < 0 || input.position > 1) return failure('MODEL_LIBRARY_REFERENCE_INPUT');
       return { ok: true, code: 'OK', result: { outputVolts: input.supplyVolts * input.position } };
@@ -98,9 +114,16 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     if (componentType === 'resistor.fixed-v1') return this.evaluateReference(componentType, input);
     if (componentType === 'led.basic-v1') return this.evaluateReference(componentType, input);
     if (componentType === 'button.momentary-v1') return this.evaluateReference(componentType, input);
-    if (componentType === 'potentiometer.linear-v1') return this.evaluateReference(componentType, input);
+    if (['potentiometer.linear-v1', 'potentiometer.trimmer-v1'].includes(componentType)) {
+      return this.evaluateReference(componentType, input);
+    }
     if (componentType === 'reference.ground-v1') {
       return exactInput(input, []) ? { ok: true, code: 'OK', result: { potentialVolts: 0 } }
+        : failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+    }
+    if (componentType === 'reference.power-5v-v1') {
+      return exactInput(input, [])
+        ? { ok: true, code: 'OK', result: { voltageVolts: 5, direction: 'source' } }
         : failure('MODEL_LIBRARY_PRODUCTION_INPUT');
     }
     if (componentType === 'switch.toggle-spst-v1') {
@@ -111,6 +134,64 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       if (!['A', 'B'].includes(input?.selectedThrow)) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
       return { ok: true, code: 'OK', result: { selectedThrow: input.selectedThrow,
         activeContact: ['COM', input.selectedThrow], breakBeforeMake: true } };
+    }
+    if (componentType === 'switch.slide-spdt-v1') {
+      if (!['A', 'B'].includes(input?.selectedThrow)) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { selectedThrow: input.selectedThrow,
+        activeContact: ['COM', input.selectedThrow], breakBeforeMake: true, maintained: true } };
+    }
+    if (componentType === 'button.momentary-nc-v1') {
+      if (typeof input?.pressed !== 'boolean') return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { connected: !input.pressed, normallyClosed: true } };
+    }
+    if (componentType === 'switch.limit-spdt-v1') {
+      if (typeof input?.actuated !== 'boolean') return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      const selectedThrow = input.actuated ? 'NO' : 'NC';
+      return { ok: true, code: 'OK', result: { selectedThrow,
+        activeContact: ['COM', selectedThrow], breakBeforeMake: true, springReturn: true } };
+    }
+    if (componentType === 'switch.dip-4-v1') {
+      if (!Array.isArray(input?.switches) || input.switches.length !== 4
+          || input.switches.some((value) => typeof value !== 'boolean')) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { connected: [...input.switches] } };
+    }
+    if (componentType === 'input.rotary-encoder-button-v1') {
+      if (!['cw', 'ccw'].includes(input?.direction) || typeof input?.pressed !== 'boolean') {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      const states = input.direction === 'cw' ? ['11', '01', '00', '10', '11']
+        : ['11', '10', '00', '01', '11'];
+      return { ok: true, code: 'OK', result: { states, phaseCycles: 16000,
+        buttonConnected: input.pressed } };
+    }
+    if (['switch.reed-no-v1', 'switch.emergency-stop-nc-v1', 'switch.foot-pedal-no-v1',
+      'switch.float-no-v1', 'sensor.tilt-switch-no-v1',
+      'sensor.ball-vibration-switch-no-v1'].includes(componentType)) {
+      if (!exactInput(input, ['closed']) || typeof input.closed !== 'boolean') {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { connected: input.closed } };
+    }
+    if (componentType === 'switch.rotary-selector-4-v1') {
+      if (!Number.isInteger(input?.position) || input.position < 1 || input.position > 4) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { position: input.position,
+        activeContact: ['COM', `P${input.position}`] } };
+    }
+    if (componentType === 'output.rgb-led-common-anode-v1') {
+      if (!exactInput(input, ['duties']) || !input.duties || ['R', 'G', 'B'].some(
+        (key) => !Number.isFinite(input.duties[key]) || input.duties[key] < 0 || input.duties[key] > 1)) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { activeLevel: 'LOW', duties: structuredClone(input.duties) } };
+    }
+    if (componentType === 'output.led-bar-graph-10-v1') {
+      if (!Array.isArray(input?.segments) || input.segments.length !== 10
+          || input.segments.some((value) => typeof value !== 'boolean')) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { segments: [...input.segments] } };
     }
     if (componentType === 'sensor.light-analogue-v1') {
       if (!Number.isFinite(input?.lightLevel) || input.lightLevel < 0 || input.lightLevel > 1) {
@@ -124,6 +205,64 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       }
       return { ok: true, code: 'OK', result: { outputVolts: (input.temperatureC + 50) / 40 } };
     }
+    if (['sensor.soil-moisture-resistive-analogue-v1',
+      'sensor.soil-moisture-capacitive-analogue-v1',
+      'sensor.water-level-analogue-v1'].includes(componentType)) {
+      if (!exactInput(input, ['ratio']) || !Number.isFinite(input.ratio)
+          || input.ratio < 0 || input.ratio > 1) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { ratio: input.ratio, outputVolts: input.ratio * 5 } };
+    }
+    if (['sensor.rain-analogue-v1', 'sensor.sound-level-analogue-v1',
+      'sensor.flame-analogue-v1', 'sensor.mq-gas-analogue-v1',
+      'sensor.co2-analogue-v1', 'sensor.uv-analogue-v1'].includes(componentType)) {
+      if (!exactInput(input, ['ratio']) || !Number.isFinite(input.ratio)
+          || input.ratio < 0 || input.ratio > 1) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { ratio: input.ratio, outputVolts: input.ratio * 5 } };
+    }
+    if (componentType === 'sensor.wind-direction-analogue-v1') {
+      if (!exactInput(input, ['directionDegrees']) || !Number.isFinite(input.directionDegrees)
+          || input.directionDegrees < 0 || input.directionDegrees > 360) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { directionDegrees: input.directionDegrees,
+        outputVolts: input.directionDegrees / 72 } };
+    }
+    if (componentType === 'sensor.hall-magnetic-analogue-v1') {
+      if (!exactInput(input, ['magneticFieldRatio']) || !Number.isFinite(input.magneticFieldRatio)
+          || input.magneticFieldRatio < -1 || input.magneticFieldRatio > 1) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { magneticFieldRatio: input.magneticFieldRatio,
+        outputVolts: (input.magneticFieldRatio + 1) * 2.5 } };
+    }
+    if (['sensor.tmp36-temperature-analogue-v1',
+      'sensor.lm35-temperature-analogue-v1'].includes(componentType)) {
+      if (!exactInput(input, ['temperatureC']) || !Number.isFinite(input.temperatureC)) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      const tmp36 = componentType === 'sensor.tmp36-temperature-analogue-v1';
+      if ((tmp36 && (input.temperatureC < -40 || input.temperatureC > 125))
+          || (!tmp36 && (input.temperatureC < 0 || input.temperatureC > 150))) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { temperatureC: input.temperatureC,
+        outputVolts: (tmp36 ? 0.5 : 0) + input.temperatureC * 0.01 } };
+    }
+    if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[componentType]) {
+      const definition = RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[componentType];
+      const key = definition.controlKeys[0]; const value = input?.[key];
+      if (!exactInput(input, [key]) || !Number.isFinite(value)
+          || value < definition.control.minimum || value > definition.control.maximum) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { [key]: value,
+        resistanceOhms: resistiveDividerSensorResistance(componentType, value),
+        outputVolts: resistiveDividerSensorVoltage(componentType, value) } };
+    }
     if (componentType === 'sensor.light-threshold-digital-v1') {
       const { lightLevelPercent, thresholdPercent, hysteresisPercentagePoints, currentActive } = input ?? {};
       if (![lightLevelPercent, thresholdPercent, hysteresisPercentagePoints].every(Number.isFinite)
@@ -136,6 +275,28 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
         : lightLevelPercent <= thresholdPercent - hysteresisPercentagePoints ? false : currentActive;
       return { ok: true, code: 'OK', result: { outputActive, digitalLevel: !outputActive } };
     }
+    if (['input.capacitive-touch-button-v1', 'sensor.pir-motion-v1',
+      'sensor.hall-switch-digital-v1'].includes(componentType)) {
+      if (!exactInput(input, ['active']) || typeof input.active !== 'boolean') {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { active: input.active, digitalLevel: input.active } };
+    }
+    if (['sensor.flow-pulse-digital-v1', 'sensor.wind-speed-pulse-digital-v1']
+      .includes(componentType)) {
+      if (!exactInput(input, ['pulseHigh']) || typeof input.pulseHigh !== 'boolean') {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK',
+        result: { pulseHigh: input.pulseHigh, digitalLevel: input.pulseHigh } };
+    }
+    if (['sensor.ir-obstacle-reflective-v1', 'sensor.line-tracking-reflective-v1']
+      .includes(componentType)) {
+      if (!exactInput(input, ['active']) || typeof input.active !== 'boolean') {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { active: input.active, digitalLevel: !input.active } };
+    }
     if (componentType === 'output.rgb-led-common-cathode-v1') {
       const duties = input?.duties;
       if (!duties || ['R', 'G', 'B'].some((key) => !Number.isFinite(duties[key]))) {
@@ -144,6 +305,14 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       return { ok: true, code: 'OK', result: { duties: Object.fromEntries(
         ['R', 'G', 'B'].map((key) => [key, Math.max(0, Math.min(1, duties[key]))]),
       ) } };
+    }
+    if (componentType === 'output.traffic-light-module-v1') {
+      const levels = input?.levels;
+      if (!levels || !exactInput(levels, ['RED', 'AMBER', 'GREEN'])
+          || ['RED', 'AMBER', 'GREEN'].some((key) => typeof levels[key] !== 'boolean')) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { levels: structuredClone(levels) } };
     }
     if (componentType === 'output.active-buzzer-module-v1') {
       if (typeof input?.level !== 'boolean') return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
@@ -159,6 +328,19 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       }
       return { ok: true, code: 'OK', result: { activeSegments: [...sevenDigits[input.digit]] } };
     }
+    if (componentType === 'output.seven-segment-four-digit-common-cathode-v1') {
+      if (!exactInput(input, ['digits', 'decimalPoints'])
+          || !Array.isArray(input.digits) || input.digits.length !== 4
+          || input.digits.some((segments) => typeof segments !== 'string'
+            || !fourDigitPattern.test(segments))
+          || !Array.isArray(input.decimalPoints) || input.decimalPoints.length !== 4
+          || input.decimalPoints.some((value) => typeof value !== 'boolean')) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: {
+        digits: [...input.digits], decimalPoints: [...input.decimalPoints],
+      } };
+    }
     if (componentType === 'output.character-lcd-16x2-4bit-v1') {
       if (!Array.isArray(input?.lines) || input.lines.length !== 2
           || input.lines.some((line) => typeof line !== 'string' || line.length > 16)) {
@@ -166,11 +348,38 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       }
       return { ok: true, code: 'OK', result: { lines: [...input.lines], busMode: 'write-only-4bit' } };
     }
+    if (componentType === 'output.character-lcd-16x2-pcf8574-v1') {
+      if (!Array.isArray(input?.lines) || input.lines.length !== 2
+          || input.lines.some((line) => typeof line !== 'string' || line.length > 16)) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { lines: [...input.lines], busMode: 'i2c-pcf8574-fixed-0x27' } };
+    }
+    if (componentType === 'output.character-lcd-20x4-4bit-v1') {
+      if (!Array.isArray(input?.lines) || input.lines.length !== 4
+          || input.lines.some((line) => typeof line !== 'string' || line.length > 20)) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { lines: [...input.lines], busMode: 'write-only-4bit-cgram' } };
+    }
     if (componentType === 'input.rotary-encoder-quadrature-v1') {
       if (!['cw', 'ccw'].includes(input?.direction)) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
       const states = input.direction === 'cw' ? ['11', '01', '00', '10', '11']
         : ['11', '10', '00', '01', '11'];
       return { ok: true, code: 'OK', result: { states, phaseCycles: 16000 } };
+    }
+    if (componentType === 'input.analog-joystick-2axis-v1') {
+      if (!Number.isFinite(input?.x) || input.x < 0 || input.x > 1
+          || !Number.isFinite(input?.y) || input.y < 0 || input.y > 1
+          || typeof input?.pressed !== 'boolean') return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { xVolts: input.x * 5, yVolts: input.y * 5,
+        switchClosed: input.pressed } };
+    }
+    if (['input.matrix-keypad-3x4-v1', 'input.matrix-keypad-4x4-v1'].includes(componentType)) {
+      const columns = componentType.includes('3x4') ? 3 : 4;
+      if (input?.pressedKey !== 'none' && (!/^R[1-4]C[1-4]$/u.test(input?.pressedKey)
+          || Number(input.pressedKey.at(-1)) > columns)) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { closedContact: input.pressedKey === 'none' ? null : input.pressedKey } };
     }
     if (['board.atmega328p-16mhz-v1', 'board.rp2040-pico-v1',
       'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1'].includes(componentType)) {
@@ -179,6 +388,76 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     }
     return failure('MODEL_LIBRARY_PRODUCTION_UNAVAILABLE', [componentType]);
   },
+});
+
+export const PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp041-public-source@55',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp043-public-source@56',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp020-manual-mixed-repair@49',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp003-public-source@54',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp020-public-source@53',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-thumbnail-artwork-1@46',
+  manifestVersion: '2.0.0-thumbnail-artwork.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48-migration',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-lcd-api-duplicate-fix@49-migration',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-lcd-persistence-fix@50-migration',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-preserved-draft-export@51-migration',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
 });
 
 export const PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({

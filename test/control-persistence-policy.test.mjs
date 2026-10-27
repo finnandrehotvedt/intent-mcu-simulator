@@ -20,13 +20,52 @@ import { validateDigitalLightThresholdComponent } from '../expansion-drafts/digi
 const expected = {
   'button.momentary-v1': ['pressed'],
   'potentiometer.linear-v1': ['position'],
+  'potentiometer.trimmer-v1': ['position'],
   'switch.toggle-spst-v1': ['closed'],
   'switch.changeover-spdt-v1': ['selectedThrow'],
+  'switch.slide-spdt-v1': ['selectedThrow'],
+  'button.momentary-nc-v1': ['pressed'],
+  'switch.limit-spdt-v1': ['actuated'],
+  'switch.dip-4-v1': ['switch1', 'switch2', 'switch3', 'switch4'],
+  'input.rotary-encoder-button-v1': ['detent', 'pressed'],
+  'switch.reed-no-v1': ['magnetPresent'],
+  'switch.emergency-stop-nc-v1': ['latched'],
+  'switch.foot-pedal-no-v1': ['pressed'],
+  'switch.float-no-v1': ['liquidHigh'],
+  'sensor.tilt-switch-no-v1': ['tilted'],
+  'sensor.ball-vibration-switch-no-v1': ['vibrationDetected'],
+  'input.analog-joystick-2axis-v1': ['x', 'y', 'pressed'],
+  'input.matrix-keypad-3x4-v1': ['pressedKey'],
+  'input.matrix-keypad-4x4-v1': ['pressedKey'],
+  'switch.rotary-selector-4-v1': ['position'],
   'sensor.light-analogue-v1': ['lightLevel'],
   'sensor.temperature-analogue-v1': ['temperatureC'],
   'sensor.light-threshold-digital-v1': [
     'lightLevelPercent', 'thresholdPercent', 'hysteresisPercentagePoints', 'outputActive',
   ],
+  'input.capacitive-touch-button-v1': ['touched'],
+  'sensor.pir-motion-v1': ['motionDetected'],
+  'sensor.hall-switch-digital-v1': ['magnetPresent'],
+  'sensor.flow-pulse-digital-v1': ['pulseHigh'],
+  'sensor.wind-speed-pulse-digital-v1': ['pulseHigh'],
+  'sensor.ir-obstacle-reflective-v1': ['obstacleDetected'],
+  'sensor.line-tracking-reflective-v1': ['lineDetected'],
+  'sensor.soil-moisture-resistive-analogue-v1': ['moistureRatio'],
+  'sensor.soil-moisture-capacitive-analogue-v1': ['moistureRatio'],
+  'sensor.water-level-analogue-v1': ['waterLevelRatio'],
+  'sensor.rain-analogue-v1': ['wetnessRatio'],
+  'sensor.sound-level-analogue-v1': ['soundLevelRatio'],
+  'sensor.flame-analogue-v1': ['flameIntensityRatio'],
+  'sensor.mq-gas-analogue-v1': ['gasResponseRatio'],
+  'sensor.co2-analogue-v1': ['co2ResponseRatio'],
+  'sensor.uv-analogue-v1': ['uvResponseRatio'],
+  'sensor.wind-direction-analogue-v1': ['directionDegrees'],
+  'sensor.hall-magnetic-analogue-v1': ['magneticFieldRatio'],
+  'sensor.tmp36-temperature-analogue-v1': ['temperatureC'],
+  'sensor.lm35-temperature-analogue-v1': ['temperatureC'],
+  'sensor.ldr-divider-v1': ['lightLevel'],
+  'sensor.ntc-10k-divider-v1': ['temperatureC'],
+  'sensor.flex-divider-v1': ['bendRatio'],
   'input.rotary-encoder-quadrature-v1': ['detent'],
 };
 
@@ -50,10 +89,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 25 available cells have one exact controls-persist or controls-empty policy', () => {
+test('all 71 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 88, available: 25, unavailable: 63,
-    controlBearing: 8, controlsEmpty: 17, controls: 11,
+    profiles: 4, cells: 336, available: 71, unavailable: 265,
+    controlBearing: 47, controlsEmpty: 24, controls: 56,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);
@@ -73,6 +112,7 @@ test('project-v2 button and potentiometer controls round-trip as authored data',
   for (const [id, type, controls] of [
     ['button', 'button.momentary-v1', { pressed: true }],
     ['adc', 'potentiometer.linear-v1', { position: 0.83 }],
+    ['trimmer', 'potentiometer.trimmer-v1', { position: 0.37 }],
   ]) {
     const project = createExampleProject(id).project;
     project.circuit.components.find((component) => component.type === type).controls = controls;

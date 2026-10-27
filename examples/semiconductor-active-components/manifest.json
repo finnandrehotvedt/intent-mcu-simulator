@@ -1,0 +1,214 @@
+{
+  "schema": "intent-mcu-semiconductor-active-component-example-manifest@1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "requirementIds": [
+    "CMP-013",
+    "CMP-014"
+  ],
+  "profileBehavior": {
+    "board.atmega328p-16mhz-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+    "board.rp2040-pico-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+    "board.esp32-c3-devmodule-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+    "board.stm32f429zi-nucleo144-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence"
+  },
+  "entries": [
+    {
+      "id": "avr-semiconductor-active-components",
+      "profile": "board.atmega328p-16mhz-v1",
+      "file": "avr-semiconductor-active-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-013",
+        "CMP-014"
+      ],
+      "componentTypes": [
+        "transistor.mosfet-p-channel-v1",
+        "semiconductor.optocoupler-phototransistor-v1"
+      ],
+      "componentIds": [
+        "pmos-1",
+        "optocoupler-1"
+      ],
+      "nameplateValues": {
+        "transistor.mosfet-p-channel-v1": {
+          "nominalGateThresholdMagnitudeVolts": 2,
+          "maxDrainSourceVoltageVolts": 60,
+          "maxDrainCurrentAmps": 10
+        },
+        "semiconductor.optocoupler-phototransistor-v1": {
+          "nominalForwardVoltageVolts": 1.2,
+          "nominalCurrentTransferRatioPercent": 100,
+          "maxIsolationVoltageVolts": 3750
+        }
+      },
+      "namedWiring": [
+        "board-1.D2 → pmos-1.GATE",
+        "pmos-1.DRAIN ↔ optocoupler-1.COLLECTOR",
+        "pmos-1.SOURCE ↔ optocoupler-1.EMITTER",
+        "board-1.D3 → optocoupler-1.ANODE",
+        "board-1.GND1 ↔ optocoupler-1.CATHODE"
+      ],
+      "expectedVisibleBehavior": "Opening restores the original P-channel MOSFET and optocoupler SVG symbols, all seven named terminals, bounded nameplate values and five authored nets.",
+      "runtimeUnavailableCode": "SEMICONDUCTOR_ACTIVE_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw active-semiconductor authoring only. No bias/current network, nonlinear transfer, switching threshold, body diode, optical coupling, isolation proof, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority, safety certification or physical equivalence.",
+      "sourceSha256": "d0171b41a357486e64c6673efc9d852c5c8adaf888026933b17da13d625fd571",
+      "projectSha256": "5a63ef414a17096e6208850afdbeaa4bbaecf37df2f6461b761921ed5bfb1da7",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "pico-semiconductor-active-components",
+      "profile": "board.rp2040-pico-v1",
+      "file": "pico-semiconductor-active-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-013",
+        "CMP-014"
+      ],
+      "componentTypes": [
+        "transistor.mosfet-p-channel-v1",
+        "semiconductor.optocoupler-phototransistor-v1"
+      ],
+      "componentIds": [
+        "pmos-1",
+        "optocoupler-1"
+      ],
+      "nameplateValues": {
+        "transistor.mosfet-p-channel-v1": {
+          "nominalGateThresholdMagnitudeVolts": 2,
+          "maxDrainSourceVoltageVolts": 60,
+          "maxDrainCurrentAmps": 10
+        },
+        "semiconductor.optocoupler-phototransistor-v1": {
+          "nominalForwardVoltageVolts": 1.2,
+          "nominalCurrentTransferRatioPercent": 100,
+          "maxIsolationVoltageVolts": 3750
+        }
+      },
+      "namedWiring": [
+        "pico-1.GP1 → pmos-1.GATE",
+        "pmos-1.DRAIN ↔ optocoupler-1.COLLECTOR",
+        "pmos-1.SOURCE ↔ optocoupler-1.EMITTER",
+        "pico-1.GP2 → optocoupler-1.ANODE",
+        "pico-1.GND8 ↔ optocoupler-1.CATHODE"
+      ],
+      "expectedVisibleBehavior": "Opening restores the original P-channel MOSFET and optocoupler SVG symbols, all seven named terminals, bounded nameplate values and five authored nets.",
+      "runtimeUnavailableCode": "SEMICONDUCTOR_ACTIVE_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw active-semiconductor authoring only. No bias/current network, nonlinear transfer, switching threshold, body diode, optical coupling, isolation proof, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority, safety certification or physical equivalence.",
+      "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
+      "projectSha256": "8c5e13bade4c304ed91c0b75a7a71db610c772a79d87d870dccbc9aaeb17a8aa",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "esp32-c3-semiconductor-active-components",
+      "profile": "board.esp32-c3-devmodule-v1",
+      "file": "esp32-c3-semiconductor-active-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-013",
+        "CMP-014"
+      ],
+      "componentTypes": [
+        "transistor.mosfet-p-channel-v1",
+        "semiconductor.optocoupler-phototransistor-v1"
+      ],
+      "componentIds": [
+        "pmos-1",
+        "optocoupler-1"
+      ],
+      "nameplateValues": {
+        "transistor.mosfet-p-channel-v1": {
+          "nominalGateThresholdMagnitudeVolts": 2,
+          "maxDrainSourceVoltageVolts": 60,
+          "maxDrainCurrentAmps": 10
+        },
+        "semiconductor.optocoupler-phototransistor-v1": {
+          "nominalForwardVoltageVolts": 1.2,
+          "nominalCurrentTransferRatioPercent": 100,
+          "maxIsolationVoltageVolts": 3750
+        }
+      },
+      "namedWiring": [
+        "c3-1.GPIO3 → pmos-1.GATE",
+        "pmos-1.DRAIN ↔ optocoupler-1.COLLECTOR",
+        "pmos-1.SOURCE ↔ optocoupler-1.EMITTER",
+        "c3-1.GPIO0 → optocoupler-1.ANODE",
+        "c3-1.GND8 ↔ optocoupler-1.CATHODE"
+      ],
+      "expectedVisibleBehavior": "Opening restores the original P-channel MOSFET and optocoupler SVG symbols, all seven named terminals, bounded nameplate values and five authored nets.",
+      "runtimeUnavailableCode": "SEMICONDUCTOR_ACTIVE_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw active-semiconductor authoring only. No bias/current network, nonlinear transfer, switching threshold, body diode, optical coupling, isolation proof, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority, safety certification or physical equivalence.",
+      "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
+      "projectSha256": "160546146745321254e0591e08d815ecb7af5a91c096a146b6e253d30919e163",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "stm32-semiconductor-active-components",
+      "profile": "board.stm32f429zi-nucleo144-v1",
+      "file": "stm32-semiconductor-active-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-013",
+        "CMP-014"
+      ],
+      "componentTypes": [
+        "transistor.mosfet-p-channel-v1",
+        "semiconductor.optocoupler-phototransistor-v1"
+      ],
+      "componentIds": [
+        "pmos-1",
+        "optocoupler-1"
+      ],
+      "nameplateValues": {
+        "transistor.mosfet-p-channel-v1": {
+          "nominalGateThresholdMagnitudeVolts": 2,
+          "maxDrainSourceVoltageVolts": 60,
+          "maxDrainCurrentAmps": 10
+        },
+        "semiconductor.optocoupler-phototransistor-v1": {
+          "nominalForwardVoltageVolts": 1.2,
+          "nominalCurrentTransferRatioPercent": 100,
+          "maxIsolationVoltageVolts": 3750
+        }
+      },
+      "namedWiring": [
+        "stm32-1.PB1 → pmos-1.GATE",
+        "pmos-1.DRAIN ↔ optocoupler-1.COLLECTOR",
+        "pmos-1.SOURCE ↔ optocoupler-1.EMITTER",
+        "stm32-1.PB7 → optocoupler-1.ANODE",
+        "stm32-1.GND20 ↔ optocoupler-1.CATHODE"
+      ],
+      "expectedVisibleBehavior": "Opening restores the original P-channel MOSFET and optocoupler SVG symbols, all seven named terminals, bounded nameplate values and five authored nets.",
+      "runtimeUnavailableCode": "SEMICONDUCTOR_ACTIVE_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw active-semiconductor data; no switching, optical-transfer, isolation runtime, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw active-semiconductor authoring only. No bias/current network, nonlinear transfer, switching threshold, body diode, optical coupling, isolation proof, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority, safety certification or physical equivalence.",
+      "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
+      "projectSha256": "78ec95a6f847a310289404cf04439d272c12316fbaa30ae136a36d9241b6068c",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    }
+  ]
+}

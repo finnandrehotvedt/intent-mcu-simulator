@@ -1117,6 +1117,11 @@ button:disabled, select:disabled { opacity: .42; }
 .rgb-led-channel.rgb-green { color: #49e57b; }
 .rgb-led-channel.rgb-blue { color: #55a5ff; }
 .rgb-led-mix { transition: fill 80ms linear; filter: drop-shadow(0 0 4px #d7f3ff55); }
+.traffic-light-artwork { overflow: visible; }
+.traffic-light-lamp { transition: fill 80ms linear, filter 80ms linear, opacity 80ms linear; opacity: .55; }
+.traffic-light-lamp[data-traffic-channel="RED"].on { fill: #ff3049; filter: drop-shadow(0 0 9px #ff4057cc); opacity: 1; }
+.traffic-light-lamp[data-traffic-channel="AMBER"].on { fill: #ffe052; filter: drop-shadow(0 0 9px #ffd84dcc); opacity: 1; }
+.traffic-light-lamp[data-traffic-channel="GREEN"].on { fill: #50f084; filter: drop-shadow(0 0 9px #48ed7ccc); opacity: 1; }
 .active-buzzer-artwork { overflow: visible; }
 .active-buzzer-disc, .buzzer-status, .buzzer-wave { transition: fill 80ms linear, stroke 80ms linear, opacity 80ms linear, filter 80ms linear; }
 .active-buzzer-disc.on { fill: #304414; stroke: #b8ff63; filter: drop-shadow(0 0 8px #9cf545aa); }
@@ -1125,6 +1130,9 @@ button:disabled, select:disabled { opacity: .42; }
 .seven-segment-artwork { overflow: visible; }
 .seven-segment-bar { transition: fill 70ms linear, stroke 70ms linear, filter 70ms linear; }
 .seven-segment-bar.on { fill: #ff3347; stroke: #ff7b88; filter: drop-shadow(0 0 6px #ff3347cc); }
+.four-digit-seven-segment-artwork { overflow: visible; }
+.four-digit-seven-segment-bar { transition: fill 45ms linear, stroke 45ms linear, filter 45ms linear; }
+.four-digit-seven-segment-bar.on { fill: #ff3347; stroke: #ff7b88; filter: drop-shadow(0 0 5px #ff3347cc); }
 .character-lcd-artwork { overflow: visible; }
 .character-lcd-screen { transition: fill 100ms linear, filter 100ms linear; }
 .character-lcd-artwork[data-protocol-state="ready"] .character-lcd-screen { fill: #b8e47a; filter: drop-shadow(0 0 4px #8ccf4f88); }
@@ -1135,6 +1143,8 @@ button:disabled, select:disabled { opacity: .42; }
 .button-body { fill: #2c3237; stroke: #aab2b5; stroke-width: 1.5; }
 .button-frame { fill: #111619; stroke: #697278; }
 .button-cap { fill: #d8463c; stroke: #ff8a81; stroke-width: 2; }
+.component-identity-mark { fill: #d9e5eb; font: 700 7px/1 system-ui, sans-serif; letter-spacing: .03em; pointer-events: none; }
+.button-identity-mark { fill: #fff; font-size: 6px; }
 .pot-body { fill: #7a6545; stroke: #d0b478; }
 .pot-case { fill: #92989a; stroke: #e4e7e7; stroke-width: 1.5; }
 .pot-shaft { fill: #c5c9ca; stroke: #656d70; }
@@ -1891,6 +1901,23 @@ footer { text-align: center; font-size: .76rem; padding-top: 28px; }
   .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% + 28px); }
   .shared-canvas-surface:fullscreen .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label,
   .shared-profile-workbench.shared-canvas-focus .pico-editor-part[data-component-type="resistor.fixed-v1"] [data-editor-endpoint$=".B"] .pico-editor-pin-label { top: calc(100% - 5px); }
+  /* The circuit editor is a desktop workbench, not a separate mobile UI.
+     Narrow windows scroll the intact editor instead of compressing pin labels,
+     component art and the inspector into overlapping columns. */
+  .shared-profile-workbench { overflow-x: auto; overscroll-behavior-inline: contain; }
+  .pico-public-grid.shared-profile-grid,
+  .c3-public-grid.shared-profile-grid,
+  .stm32-public-grid.shared-profile-grid { min-width: 1120px; grid-template-columns: 260px 8px minmax(520px,1fr) 8px 280px;
+    grid-template-areas: "parts parts-resizer canvas inspector-resizer inspector"; }
+  .shared-profile-workbench .serial-tab, .shared-profile-workbench .serial-tab[aria-expanded="true"] {
+    top: 44%; right: 0; bottom: auto; min-width: 48px; min-height: 112px;
+    border-right: 0; border-radius: 12px 0 0 12px; writing-mode: vertical-rl;
+  }
+  .top-workbench-shell { overflow-x: auto; overscroll-behavior-inline: contain; }
+  .top-workbench-sticky-controls, .active-canvas-stage { min-width: 980px; }
+  .active-canvas-stage { grid-template-columns: 270px minmax(700px,1fr); }
+  .simple-parts-mount .catalog-list { grid-template-columns: 1fr; overflow-x: hidden; }
+  body[data-workbench-view="simple"] > .serial-tab { display: none; }
 }
 @media (max-width: 480px) {
   .example-picker-dialog .starter-grid { grid-template-columns: minmax(0,1fr); }

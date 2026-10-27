@@ -16,6 +16,11 @@ import {
   validateGroundReferenceCircuit,
 } from './ground-reference-integration-v1.mjs';
 import {
+  POWER_REFERENCE_DEFINITION,
+  POWER_REFERENCE_TYPE,
+  projectPowerReferenceCircuit,
+} from './power-reference-integration-v1.mjs';
+import {
   PROJECT_V3_LIMIT,
   validateProjectV3,
 } from './project-v3-envelope.mjs';
@@ -31,6 +36,25 @@ import {
   TOGGLE_SWITCH_TYPE,
 } from './toggle-switch-integration-v1.mjs';
 import {
+  LIMIT_SWITCH_DEFINITION, LIMIT_SWITCH_TYPE, NC_BUTTON_DEFINITION, NC_BUTTON_TYPE,
+  SLIDE_SWITCH_DEFINITION, SLIDE_SWITCH_TYPE, mechanicalRuntimeState,
+  validateMechanicalInputComponent,
+} from './mechanical-inputs-v1.mjs';
+import {
+  ADVANCED_SWITCH_INPUT_DEFINITIONS, DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
+  advancedSwitchRuntimeState, validateAdvancedSwitchInput,
+} from './advanced-switch-inputs-v1.mjs';
+import {
+  EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE, SAFETY_PEDAL_INPUT_DEFINITIONS,
+  safetyPedalRuntimeState, validateSafetyPedalInput,
+} from './safety-pedal-inputs-v1.mjs';
+import { CONTACT_SENSOR_DEFINITIONS, contactSensorRuntimeState,
+  validateContactSensor } from './contact-sensors-v1.mjs';
+import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE, ROTARY_SELECTOR_INDICATOR_DEFINITIONS,
+  ROTARY_SELECTOR_TYPE, projectCommonAnodeRgbLeds, projectLedBarGraphs, projectRotarySelectors,
+  rotarySelectorContactState,
+  validateRotarySelectorIndicator } from './rotary-selector-indicators-v1.mjs';
+import {
   LIGHT_ANALOGUE_SENSOR_DEFINITION,
   LIGHT_ANALOGUE_SENSOR_TYPE,
   projectLightAnalogueSensors,
@@ -42,6 +66,69 @@ import {
   projectTemperatureAnalogueSensors,
   validateTemperatureAnalogueSensorComponent,
 } from './temperature-analogue-sensor-v1.mjs';
+import {
+  ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
+  ANALOGUE_WATER_LEVEL_TYPE,
+  CAPACITIVE_SOIL_MOISTURE_TYPE,
+  RESISTIVE_SOIL_MOISTURE_TYPE,
+  analogueMoistureLevelRatio,
+  projectAnalogueMoistureLevelSensors,
+  validateAnalogueMoistureLevelSensor,
+} from './analogue-moisture-level-sensors-v1.mjs';
+import {
+  ANALOGUE_DETECTION_DEFINITIONS,
+  analogueDetectionRatio,
+  projectAnalogueDetectionSensors,
+  validateAnalogueDetectionSensor,
+} from './analogue-detection-sensors-v1.mjs';
+import {
+  ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
+  analogueDirectionFieldValue,
+  projectAnalogueDirectionFieldSensors,
+  validateAnalogueDirectionFieldSensor,
+} from './analogue-direction-field-sensors-v1.mjs';
+import {
+  ANALOGUE_TEMPERATURE_IC_DEFINITIONS,
+  analogueTemperatureIcValue,
+  projectAnalogueTemperatureIcSensors,
+  validateAnalogueTemperatureIcSensor,
+} from './analogue-temperature-ic-sensors-v1.mjs';
+import {
+  RESISTIVE_DIVIDER_SENSOR_DEFINITIONS,
+  projectResistiveDividerSensors,
+  resistiveDividerSensorValue,
+  validateResistiveDividerSensor,
+} from './resistive-divider-sensors-v1.mjs';
+import {
+  PASSIVE_ENERGY_STORAGE_DEFINITIONS,
+  validatePassiveEnergyStorageAuthoringGraph,
+  validatePassiveEnergyStorageComponent,
+} from './passive-energy-storage-components-v1.mjs';
+import {
+  DIODE_COMPONENT_DEFINITIONS,
+  validateDiodeAuthoringGraph,
+  validateDiodeComponent,
+} from './diode-components-v1.mjs';
+import {
+  TRANSISTOR_COMPONENT_DEFINITIONS,
+  validateTransistorAuthoringGraph,
+  validateTransistorComponent,
+} from './transistor-components-v1.mjs';
+import {
+  CIRCUIT_PROTECTION_DEFINITIONS,
+  validateCircuitProtectionAuthoringGraph,
+  validateCircuitProtectionComponent,
+} from './circuit-protection-components-v1.mjs';
+import {
+  CONNECTION_HARDWARE_DEFINITIONS,
+  validateConnectionHardwareAuthoringGraph,
+  validateConnectionHardwareComponent,
+} from './connection-hardware-components-v1.mjs';
+import {
+  SEMICONDUCTOR_ACTIVE_DEFINITIONS,
+  validateSemiconductorActiveAuthoringGraph,
+  validateSemiconductorActiveComponent,
+} from './semiconductor-active-components-v1.mjs';
 import {
   DIGITAL_LIGHT_THRESHOLD_DEFINITION,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
@@ -55,6 +142,12 @@ import {
   validateCommonCathodeRgbLedComponent,
 } from './common-cathode-rgb-led-v1.mjs';
 import {
+  TRAFFIC_LIGHT_DEFINITION,
+  TRAFFIC_LIGHT_TYPE,
+  projectTrafficLightModules,
+  validateTrafficLightComponent,
+} from './traffic-light-module-v1.mjs';
+import {
   ACTIVE_BUZZER_DEFINITION,
   ACTIVE_BUZZER_TYPE,
   projectActiveBuzzerModules,
@@ -67,17 +160,62 @@ import {
   validateSevenSegmentComponent,
 } from './seven-segment-common-cathode-v1.mjs';
 import {
+  FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION,
+  FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+  projectFourDigitSevenSegmentDisplays,
+  validateFourDigitSevenSegmentComponent,
+} from './seven-segment-four-digit-common-cathode-v1.mjs';
+import {
   CHARACTER_LCD_DEFINITION,
   CHARACTER_LCD_TYPE,
   projectCharacterLcdDisplays,
   validateCharacterLcdComponent,
 } from './character-lcd-16x2-4bit-v1.mjs';
 import {
+  CHARACTER_LCD_20X4_DEFINITION,
+  CHARACTER_LCD_20X4_TYPE,
+  projectCharacterLcd20x4Displays,
+  validateCharacterLcd20x4Component,
+} from './character-lcd-20x4-4bit-v1.mjs';
+import {
+  PCF8574_LCD_DEFINITION,
+  PCF8574_LCD_TYPE,
+  projectPcf8574LcdDisplays,
+  validatePcf8574LcdComponent,
+} from './pcf8574-lcd-backpack-v1.mjs';
+import {
   ROTARY_ENCODER_DEFINITION,
   ROTARY_ENCODER_TYPE,
   projectRotaryEncoders,
   validateRotaryEncoderComponent,
 } from './rotary-encoder-quadrature-v1.mjs';
+import {
+  ANALOG_JOYSTICK_TYPE, JOYSTICK_KEYPAD_DEFINITIONS, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
+  projectJoystickKeypads, validateJoystickKeypad,
+} from './joystick-keypads-v1.mjs';
+import {
+  DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
+  CAPACITIVE_TOUCH_TYPE,
+  HALL_SWITCH_TYPE,
+  PIR_MOTION_TYPE,
+  digitalPresenceActive,
+  projectDigitalPresenceSensors,
+  validateDigitalPresenceSensor,
+} from './digital-presence-sensors-v1.mjs';
+import {
+  DIGITAL_PULSE_SENSOR_DEFINITIONS,
+  digitalPulseLevel,
+  projectDigitalPulseSensors,
+  validateDigitalPulseSensor,
+} from './digital-pulse-sensors-v1.mjs';
+import {
+  DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
+  IR_OBSTACLE_SENSOR_TYPE,
+  LINE_TRACKING_SENSOR_TYPE,
+  digitalReflectiveSensorActive,
+  projectDigitalReflectiveSensors,
+  validateDigitalReflectiveSensor,
+} from './digital-reflective-sensors-v1.mjs';
 
 export const CONTACT_PERSISTENCE_SCHEMA = 'intent-mcu-project-contact-persistence@1';
 export const COMPILED_FIXTURE_REFERENCE_SCHEMA = 'intent-mcu-compiled-fixture-ref@1';
@@ -134,15 +272,61 @@ export function validateCompiledFixtureReference(value, profile) {
 
 function pinIds(component) {
   if (component.type === GROUND_REFERENCE_TYPE) return ['REF'];
+  if (component.type === POWER_REFERENCE_TYPE) return ['OUT'];
   if (component.type === TOGGLE_SWITCH_TYPE) return ['A', 'B'];
+  if (component.type === NC_BUTTON_TYPE) return ['A', 'B'];
+  if (component.type === SLIDE_SWITCH_TYPE) return ['COM', 'A', 'B'];
+  if (component.type === LIMIT_SWITCH_TYPE) return ['COM', 'NC', 'NO'];
+  if (component.type === DIP_SWITCH_4_TYPE) return ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B'];
+  if (component.type === ROTARY_ENCODER_BUTTON_TYPE) return ['A', 'COM', 'B', 'SW', 'SWCOM'];
+  if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) return ['A', 'B'];
+  if (CONTACT_SENSOR_DEFINITIONS[component.type]) return ['A', 'B'];
+  if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) {
+    return ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type].pins.map((item) => item.id);
+  }
+  if (JOYSTICK_KEYPAD_DEFINITIONS[component.type]) {
+    return JOYSTICK_KEYPAD_DEFINITIONS[component.type].pins.map((item) => item.id);
+  }
   if (component.type === SPDT_CONTACT_TYPE) return ['COM', 'A', 'B'];
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
+  if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
+  if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
+  if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
+  if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
+  if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) {
+    return PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type].pins.map(({ id }) => id);
+  }
+  if (DIODE_COMPONENT_DEFINITIONS[component.type]) {
+    return DIODE_COMPONENT_DEFINITIONS[component.type].pins.map(({ id }) => id);
+  }
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) {
+    return TRANSISTOR_COMPONENT_DEFINITIONS[component.type].pins.map(({ id }) => id);
+  }
+  if (CIRCUIT_PROTECTION_DEFINITIONS[component.type]) {
+    return CIRCUIT_PROTECTION_DEFINITIONS[component.type].pins.map(({ id }) => id);
+  }
+  if (CONNECTION_HARDWARE_DEFINITIONS[component.type]) {
+    return CONNECTION_HARDWARE_DEFINITIONS[component.type].pins.map(({ id }) => id);
+  }
+  if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) {
+    return SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type].pins.map(({ id }) => id);
+  }
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return ['VCC', 'GND', 'DOUT'];
+  if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
+  if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
+  if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return ['R', 'G', 'B', 'COM'];
+  if (component.type === TRAFFIC_LIGHT_TYPE) return ['RED', 'AMBER', 'GREEN', 'COM'];
   if (component.type === ACTIVE_BUZZER_TYPE) return ['VCC', 'GND', 'EN'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
+  if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
+    return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp', 'DIG1', 'DIG2', 'DIG3', 'DIG4'];
+  }
   if (component.type === CHARACTER_LCD_TYPE) return ['VCC', 'GND', 'RS', 'RW', 'E', 'D4', 'D5', 'D6', 'D7'];
+  if (component.type === CHARACTER_LCD_20X4_TYPE) return ['VCC', 'GND', 'RS', 'RW', 'E', 'D4', 'D5', 'D6', 'D7'];
+  if (component.type === PCF8574_LCD_TYPE) return ['VCC', 'GND', 'SDA', 'SCL'];
   if (component.type === ROTARY_ENCODER_TYPE) return ['A', 'COM', 'B'];
   const definition = catalogType(component.type);
   return definition ? definition.pins.map((pin) => pin.id) : null;
@@ -150,15 +334,44 @@ function pinIds(component) {
 
 function componentPins(component) {
   if (component.type === GROUND_REFERENCE_TYPE) return GROUND_REFERENCE_DEFINITION.pins;
+  if (component.type === POWER_REFERENCE_TYPE) return POWER_REFERENCE_DEFINITION.pins;
   if (component.type === TOGGLE_SWITCH_TYPE) return TOGGLE_SWITCH_DEFINITION.pins;
+  if (component.type === NC_BUTTON_TYPE) return NC_BUTTON_DEFINITION.pins;
+  if (component.type === SLIDE_SWITCH_TYPE) return SLIDE_SWITCH_DEFINITION.pins;
+  if (component.type === LIMIT_SWITCH_TYPE) return LIMIT_SWITCH_DEFINITION.pins;
+  if (ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type]) return ADVANCED_SWITCH_INPUT_DEFINITIONS[component.type].pins;
+  if (SAFETY_PEDAL_INPUT_DEFINITIONS[component.type]) return SAFETY_PEDAL_INPUT_DEFINITIONS[component.type].pins;
+  if (CONTACT_SENSOR_DEFINITIONS[component.type]) return CONTACT_SENSOR_DEFINITIONS[component.type].pins;
+  if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) return ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type].pins;
+  if (JOYSTICK_KEYPAD_DEFINITIONS[component.type]) return JOYSTICK_KEYPAD_DEFINITIONS[component.type].pins;
   if (component.type === SPDT_CONTACT_TYPE) return SPDT_CONTACT_DEFINITION.terminals;
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return LIGHT_ANALOGUE_SENSOR_DEFINITION.pins;
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.pins;
+  if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) return ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type].pins;
+  if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) return ANALOGUE_DETECTION_DEFINITIONS[component.type].pins;
+  if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) return ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type].pins;
+  if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) return ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type].pins;
+  if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) return RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type].pins;
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) return PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type].pins;
+  if (DIODE_COMPONENT_DEFINITIONS[component.type]) return DIODE_COMPONENT_DEFINITIONS[component.type].pins;
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) return TRANSISTOR_COMPONENT_DEFINITIONS[component.type].pins;
+  if (CIRCUIT_PROTECTION_DEFINITIONS[component.type]) return CIRCUIT_PROTECTION_DEFINITIONS[component.type].pins;
+  if (CONNECTION_HARDWARE_DEFINITIONS[component.type]) return CONNECTION_HARDWARE_DEFINITIONS[component.type].pins;
+  if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) return SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type].pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
+  if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
+  if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type].pins;
+  if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].pins;
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return COMMON_CATHODE_RGB_LED_DEFINITION.pins;
+  if (component.type === TRAFFIC_LIGHT_TYPE) return TRAFFIC_LIGHT_DEFINITION.pins;
   if (component.type === ACTIVE_BUZZER_TYPE) return ACTIVE_BUZZER_DEFINITION.pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
+  if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
+    return FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION.pins;
+  }
   if (component.type === CHARACTER_LCD_TYPE) return CHARACTER_LCD_DEFINITION.pins;
+  if (component.type === CHARACTER_LCD_20X4_TYPE) return CHARACTER_LCD_20X4_DEFINITION.pins;
+  if (component.type === PCF8574_LCD_TYPE) return PCF8574_LCD_DEFINITION.pins;
   if (component.type === ROTARY_ENCODER_TYPE) return ROTARY_ENCODER_DEFINITION.pins;
   return catalogType(component.type)?.pins ?? null;
 }
@@ -173,11 +386,28 @@ function validateCandidateComponent(component) {
   if (component.type === GROUND_REFERENCE_TYPE) {
     if (!exactKeys(component.properties, ['potentialVolts']) || component.properties.potentialVolts !== 0
         || !exactKeys(component.controls, [])) fail('PROJECT_CONTACT_GROUND_STATE', [component.id]);
+  } else if (component.type === POWER_REFERENCE_TYPE) {
+    if (!exactKeys(component.properties, ['voltageVolts']) || component.properties.voltageVolts !== 5
+        || !exactKeys(component.controls, [])) fail('PROJECT_CONTACT_POWER_STATE', [component.id]);
   } else if (component.type === TOGGLE_SWITCH_TYPE) {
     if (!exactKeys(component.properties, ['normallyOpen']) || component.properties.normallyOpen !== true
         || !exactKeys(component.controls, ['closed']) || typeof component.controls.closed !== 'boolean') {
       fail('PROJECT_CONTACT_SPST_STATE', [component.id]);
     }
+  } else if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(component.type)) {
+    if (!validateMechanicalInputComponent(component)) {
+      fail('PROJECT_CONTACT_MECHANICAL_INPUT_STATE', [component.id]);
+    }
+  } else if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(component.type)) {
+    if (!validateAdvancedSwitchInput(component)) fail('PROJECT_CONTACT_ADVANCED_SWITCH_STATE', [component.id]);
+  } else if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
+    if (!validateSafetyPedalInput(component)) fail('PROJECT_CONTACT_SAFETY_PEDAL_STATE', [component.id]);
+  } else if (CONTACT_SENSOR_DEFINITIONS[component.type]) {
+    if (!validateContactSensor(component)) fail('PROJECT_CONTACT_SENSOR_STATE', [component.id]);
+  } else if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component.type]) {
+    if (!validateRotarySelectorIndicator(component)) fail('PROJECT_CONTACT_ROTARY_SELECTOR_INDICATOR_STATE', [component.id]);
+  } else if (JOYSTICK_KEYPAD_DEFINITIONS[component.type]) {
+    if (!validateJoystickKeypad(component)) fail('PROJECT_CONTACT_JOYSTICK_KEYPAD_STATE', [component.id]);
   } else if (component.type === SPDT_CONTACT_TYPE) {
     if (!exactKeys(component.properties, ['transitionPolicy'])
         || component.properties.transitionPolicy !== 'break-before-make'
@@ -193,13 +423,69 @@ function validateCandidateComponent(component) {
     if (!validateTemperatureAnalogueSensorComponent(component)) {
       fail('PROJECT_CONTACT_TEMPERATURE_SENSOR_STATE', [component.id]);
     }
+  } else if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) {
+    if (!validateAnalogueMoistureLevelSensor(component)) {
+      fail('PROJECT_CONTACT_ANALOGUE_MOISTURE_LEVEL_SENSOR_STATE', [component.id]);
+    }
+  } else if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) {
+    if (!validateAnalogueDetectionSensor(component)) {
+      fail('PROJECT_CONTACT_ANALOGUE_DETECTION_SENSOR_STATE', [component.id]);
+    }
+  } else if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) {
+    if (!validateAnalogueDirectionFieldSensor(component)) {
+      fail('PROJECT_CONTACT_ANALOGUE_DIRECTION_FIELD_SENSOR_STATE', [component.id]);
+    }
+  } else if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) {
+    if (!validateAnalogueTemperatureIcSensor(component)) {
+      fail('PROJECT_CONTACT_ANALOGUE_TEMPERATURE_IC_SENSOR_STATE', [component.id]);
+    }
+  } else if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) {
+    if (!validateResistiveDividerSensor(component)) {
+      fail('PROJECT_CONTACT_RESISTIVE_DIVIDER_SENSOR_STATE', [component.id]);
+    }
+  } else if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) {
+    if (!validatePassiveEnergyStorageComponent(component)) {
+      fail('PROJECT_CONTACT_PASSIVE_ENERGY_STORAGE_STATE', [component.id]);
+    }
+  } else if (DIODE_COMPONENT_DEFINITIONS[component.type]) {
+    if (!validateDiodeComponent(component)) fail('PROJECT_CONTACT_DIODE_STATE', [component.id]);
+  } else if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) {
+    if (!validateTransistorComponent(component)) fail('PROJECT_CONTACT_TRANSISTOR_STATE', [component.id]);
+  } else if (CIRCUIT_PROTECTION_DEFINITIONS[component.type]) {
+    if (!validateCircuitProtectionComponent(component)) {
+      fail('PROJECT_CONTACT_CIRCUIT_PROTECTION_STATE', [component.id]);
+    }
+  } else if (CONNECTION_HARDWARE_DEFINITIONS[component.type]) {
+    if (!validateConnectionHardwareComponent(component)) {
+      fail('PROJECT_CONTACT_CONNECTION_HARDWARE_STATE', [component.id]);
+    }
+  } else if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) {
+    if (!validateSemiconductorActiveComponent(component)) {
+      fail('PROJECT_CONTACT_SEMICONDUCTOR_ACTIVE_STATE', [component.id]);
+    }
   } else if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     if (!validateDigitalLightThresholdComponent(component)) {
       fail('PROJECT_CONTACT_DIGITAL_LIGHT_THRESHOLD_STATE', [component.id]);
     }
+  } else if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) {
+    if (!validateDigitalPresenceSensor(component)) {
+      fail('PROJECT_CONTACT_DIGITAL_PRESENCE_SENSOR_STATE', [component.id]);
+    }
+  } else if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) {
+    if (!validateDigitalPulseSensor(component)) {
+      fail('PROJECT_CONTACT_DIGITAL_PULSE_SENSOR_STATE', [component.id]);
+    }
+  } else if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
+    if (!validateDigitalReflectiveSensor(component)) {
+      fail('PROJECT_CONTACT_DIGITAL_REFLECTIVE_SENSOR_STATE', [component.id]);
+    }
   } else if (component.type === COMMON_CATHODE_RGB_LED_TYPE) {
     if (!validateCommonCathodeRgbLedComponent(component)) {
       fail('PROJECT_CONTACT_RGB_LED_STATE', [component.id]);
+    }
+  } else if (component.type === TRAFFIC_LIGHT_TYPE) {
+    if (!validateTrafficLightComponent(component)) {
+      fail('PROJECT_CONTACT_TRAFFIC_LIGHT_STATE', [component.id]);
     }
   } else if (component.type === ACTIVE_BUZZER_TYPE) {
     if (!validateActiveBuzzerComponent(component)) {
@@ -209,9 +495,21 @@ function validateCandidateComponent(component) {
     if (!validateSevenSegmentComponent(component)) {
       fail('PROJECT_CONTACT_SEVEN_SEGMENT_STATE', [component.id]);
     }
+  } else if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
+    if (!validateFourDigitSevenSegmentComponent(component)) {
+      fail('PROJECT_CONTACT_FOUR_DIGIT_SEVEN_SEGMENT_STATE', [component.id]);
+    }
   } else if (component.type === CHARACTER_LCD_TYPE) {
     if (!validateCharacterLcdComponent(component)) {
       fail('PROJECT_CONTACT_CHARACTER_LCD_STATE', [component.id]);
+    }
+  } else if (component.type === CHARACTER_LCD_20X4_TYPE) {
+    if (!validateCharacterLcd20x4Component(component)) {
+      fail('PROJECT_CONTACT_CHARACTER_LCD_20X4_STATE', [component.id]);
+    }
+  } else if (component.type === PCF8574_LCD_TYPE) {
+    if (!validatePcf8574LcdComponent(component)) {
+      fail('PROJECT_CONTACT_PCF8574_LCD_STATE', [component.id]);
     }
   } else if (component.type === ROTARY_ENCODER_TYPE) {
     if (!validateRotaryEncoderComponent(component)) {
@@ -247,10 +545,27 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
   }
   if (requireCandidate
       && !components.some((component) => [
-        GROUND_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+        GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+        SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
+        DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
+        REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE,
+        ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
+        ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
+        RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
-        ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE,
+        TRAFFIC_LIGHT_TYPE,
+        CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+        ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
+        ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
+        ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
+        ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
+        ...Object.keys(CIRCUIT_PROTECTION_DEFINITIONS),
+        ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
+        ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
+        IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
+        ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+        CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
       ].includes(component.type))) {
     fail('PROJECT_CONTACT_CANDIDATE_REQUIRED');
@@ -301,7 +616,54 @@ export function validateCandidateCircuitGraph(value, {
     const graph = normalizeCandidateCircuit(value, { requireCandidate });
     const admission = validateProjectModelLibrary(modelLibraryLock, BOARD_TYPE,
       { candidateCircuit: graph });
-    if (!admission.ok) return admission;
+    if (!admission.ok) {
+      const passiveComponents = graph.components.filter((component) =>
+        PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]);
+      const diodeComponents = graph.components.filter((component) =>
+        DIODE_COMPONENT_DEFINITIONS[component.type]);
+      const transistorComponents = graph.components.filter((component) =>
+        TRANSISTOR_COMPONENT_DEFINITIONS[component.type]);
+      const circuitProtectionComponents = graph.components.filter((component) =>
+        CIRCUIT_PROTECTION_DEFINITIONS[component.type]);
+      const connectionHardwareComponents = graph.components.filter((component) =>
+        CONNECTION_HARDWARE_DEFINITIONS[component.type]);
+      const activeSemiconductorComponents = graph.components.filter((component) =>
+        SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]);
+      if (!passiveComponents.length && !diodeComponents.length && !transistorComponents.length
+          && !circuitProtectionComponents.length && !connectionHardwareComponents.length
+          && !activeSemiconductorComponents.length) return admission;
+      const authoringResults = [];
+      if (passiveComponents.length) authoringResults.push(validatePassiveEnergyStorageAuthoringGraph(graph));
+      if (diodeComponents.length) authoringResults.push(validateDiodeAuthoringGraph(graph));
+      if (transistorComponents.length) authoringResults.push(validateTransistorAuthoringGraph(graph));
+      if (circuitProtectionComponents.length) {
+        authoringResults.push(validateCircuitProtectionAuthoringGraph(graph));
+      }
+      if (connectionHardwareComponents.length) {
+        authoringResults.push(validateConnectionHardwareAuthoringGraph(graph));
+      }
+      if (activeSemiconductorComponents.length) {
+        authoringResults.push(validateSemiconductorActiveAuthoringGraph(graph));
+      }
+      const rejected = authoringResults.find((result) => !result.ok);
+      if (rejected) return rejected;
+      const filtered = { ...graph,
+        components: graph.components.filter((component) =>
+          !PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]
+          && !DIODE_COMPONENT_DEFINITIONS[component.type]
+          && !TRANSISTOR_COMPONENT_DEFINITIONS[component.type]
+          && !CIRCUIT_PROTECTION_DEFINITIONS[component.type]
+          && !CONNECTION_HARDWARE_DEFINITIONS[component.type]
+          && !SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) };
+      const retainedAdmission = validateProjectModelLibrary(modelLibraryLock, BOARD_TYPE,
+        { candidateCircuit: filtered });
+      if (!retainedAdmission.ok) return retainedAdmission;
+      validateDraftElectricalSafety(graph);
+      const code = authoringResults.length === 1
+        ? authoringResults[0].code : 'AUTHORING_ONLY_GRAPH_ACCEPTED_DATA_ONLY';
+      return { ok: true, code, graph, modelLibrary: clone(retainedAdmission.lock),
+        authoringOnly: true, executable: false };
+    }
     validateDraftElectricalSafety(graph);
     return { ok: true, code: 'OK', graph, modelLibrary: clone(admission.lock) };
   } catch (error) {
@@ -403,6 +765,7 @@ function deriveNetClasses(graph) {
     for (const endpoint of net.endpoints) {
       const component = components.get(endpoint.component);
       if (component?.type === GROUND_REFERENCE_TYPE && endpoint.pin === 'REF') classes.add('ground.reference');
+      if (component?.type === POWER_REFERENCE_TYPE && endpoint.pin === 'OUT') classes.add('power.5v-reference');
       if (component?.type === BOARD_TYPE && GROUND_PINS.has(endpoint.pin)) classes.add('ground.reference');
       if (component?.type === BOARD_TYPE && endpoint.pin === '5V') classes.add('power.5v-reference');
     }
@@ -453,6 +816,89 @@ function projectSpstComponents(graph) {
   return projected;
 }
 
+function projectMechanicalInputs(graph) {
+  const projected = clone(graph);
+  projected.components = projected.components.map((component) => {
+    if (component.type === NC_BUTTON_TYPE) return {
+      id: component.id, type: TOGGLE_SWITCH_TYPE, label: component.label,
+      properties: { normallyOpen: true }, controls: { closed: !component.controls.pressed },
+    };
+    if (component.type === SLIDE_SWITCH_TYPE) return {
+      id: component.id, type: SPDT_CONTACT_TYPE, label: component.label,
+      properties: { transitionPolicy: 'break-before-make' },
+      controls: { selectedThrow: component.controls.selectedThrow },
+    };
+    if (component.type === LIMIT_SWITCH_TYPE) return {
+      id: component.id, type: SPDT_CONTACT_TYPE, label: component.label,
+      properties: { transitionPolicy: 'break-before-make' },
+      controls: { selectedThrow: component.controls.actuated ? 'B' : 'A' },
+    };
+    return component;
+  });
+  projected.nets = projected.nets.map((net) => ({ ...net, endpoints: net.endpoints.map((endpoint) => {
+    const source = graph.components.find((item) => item.id === endpoint.component);
+    if (source?.type === LIMIT_SWITCH_TYPE) {
+      return { ...endpoint, pin: endpoint.pin === 'NC' ? 'A' : endpoint.pin === 'NO' ? 'B' : endpoint.pin };
+    }
+    return endpoint;
+  }) }));
+  return projected;
+}
+
+function projectedId(id, suffix) {
+  return `${id.slice(0, 47 - suffix.length)}-${suffix}`;
+}
+
+function projectAdvancedSwitchInputs(graph) {
+  const projected = clone(graph);
+  const replacements = new Map();
+  projected.components = projected.components.flatMap((component) => {
+    if (component.type === DIP_SWITCH_4_TYPE) {
+      const items = [1, 2, 3, 4].map((channel) => ({
+        id: projectedId(component.id, `s${channel}`), type: TOGGLE_SWITCH_TYPE,
+        label: `${component.label} ${channel}`, properties: { normallyOpen: true },
+        controls: { closed: component.controls[`switch${channel}`] },
+      }));
+      replacements.set(component.id, Object.fromEntries(items.flatMap((item, index) => [
+        [`${index + 1}A`, { component: item.id, pin: 'A' }],
+        [`${index + 1}B`, { component: item.id, pin: 'B' }],
+      ])));
+      return items;
+    }
+    if (component.type === ROTARY_ENCODER_BUTTON_TYPE) {
+      const encoderId = projectedId(component.id, 'enc'); const buttonId = projectedId(component.id, 'sw');
+      replacements.set(component.id, {
+        A: { component: encoderId, pin: 'A' }, COM: { component: encoderId, pin: 'COM' },
+        B: { component: encoderId, pin: 'B' }, SW: { component: buttonId, pin: 'A' },
+        SWCOM: { component: buttonId, pin: 'B' },
+      });
+      return [{ id: encoderId, type: ROTARY_ENCODER_TYPE, label: component.label,
+        properties: { encoding: 'gray-2bit', pullMode: 'input-pullup' },
+        controls: { detent: component.controls.detent } },
+      { id: buttonId, type: TOGGLE_SWITCH_TYPE, label: `${component.label} button`,
+        properties: { normallyOpen: true }, controls: { closed: component.controls.pressed } }];
+    }
+    if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
+      const contactId = component.id;
+      replacements.set(component.id, { A: { component: contactId, pin: 'A' }, B: { component: contactId, pin: 'B' } });
+      return [{ id: contactId, type: TOGGLE_SWITCH_TYPE, label: component.label,
+        properties: { normallyOpen: true }, controls: { closed: safetyPedalRuntimeState(component).closed } }];
+    }
+    if (CONTACT_SENSOR_DEFINITIONS[component.type]) {
+      const contactId = component.id;
+      replacements.set(component.id, { A: { component: contactId, pin: 'A' }, B: { component: contactId, pin: 'B' } });
+      return [{ id: contactId, type: TOGGLE_SWITCH_TYPE, label: component.label,
+        properties: { normallyOpen: true }, controls: { closed: contactSensorRuntimeState(component).closed } }];
+    }
+    return [component];
+  });
+  projected.nets = projected.nets.map((net) => ({ ...net, endpoints: net.endpoints.map((endpoint) => {
+    const replacement = replacements.get(endpoint.component)?.[endpoint.pin];
+    return replacement ? { ...endpoint, ...replacement } : endpoint;
+  }) }));
+  return projected;
+}
+
 function production(implementation, componentType, input, details = []) {
   const evaluated = implementation.evaluateProduction(componentType, input);
   if (!evaluated.ok) fail(evaluated.code, [componentType, ...details]);
@@ -460,12 +906,42 @@ function production(implementation, componentType, input, details = []) {
 }
 
 function reconstructCandidate(graph, implementation, modelLibraryLock) {
+  const passiveOnly = graph.components.filter((component) => PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]);
+  if (passiveOnly.length) {
+    fail('PASSIVE_TRANSIENT_MODEL_UNAVAILABLE', passiveOnly.map(({ id }) => id).sort());
+  }
+  const diodeOnly = graph.components.filter((component) => DIODE_COMPONENT_DEFINITIONS[component.type]);
+  if (diodeOnly.length) fail('DIODE_NONLINEAR_MODEL_UNAVAILABLE', diodeOnly.map(({ id }) => id).sort());
+  const transistorOnly = graph.components.filter((component) =>
+    TRANSISTOR_COMPONENT_DEFINITIONS[component.type]);
+  if (transistorOnly.length) {
+    fail('TRANSISTOR_SWITCHING_MODEL_UNAVAILABLE', transistorOnly.map(({ id }) => id).sort());
+  }
+  const circuitProtectionOnly = graph.components.filter((component) =>
+    CIRCUIT_PROTECTION_DEFINITIONS[component.type]);
+  if (circuitProtectionOnly.length) {
+    fail('CIRCUIT_PROTECTION_MODEL_UNAVAILABLE', circuitProtectionOnly.map(({ id }) => id).sort());
+  }
+  const connectionHardwareOnly = graph.components.filter((component) =>
+    CONNECTION_HARDWARE_DEFINITIONS[component.type]);
+  if (connectionHardwareOnly.length) {
+    fail('CONNECTION_HARDWARE_MODEL_UNAVAILABLE', connectionHardwareOnly.map(({ id }) => id).sort());
+  }
+  const activeSemiconductorOnly = graph.components.filter((component) =>
+    SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]);
+  if (activeSemiconductorOnly.length) {
+    fail('SEMICONDUCTOR_ACTIVE_MODEL_UNAVAILABLE', activeSemiconductorOnly.map(({ id }) => id).sort());
+  }
   const netClasses = deriveNetClasses(graph);
   const contacts = [];
   for (const component of graph.components) {
     if (component.type === GROUND_REFERENCE_TYPE) {
       production(implementation, component.type, component.controls, [component.id]);
       contacts.push({ componentId: component.id, type: component.type, state: { potentialVolts: 0 } });
+    }
+    if (component.type === POWER_REFERENCE_TYPE) {
+      contacts.push({ componentId: component.id, type: component.type,
+        state: { voltageVolts: 5, direction: 'source' } });
     }
     if (component.type === TOGGLE_SWITCH_TYPE) {
       production(implementation, component.type, { closed: component.controls.closed }, [component.id]);
@@ -490,9 +966,50 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
         oppositeTransition: clone(transition),
       });
     }
+    if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(component.type)) {
+      const state = mechanicalRuntimeState(component);
+      production(implementation, component.type,
+        component.type === SLIDE_SWITCH_TYPE ? { selectedThrow: component.controls.selectedThrow }
+          : component.type === NC_BUTTON_TYPE ? { pressed: component.controls.pressed }
+            : { actuated: component.controls.actuated }, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type, state });
+    }
+    if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(component.type)) {
+      const state = advancedSwitchRuntimeState(component);
+      production(implementation, component.type, component.type === DIP_SWITCH_4_TYPE
+        ? { switches: state.contacts.map((item) => item.closed) }
+        : { direction: 'cw', pressed: component.controls.pressed }, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type, state });
+    }
+    if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
+      const state = safetyPedalRuntimeState(component);
+      production(implementation, component.type, { closed: state.closed }, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type, state });
+    }
+    if (CONTACT_SENSOR_DEFINITIONS[component.type]) {
+      const state = contactSensorRuntimeState(component);
+      production(implementation, component.type, { closed: state.closed }, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type, state });
+    }
+    if (component.type === ROTARY_SELECTOR_TYPE) {
+      production(implementation, component.type, { position: component.controls.position }, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type,
+        state: { position: component.controls.position, contacts: rotarySelectorContactState(component) } });
+    }
+    if (JOYSTICK_KEYPAD_DEFINITIONS[component.type]) {
+      const input = component.type === ANALOG_JOYSTICK_TYPE
+        ? { x: component.controls.x, y: component.controls.y, pressed: component.controls.pressed }
+        : { pressedKey: component.controls.pressedKey };
+      production(implementation, component.type, input, [component.id]);
+      contacts.push({ componentId: component.id, type: component.type, state: clone(input) });
+    }
   }
 
-  const withoutSpdt = removeSpdtComponents(graph);
+  const joystickKeypadProjection = projectJoystickKeypads(graph);
+  const selectorProjection = projectRotarySelectors(joystickKeypadProjection.runtimeGraph);
+  const advancedProjection = projectAdvancedSwitchInputs(selectorProjection.runtimeGraph);
+  const mechanicalProjection = projectMechanicalInputs(advancedProjection);
+  const withoutSpdt = removeSpdtComponents(mechanicalProjection);
   const withProjectedSpst = projectSpstComponents(withoutSpdt);
   const lightProjection = projectLightAnalogueSensors(withProjectedSpst);
   if (!lightProjection.ok) fail(`PROJECT_CONTACT_${lightProjection.code}`, lightProjection.details);
@@ -522,7 +1039,91 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       { temperatureC: sensor.temperatureC }, [sensor.componentId]);
     if (expected.outputVolts !== sensor.voltage) fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
   }
-  const thresholdProjection = projectDigitalLightThresholdModules(temperatureProjection.runtimeGraph);
+  const moistureLevelProjection = projectAnalogueMoistureLevelSensors(temperatureProjection.runtimeGraph);
+  if (!moistureLevelProjection.ok) {
+    fail(`PROJECT_CONTACT_${moistureLevelProjection.code}`, moistureLevelProjection.details);
+  }
+  contacts.push(...moistureLevelProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { ratio: sensor.ratio, voltage: sensor.voltage },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of moistureLevelProjection.sensors) {
+    const expected = production(implementation, sensor.type, { ratio: sensor.ratio }, [sensor.componentId]);
+    if (expected.ratio !== sensor.ratio || expected.outputVolts !== sensor.voltage) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const detectionProjection = projectAnalogueDetectionSensors(moistureLevelProjection.runtimeGraph);
+  if (!detectionProjection.ok) {
+    fail(`PROJECT_CONTACT_${detectionProjection.code}`, detectionProjection.details);
+  }
+  contacts.push(...detectionProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { ratio: sensor.ratio, voltage: sensor.voltage },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of detectionProjection.sensors) {
+    const expected = production(implementation, sensor.type, { ratio: sensor.ratio }, [sensor.componentId]);
+    if (expected.ratio !== sensor.ratio || expected.outputVolts !== sensor.voltage) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const directionFieldProjection = projectAnalogueDirectionFieldSensors(detectionProjection.runtimeGraph);
+  if (!directionFieldProjection.ok) {
+    fail(`PROJECT_CONTACT_${directionFieldProjection.code}`, directionFieldProjection.details);
+  }
+  contacts.push(...directionFieldProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { [sensor.controlKey]: sensor.value, voltage: sensor.voltage },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of directionFieldProjection.sensors) {
+    const expected = production(implementation, sensor.type,
+      { [sensor.controlKey]: sensor.value }, [sensor.componentId]);
+    if (expected[sensor.controlKey] !== sensor.value || expected.outputVolts !== sensor.voltage) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const temperatureIcProjection = projectAnalogueTemperatureIcSensors(directionFieldProjection.runtimeGraph);
+  if (!temperatureIcProjection.ok) {
+    fail(`PROJECT_CONTACT_${temperatureIcProjection.code}`, temperatureIcProjection.details);
+  }
+  contacts.push(...temperatureIcProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { temperatureC: sensor.temperatureC, voltage: sensor.voltage },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of temperatureIcProjection.sensors) {
+    const expected = production(implementation, sensor.type,
+      { temperatureC: sensor.temperatureC }, [sensor.componentId]);
+    if (expected.temperatureC !== sensor.temperatureC || expected.outputVolts !== sensor.voltage) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const resistiveDividerProjection = projectResistiveDividerSensors(temperatureIcProjection.runtimeGraph);
+  if (!resistiveDividerProjection.ok) {
+    fail(`PROJECT_CONTACT_${resistiveDividerProjection.code}`, resistiveDividerProjection.details);
+  }
+  contacts.push(...resistiveDividerProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId, type: sensor.type,
+    state: { [sensor.controlKey]: sensor.controlValue, resistanceOhms: sensor.resistanceOhms,
+      voltage: sensor.voltage }, runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of resistiveDividerProjection.sensors) {
+    const expected = production(implementation, sensor.type,
+      { [sensor.controlKey]: sensor.controlValue }, [sensor.componentId]);
+    if (expected[sensor.controlKey] !== sensor.controlValue
+        || expected.resistanceOhms !== sensor.resistanceOhms
+        || expected.outputVolts !== sensor.voltage) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const thresholdProjection = projectDigitalLightThresholdModules(resistiveDividerProjection.runtimeGraph);
   if (!thresholdProjection.ok) {
     fail(`PROJECT_CONTACT_${thresholdProjection.code}`, thresholdProjection.details);
   }
@@ -546,7 +1147,68 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     }, [module.componentId]);
     if (expected.outputActive !== module.outputActive) fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [module.componentId]);
   }
-  const rgbProjection = projectCommonCathodeRgbLeds(thresholdProjection.runtimeGraph);
+  const presenceProjection = projectDigitalPresenceSensors(thresholdProjection.runtimeGraph);
+  if (!presenceProjection.ok) {
+    fail(`PROJECT_CONTACT_${presenceProjection.code}`, presenceProjection.details);
+  }
+  contacts.push(...presenceProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { active: sensor.active, outputLevel: sensor.outputLevel },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of presenceProjection.sensors) {
+    const expected = production(implementation, sensor.type, { active: sensor.active }, [sensor.componentId]);
+    if (expected.active !== sensor.active || expected.digitalLevel !== sensor.active) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const pulseProjection = projectDigitalPulseSensors(presenceProjection.runtimeGraph);
+  if (!pulseProjection.ok) {
+    fail(`PROJECT_CONTACT_${pulseProjection.code}`, pulseProjection.details);
+  }
+  contacts.push(...pulseProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { pulseHigh: sensor.pulseHigh, outputLevel: sensor.outputLevel },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of pulseProjection.sensors) {
+    const expected = production(implementation, sensor.type,
+      { pulseHigh: sensor.pulseHigh }, [sensor.componentId]);
+    if (expected.pulseHigh !== sensor.pulseHigh || expected.digitalLevel !== sensor.pulseHigh) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const reflectiveProjection = projectDigitalReflectiveSensors(pulseProjection.runtimeGraph);
+  if (!reflectiveProjection.ok) {
+    fail(`PROJECT_CONTACT_${reflectiveProjection.code}`, reflectiveProjection.details);
+  }
+  contacts.push(...reflectiveProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { active: sensor.active, outputLevel: sensor.outputLevel },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of reflectiveProjection.sensors) {
+    const expected = production(implementation, sensor.type, { active: sensor.active }, [sensor.componentId]);
+    if (expected.active !== sensor.active || expected.digitalLevel !== !sensor.active) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const commonAnodeProjection = projectCommonAnodeRgbLeds(reflectiveProjection.runtimeGraph);
+  contacts.push(...commonAnodeProjection.outputs.map((output) => ({ componentId: output.componentId,
+    type: RGB_COMMON_ANODE_TYPE, state: { commonPolarity: 'anode', activeLevel: 'LOW' },
+    runtimeProjection: clone(output) })));
+  for (const output of commonAnodeProjection.outputs) production(implementation, RGB_COMMON_ANODE_TYPE,
+    { duties: { R: 0, G: 0, B: 0 } }, [output.componentId]);
+  const barProjection = projectLedBarGraphs(commonAnodeProjection.runtimeGraph);
+  contacts.push(...barProjection.displays.map((display) => ({ componentId: display.componentId,
+    type: LED_BAR_GRAPH_TYPE, state: { segments: 10, color: display.color },
+    runtimeProjection: clone(display) })));
+  for (const display of barProjection.displays) production(implementation, LED_BAR_GRAPH_TYPE,
+    { segments: Array(10).fill(false) }, [display.componentId]);
+  const rgbProjection = projectCommonCathodeRgbLeds(barProjection.runtimeGraph);
   if (!rgbProjection.ok) {
     fail(`PROJECT_CONTACT_${rgbProjection.code}`, rgbProjection.details);
   }
@@ -558,7 +1220,19 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   })));
   for (const led of rgbProjection.leds) production(implementation, COMMON_CATHODE_RGB_LED_TYPE,
     { duties: { R: 0, G: 0, B: 0 } }, [led.componentId]);
-  const buzzerProjection = projectActiveBuzzerModules(rgbProjection.runtimeGraph);
+  const trafficProjection = projectTrafficLightModules(rgbProjection.runtimeGraph);
+  if (!trafficProjection.ok) {
+    fail(`PROJECT_CONTACT_${trafficProjection.code}`, trafficProjection.details);
+  }
+  contacts.push(...trafficProjection.lights.map((light) => ({
+    componentId: light.componentId,
+    type: TRAFFIC_LIGHT_TYPE,
+    state: { commonPolarity: light.commonPolarity, lamps: ['RED', 'AMBER', 'GREEN'] },
+    runtimeProjection: clone(light),
+  })));
+  for (const light of trafficProjection.lights) production(implementation, TRAFFIC_LIGHT_TYPE,
+    { levels: { RED: false, AMBER: false, GREEN: false } }, [light.componentId]);
+  const buzzerProjection = projectActiveBuzzerModules(trafficProjection.runtimeGraph);
   if (!buzzerProjection.ok) {
     fail(`PROJECT_CONTACT_${buzzerProjection.code}`, buzzerProjection.details);
   }
@@ -582,7 +1256,23 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   })));
   for (const display of sevenSegmentProjection.displays) production(implementation, SEVEN_SEGMENT_TYPE,
     { digit: 0 }, [display.componentId]);
-  const characterLcdProjection = projectCharacterLcdDisplays(sevenSegmentProjection.runtimeGraph);
+  const fourDigitProjection = projectFourDigitSevenSegmentDisplays(sevenSegmentProjection.runtimeGraph);
+  if (!fourDigitProjection.ok) {
+    fail(`PROJECT_CONTACT_${fourDigitProjection.code}`, fourDigitProjection.details);
+  }
+  contacts.push(...fourDigitProjection.displays.map((display) => ({
+    componentId: display.componentId,
+    type: FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+    state: { commonPolarity: display.commonPolarity, selectionPolarity: display.selectionPolarity },
+    runtimeProjection: clone(display),
+  })));
+  for (const display of fourDigitProjection.displays) production(
+    implementation,
+    FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+    { digits: ['', '', '', ''], decimalPoints: [false, false, false, false] },
+    [display.componentId],
+  );
+  const characterLcdProjection = projectCharacterLcdDisplays(fourDigitProjection.runtimeGraph);
   if (!characterLcdProjection.ok) {
     fail(`PROJECT_CONTACT_${characterLcdProjection.code}`, characterLcdProjection.details);
   }
@@ -594,7 +1284,31 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   })));
   for (const display of characterLcdProjection.displays) production(implementation, CHARACTER_LCD_TYPE,
     { lines: ['', ''] }, [display.componentId]);
-  const rotaryEncoderProjection = projectRotaryEncoders(characterLcdProjection.runtimeGraph);
+  const characterLcd20x4Projection = projectCharacterLcd20x4Displays(characterLcdProjection.runtimeGraph);
+  if (!characterLcd20x4Projection.ok) {
+    fail(`PROJECT_CONTACT_${characterLcd20x4Projection.code}`, characterLcd20x4Projection.details);
+  }
+  contacts.push(...characterLcd20x4Projection.displays.map((display) => ({
+    componentId: display.componentId,
+    type: CHARACTER_LCD_20X4_TYPE,
+    state: { geometry: '20x4', busMode: display.busMode, customGlyphSlots: 8 },
+    runtimeProjection: clone(display),
+  })));
+  for (const display of characterLcd20x4Projection.displays) production(implementation, CHARACTER_LCD_20X4_TYPE,
+    { lines: ['', '', '', ''] }, [display.componentId]);
+  const pcf8574LcdProjection = projectPcf8574LcdDisplays(characterLcd20x4Projection.runtimeGraph);
+  if (!pcf8574LcdProjection.ok) {
+    fail(`PROJECT_CONTACT_${pcf8574LcdProjection.code}`, pcf8574LcdProjection.details);
+  }
+  contacts.push(...pcf8574LcdProjection.displays.map((display) => ({
+    componentId: display.componentId,
+    type: PCF8574_LCD_TYPE,
+    state: { geometry: '16x2', busMode: 'i2c-pcf8574-fixed-0x27' },
+    runtimeProjection: clone(display),
+  })));
+  for (const display of pcf8574LcdProjection.displays) production(implementation, PCF8574_LCD_TYPE,
+    { lines: ['', ''] }, [display.componentId]);
+  const rotaryEncoderProjection = projectRotaryEncoders(pcf8574LcdProjection.runtimeGraph);
   if (!rotaryEncoderProjection.ok) {
     fail(`PROJECT_CONTACT_${rotaryEncoderProjection.code}`, rotaryEncoderProjection.details);
   }
@@ -606,12 +1320,20 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   })));
   for (const encoder of rotaryEncoderProjection.encoders) production(implementation, ROTARY_ENCODER_TYPE,
     { direction: 'cw' }, [encoder.componentId]);
-  const hasGround = rotaryEncoderProjection.runtimeGraph.components.some(
+  const hasPower = rotaryEncoderProjection.runtimeGraph.components.some(
+    (component) => component.type === POWER_REFERENCE_TYPE,
+  );
+  const powerProjected = hasPower
+    ? projectPowerReferenceCircuit(rotaryEncoderProjection.runtimeGraph)
+    : { ok: true, graph: rotaryEncoderProjection.runtimeGraph };
+  if (!powerProjected.ok) fail(`PROJECT_CONTACT_${powerProjected.code}`, powerProjected.diagnostics ?? []);
+  const afterPower = powerProjected.runtimeGraph ?? powerProjected.graph;
+  const hasGround = afterPower.components.some(
     (component) => component.type === GROUND_REFERENCE_TYPE,
   );
   const projected = hasGround
-    ? validateGroundReferenceCircuit(rotaryEncoderProjection.runtimeGraph, { modelLibraryLock })
-    : validateCircuit(rotaryEncoderProjection.runtimeGraph, { modelLibraryLock });
+    ? validateGroundReferenceCircuit(afterPower, { modelLibraryLock })
+    : validateCircuit(afterPower, { modelLibraryLock });
   if (!projected.ok) fail(`PROJECT_CONTACT_${projected.code}`, projected.diagnostics ?? []);
   const runtimeGraph = projected.runtimeGraph ?? projected.graph;
   return {
@@ -619,8 +1341,13 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     modelLibraryImplementationId: implementation.id,
     runtimePositionSources: clone({
       ...rgbProjection.runtimePositionSources,
+      ...trafficProjection.runtimePositionSources,
+      ...commonAnodeProjection.runtimePositionSources,
+      ...barProjection.runtimePositionSources,
       ...sevenSegmentProjection.runtimePositionSources,
+      ...fourDigitProjection.runtimePositionSources,
       ...rotaryEncoderProjection.runtimePositionSources,
+      ...joystickKeypadProjection.runtimePositionSources,
     }),
   };
 }
@@ -629,6 +1356,10 @@ function draftContacts(graph) {
   return graph.components.flatMap((component) => {
     if (component.type === GROUND_REFERENCE_TYPE) {
       return [{ componentId: component.id, type: component.type, state: { potentialVolts: 0 } }];
+    }
+    if (component.type === POWER_REFERENCE_TYPE) {
+      return [{ componentId: component.id, type: component.type,
+        state: { voltageVolts: 5, direction: 'source' } }];
     }
     if (component.type === TOGGLE_SWITCH_TYPE) {
       return [{ componentId: component.id, type: component.type, state: { closed: component.controls.closed } }];
@@ -643,6 +1374,27 @@ function draftContacts(graph) {
         oppositeTransition: clone(transitionSwitchContact(selectedThrow, selectedThrow === 'A' ? 'B' : 'A')),
       }];
     }
+    if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(component.type)) {
+      return [{ componentId: component.id, type: component.type, state: mechanicalRuntimeState(component) }];
+    }
+    if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(component.type)) {
+      return [{ componentId: component.id, type: component.type, state: advancedSwitchRuntimeState(component) }];
+    }
+    if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
+      return [{ componentId: component.id, type: component.type, state: safetyPedalRuntimeState(component) }];
+    }
+    if (CONTACT_SENSOR_DEFINITIONS[component.type]) {
+      return [{ componentId: component.id, type: component.type, state: contactSensorRuntimeState(component) }];
+    }
+    if (component.type === ROTARY_SELECTOR_TYPE) {
+      return [{ componentId: component.id, type: component.type, state: {
+        position: component.controls.position, contacts: rotarySelectorContactState(component),
+      }, runtimeProjection: null }];
+    }
+    if (component.type === RGB_COMMON_ANODE_TYPE) return [{ componentId: component.id,
+      type: component.type, state: { commonPolarity: 'anode', activeLevel: 'LOW' }, runtimeProjection: null }];
+    if (component.type === LED_BAR_GRAPH_TYPE) return [{ componentId: component.id,
+      type: component.type, state: { segments: 10, independentCathodes: true }, runtimeProjection: null }];
     if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) {
       return [{
         componentId: component.id,
@@ -659,6 +1411,75 @@ function draftContacts(graph) {
         runtimeProjection: null,
       }];
     }
+    if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { ratio: analogueMoistureLevelRatio(component) },
+        runtimeProjection: null,
+      }];
+    }
+    if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { ratio: analogueDetectionRatio(component) },
+        runtimeProjection: null,
+      }];
+    }
+    if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) {
+      const key = ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type].controlKeys[0];
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { [key]: analogueDirectionFieldValue(component) },
+        runtimeProjection: null,
+      }];
+    }
+    if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { temperatureC: analogueTemperatureIcValue(component) },
+        runtimeProjection: null,
+      }];
+    }
+    if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) {
+      const key = RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+      return [{ componentId: component.id, type: component.type,
+        state: { [key]: resistiveDividerSensorValue(component) }, runtimeProjection: null }];
+    }
+    if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) {
+      return [{ componentId: component.id, type: component.type,
+        state: { properties: clone(component.properties), execution: 'authoring-only' },
+        runtimeProjection: null }];
+    }
+    if (DIODE_COMPONENT_DEFINITIONS[component.type]) {
+      return [{ componentId: component.id, type: component.type,
+        state: { properties: clone(component.properties), execution: 'authoring-only' },
+        runtimeProjection: null }];
+    }
+    if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) {
+      return [{ componentId: component.id, type: component.type,
+        state: { properties: clone(component.properties), execution: 'authoring-only' },
+        runtimeProjection: null }];
+    }
+    if (CIRCUIT_PROTECTION_DEFINITIONS[component.type]) {
+      return [{ componentId: component.id, type: component.type,
+        state: { properties: clone(component.properties), execution: 'authoring-only' },
+        runtimeProjection: null }];
+    }
+    if (CONNECTION_HARDWARE_DEFINITIONS[component.type]) {
+      return [{ componentId: component.id, type: component.type,
+        state: { terminalGroups: clone(CONNECTION_HARDWARE_DEFINITIONS[component.type]
+          .internalTerminalGroups), execution: 'authoring-only' },
+        runtimeProjection: null }];
+    }
+    if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) {
+      return [{ componentId: component.id, type: component.type,
+        state: { properties: clone(component.properties), execution: 'authoring-only' },
+        runtimeProjection: null }];
+    }
     if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
       return [{
         componentId: component.id,
@@ -667,11 +1488,43 @@ function draftContacts(graph) {
         runtimeProjection: null,
       }];
     }
+    if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { active: digitalPresenceActive(component) },
+        runtimeProjection: null,
+      }];
+    }
+    if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { pulseHigh: digitalPulseLevel(component) },
+        runtimeProjection: null,
+      }];
+    }
+    if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { active: digitalReflectiveSensorActive(component) },
+        runtimeProjection: null,
+      }];
+    }
     if (component.type === COMMON_CATHODE_RGB_LED_TYPE) {
       return [{
         componentId: component.id,
         type: component.type,
         state: { commonPolarity: 'cathode' },
+        runtimeProjection: null,
+      }];
+    }
+    if (component.type === TRAFFIC_LIGHT_TYPE) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { commonPolarity: 'cathode', lamps: ['RED', 'AMBER', 'GREEN'] },
         runtimeProjection: null,
       }];
     }
@@ -691,11 +1544,27 @@ function draftContacts(graph) {
         runtimeProjection: null,
       }];
     }
+    if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { commonPolarity: 'cathode', selectionPolarity: 'active-low' },
+        runtimeProjection: null,
+      }];
+    }
     if (component.type === CHARACTER_LCD_TYPE) {
       return [{
         componentId: component.id,
         type: component.type,
         state: { geometry: '16x2', busMode: 'write-only-4-bit' },
+        runtimeProjection: null,
+      }];
+    }
+    if (component.type === CHARACTER_LCD_20X4_TYPE) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { geometry: '20x4', busMode: 'write-only-4-bit', customGlyphSlots: 8 },
         runtimeProjection: null,
       }];
     }
@@ -817,10 +1686,24 @@ export function validateContactPersistenceProject(value, options = {}) {
   if (!draft.ok) return draft;
   if (!draft.reconstruction.graph.components.some(
     (component) => [
-      GROUND_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+      GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+      ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
       LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
+      RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
       DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
-      ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE,
+      TRAFFIC_LIGHT_TYPE,
+      CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+      ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
+      ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
+      ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
+      ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
+      ...Object.keys(CIRCUIT_PROTECTION_DEFINITIONS),
+      ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
+      ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
+      IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
+      ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
+      ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+      CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,
     ].includes(component.type),
   )) return failResult('PROJECT_CONTACT_CANDIDATE_REQUIRED');

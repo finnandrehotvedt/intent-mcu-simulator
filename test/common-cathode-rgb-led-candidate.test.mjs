@@ -106,10 +106,10 @@ test('common-cathode RGB LED is an original private four-terminal contract', () 
   assert.match(COMMON_CATHODE_RGB_LED_DEFINITION.support.limitations.join(' '), /dedicated external series resistor/u);
   assert.match(COMMON_CATHODE_RGB_LED_DEFINITION.support.limitations.join(' '), /No wavelength/u);
   assert(!Object.hasOwn(COMPONENT_CATALOG, COMMON_CATHODE_RGB_LED_TYPE));
-  assert.equal(Object.values(COMPONENT_CATALOG).length, 6);
-  assert.equal(Object.values(COMPONENT_CATALOG).filter((definition) => definition.selectable).length, 5);
-  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 11);
-  assert.equal(5 + Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 16);
+  assert.equal(Object.values(COMPONENT_CATALOG).length, 7);
+  assert.equal(Object.values(COMPONENT_CATALOG).filter((definition) => definition.selectable).length, 6);
+  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 71);
+  assert.equal(6 + Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 77);
   assert.deepEqual(createCandidateUiComponent(COMMON_CATHODE_RGB_LED_TYPE, 'rgb-led-2'), {
     id: 'rgb-led-2', type: COMMON_CATHODE_RGB_LED_TYPE,
     label: 'Common-cathode RGB LED', properties: {}, controls: {},

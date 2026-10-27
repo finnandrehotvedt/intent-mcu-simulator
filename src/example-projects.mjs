@@ -39,10 +39,23 @@ const EXAMPLES = Object.freeze({
     try: 'Build, Run, then turn the dial through its range.',
     observe: 'A0 voltage and Serial counts move together.',
     limits: 'Ideal 0–5 V input; no noise, tolerance or loading.',
-    next: 'Load PWM fade to turn a measured range into a variable output.',
+    next: 'Load Trimmer calibration to compare a set-and-retain adjustment with a rotary control.',
     parts: ['board.atmega328p-16mhz-v1', 'potentiometer.linear-v1'],
     nets: [['board', '5V', 1, 'HIGH'], [1, 'WIPER', 'board', 'A0'], [1, 'LOW', 'board', 'GND1']],
     source: `void setup() { Serial.begin(9600); }\nvoid loop() {\n  Serial.println(analogRead(A0));\n  delay(150);\n}`,
+  },
+  trimmer: {
+    name: 'Trimmer calibration', description: 'Read the top-adjust trimmer on A1 and print its retained calibration value.',
+    focus: 'Analogue calibration input', partsLabel: 'Controller · trimmer potentiometer',
+    outcome: 'Adjust the trimmer and compare voltage with ADC counts.',
+    learn: 'How a three-terminal trimmer provides a retained calibration voltage.',
+    try: 'Build, Run, then move the trimmer through its range.',
+    observe: 'A1 voltage and Serial TRIM counts move together.',
+    limits: 'Ideal unloaded linear 0–5 V divider; no screw mechanics, tolerance, noise or loading.',
+    next: 'Load PWM fade to turn a measured range into a variable output.',
+    parts: ['board.atmega328p-16mhz-v1', 'potentiometer.trimmer-v1'],
+    nets: [['board', '5V', 1, 'HIGH'], [1, 'WIPER', 'board', 'A1'], [1, 'LOW', 'board', 'GND1']],
+    source: `void setup() { Serial.begin(9600); }\nvoid loop() {\n  Serial.print("TRIM "); Serial.println(analogRead(A1));\n  delay(150);\n}`,
   },
   pwm: {
     name: 'PWM fade', description: 'Drive an LED from PWM pin D3 and inspect its waveform.',
@@ -110,5 +123,6 @@ export function createExampleProject(id) {
   if (id === 'pwm' || id === 'pwm-pulse') project.instruments.logicChannels = ['D3'];
   if (id === 'button') project.instruments.logicChannels = ['D2'];
   if (id === 'adc') project.instruments.selectedPin = 'A0';
+  if (id === 'trimmer') project.instruments.selectedPin = 'A1';
   return { name: example.name, description: example.description, project };
 }

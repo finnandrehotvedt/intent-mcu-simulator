@@ -13,7 +13,8 @@ import {
   prepareProjectEnvelope, preparePublishedRecoveryProjectEnvelope,
 } from '../src/project-envelope.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_LOCK, RC111_CURRENT_MODEL_LIBRARY_LOCK,
+  CURRENT_MODEL_LIBRARY_LOCK, PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_LOCK,
+  RC111_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_LOCK,
   RC112_CURRENT_MODEL_LIBRARY_LOCK, RC120_CURRENT_MODEL_LIBRARY_LOCK,
   RC124_CURRENT_MODEL_LIBRARY_LOCK,
@@ -158,7 +159,7 @@ test('model-library migration creates a deterministic current copy without chang
   assert.deepEqual(repeated, migrated);
   assert.equal(migrated.originalUnchanged, previous);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.equal(migrated.preview.semanticChanges.length, 3);
+  assert.equal(migrated.preview.semanticChanges.length, 50);
   assert.equal(migrated.preview.rendererChanges.length, 0);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(migrateProjectModelLibrary(migrated.canonical, adapters).code, 'MODEL_LIBRARY_ALREADY_CURRENT');
@@ -178,9 +179,9 @@ test('accepted public rc.111 envelope reopens and migrates without changing save
   assert.equal(migrated.ok, true);
   assert.equal(migrated.originalUnchanged, oldEnvelope);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.equal(migrated.preview.semanticChanges.length, 3);
+  assert.equal(migrated.preview.semanticChanges.length, 50);
   assert.deepEqual(migrated.preview.rendererChanges, []);
-  assert.equal(migrated.preview.unchanged.length, 22);
+  assert.equal(migrated.preview.unchanged.length, 21);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
@@ -197,9 +198,9 @@ test('accepted public rc.112 envelope normalizes, reopens and migrates without c
   assert.equal(migrated.ok, true);
   assert.equal(migrated.originalUnchanged, oldEnvelope);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.equal(migrated.preview.semanticChanges.length, 3);
+  assert.equal(migrated.preview.semanticChanges.length, 50);
   assert.deepEqual(migrated.preview.rendererChanges, []);
-  assert.equal(migrated.preview.unchanged.length, 22);
+  assert.equal(migrated.preview.unchanged.length, 21);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
@@ -216,9 +217,9 @@ test('accepted public rc.120 envelope remains openable and migrates data-only af
   assert.equal(migrated.ok, true);
   assert.equal(migrated.originalUnchanged, oldEnvelope);
   assert.equal(migrated.executableAuthorityCleared, true);
-  assert.equal(migrated.preview.semanticChanges.length, 3);
+  assert.equal(migrated.preview.semanticChanges.length, 50);
   assert.deepEqual(migrated.preview.rendererChanges, []);
-  assert.equal(migrated.preview.unchanged.length, 22);
+  assert.equal(migrated.preview.unchanged.length, 21);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
@@ -503,6 +504,20 @@ test('accepted rc.139 current lock remains an exact migration-only recovery anch
   assert.equal(migrated.ok, true);
   assert.deepEqual(JSON.parse(migrated.canonical).project, project);
   assert.deepEqual(JSON.parse(migrated.canonical).modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
+});
+
+test('accepted pre-LCD current lock reopens raw bytes as data-only recovery', () => {
+  const envelope = JSON.parse(canonicalProjectEnvelope(profile, project, adapters));
+  envelope.modelLibrary = structuredClone(PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_LOCK);
+  const source = JSON.stringify(envelope);
+  const opened = preparePublishedRecoveryProjectEnvelope(source, adapters);
+  assert.equal(opened.ok, true);
+  assert.equal(opened.originalUnchanged, source);
+  assert.deepEqual(opened.project, project);
+  assert.equal(opened.code, 'PROJECT_ENVELOPE_PUBLISHED_LOCK_RECOVERED');
+  assert.equal(opened.publishedRecovery.executableAuthority, false);
+  assert.equal(opened.publishedRecovery.freshBuildRequired, true);
+  assert.deepEqual(opened.modelLibrary, CURRENT_MODEL_LIBRARY_LOCK);
 });
 
 test('published locks are exact data-only recovery anchors while unknown locks remain rejected', () => {

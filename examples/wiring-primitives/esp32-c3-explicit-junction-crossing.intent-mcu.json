@@ -1,0 +1,239 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.esp32-c3-devmodule-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-esp32c3-public-project@1",
+    "name": "esp32-c3 explicit junction and separate crossing",
+    "profile": "board.esp32-c3-devmodule-v1",
+    "source": "// Copyright 2026 IntentForce\n// SPDX-License-Identifier: Apache-2.0\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(2, OUTPUT);\n  digitalWrite(2, HIGH);\n  Serial.println(\"C3_PUBLIC\");\n}\n\nvoid loop() {\n  delay(1000);\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-esp32c3-public-circuit@1",
+      "boardProfile": "board.esp32-c3-devmodule-v1",
+      "components": [
+        {
+          "id": "c3-1",
+          "type": "board.esp32-c3-devmodule-v1",
+          "label": "ESP32-C3 GPIO2 profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "ground-1",
+          "type": "ground.reference-3v3-v1",
+          "label": "3.3 V ground reference 1",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "led-1",
+          "type": "led.basic-v1",
+          "label": "External red LED",
+          "properties": {
+            "color": "red"
+          },
+          "controls": {}
+        },
+        {
+          "id": "resistor-1",
+          "type": "resistor.fixed-v1",
+          "label": "220 Ω series resistor",
+          "properties": {
+            "ohms": 220
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-gpio2",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GPIO2"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-ground",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GND"
+            },
+            {
+              "component": "ground-1",
+              "pin": "GND"
+            },
+            {
+              "component": "led-1",
+              "pin": "CATHODE"
+            }
+          ]
+        },
+        {
+          "id": "net-series",
+          "endpoints": [
+            {
+              "component": "led-1",
+              "pin": "ANODE"
+            },
+            {
+              "component": "resistor-1",
+              "pin": "B"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "c3-1": {
+            "x": 0.2,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "ground-1": {
+            "x": 0.78,
+            "y": 0.78,
+            "rotation": 0
+          },
+          "led-1": {
+            "x": 0.8,
+            "y": 0.48,
+            "rotation": 0
+          },
+          "resistor-1": {
+            "x": 0.52,
+            "y": 0.27,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-gpio2": "#f5c451",
+          "net-ground": "#303943",
+          "net-series": "#f04f5f"
+        },
+        "wireRoutes": {
+          "net-gpio2": {
+            "schema": "intent-mcu-route@1",
+            "branches": [
+              {
+                "endpoint": {
+                  "component": "c3-1",
+                  "pin": "GPIO2"
+                },
+                "points": [
+                  {
+                    "x": 0.5,
+                    "y": 0.5
+                  }
+                ]
+              },
+              {
+                "endpoint": {
+                  "component": "resistor-1",
+                  "pin": "A"
+                },
+                "points": [
+                  {
+                    "x": 0.5,
+                    "y": 0.5
+                  }
+                ]
+              }
+            ]
+          },
+          "net-ground": {
+            "schema": "intent-mcu-route@1",
+            "branches": [
+              {
+                "endpoint": {
+                  "component": "c3-1",
+                  "pin": "GND"
+                },
+                "points": [
+                  {
+                    "x": 0.5,
+                    "y": 0.5
+                  }
+                ]
+              },
+              {
+                "endpoint": {
+                  "component": "ground-1",
+                  "pin": "GND"
+                },
+                "points": [
+                  {
+                    "x": 0.5,
+                    "y": 0.5
+                  }
+                ]
+              },
+              {
+                "endpoint": {
+                  "component": "led-1",
+                  "pin": "CATHODE"
+                },
+                "points": [
+                  {
+                    "x": 0.5,
+                    "y": 0.5
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        },
+        "idCounters": {
+          "breadboard": 0,
+          "button": 0,
+          "capacitor": 0,
+          "diode": 0,
+          "electrolytic": 0,
+          "fuse": 0,
+          "ground": 1,
+          "inductor": 0,
+          "led": 1,
+          "nmos": 0,
+          "npn": 0,
+          "optocoupler": 0,
+          "pmos": 0,
+          "pnp": 0,
+          "potentiometer": 0,
+          "ptc": 0,
+          "resistor": 1,
+          "schottky": 0,
+          "switch": 0,
+          "terminal-block": 0,
+          "zener": 0
+        }
+      }
+    }
+  }
+}

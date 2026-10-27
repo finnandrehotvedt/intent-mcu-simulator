@@ -7,13 +7,13 @@ import {
   CONTROL_RUNTIME_EVIDENCE_SCHEMA, controlRuntimeEvidenceMatrix,
 } from '../src/control-runtime-evidence.mjs';
 
-test('runtime evidence matrix covers exactly eight AVR models and eleven retained fields', () => {
+test('runtime evidence matrix covers exactly forty-seven AVR models and fifty-six retained fields', () => {
   const matrix = controlRuntimeEvidenceMatrix();
   assert.equal(matrix.schema, CONTROL_RUNTIME_EVIDENCE_SCHEMA);
-  assert.equal(matrix.models, 8);
-  assert.equal(matrix.fields, 11);
-  assert.equal(matrix.rows.length, 11);
-  assert.equal(new Set(matrix.rows.map((row) => `${row.model}.${row.field}`)).size, 11);
+  assert.equal(matrix.models, 47);
+  assert.equal(matrix.fields, 56);
+  assert.equal(matrix.rows.length, 56);
+  assert.equal(new Set(matrix.rows.map((row) => `${row.model}.${row.field}`)).size, 56);
   assert(matrix.rows.every((row) => row.workerEvent && row.observable && row.evidenceSource));
   assert.deepEqual(matrix.rows.filter((row) => !row.authored).map((row) => row.field), ['outputActive']);
   assert(matrix.excluded.includes('saved model state alone'));

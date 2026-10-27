@@ -1,0 +1,83 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Finn Andre Hotvedt and IntentForce
+
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
+import { prepareProjectEnvelope } from '../src/project-envelope.mjs';
+
+await import('../scripts/generate-input-control-examples.mjs');
+
+const ROOT = new URL('../examples/input-controls/', import.meta.url);
+const sha256 = (value) => createHash('sha256').update(value).digest('hex');
+const adapters = Object.freeze({ 'board.atmega328p-16mhz-v1': Object.freeze({
+  schemas: Object.freeze(['intent-mcu-project-contact-persistence@1']),
+  prepare(value) {
+    const opened = openCandidateUiSession(JSON.stringify(value));
+    if (!opened.ok) throw Object.assign(new Error(opened.code), opened);
+    return { project: JSON.parse(opened.session.saveText()) };
+  },
+}) });
+
+test('input-control artifacts are canonical, hashed and profile-bounded', async () => {
+  const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
+  assert.equal(manifest.schema, 'intent-mcu-input-control-example-manifest@1');
+  assert.deepEqual(manifest.entries.map((entry) => entry.requirementIds).flat(),
+    ['CMP-021', 'CMP-022', 'CMP-132', 'CMP-023', 'CMP-025', 'CMP-032',
+      'CMP-024', 'CMP-026', 'CMP-027', 'CMP-033', 'CMP-034', 'CMP-035']);
+  assert.deepEqual(manifest.entries.at(-1).requirementIds, ['CMP-033', 'CMP-034', 'CMP-035']);
+  for (const entry of manifest.entries) {
+    const bytes = await readFile(new URL(entry.file, ROOT), 'utf8');
+    assert.equal(sha256(bytes), entry.projectSha256, entry.id);
+    const parsed = JSON.parse(bytes);
+    const source = parsed.project.project?.source?.files?.[0]?.content ?? parsed.project.source?.files?.[0]?.content;
+    assert.equal(sha256(source), entry.sourceSha256, `${entry.id}:source`);
+    const opened = prepareProjectEnvelope(bytes, adapters);
+    assert.equal(opened.ok, true, `${entry.id}:${opened.code}`);
+    assert.match(entry.profileBehavior['board.atmega328p-16mhz-v1'], /executable/u);
+    for (const profile of ['board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1']) {
+      assert.match(entry.profileBehavior[profile], entry.id === 'avr-quadrature-encoder'
+        ? /unavailable in the current bounded Parts catalogue/u : /exact model is unavailable/u,
+      `${entry.id}:${profile}`);
+    }
+  }
+});
+
+test('input-control named wiring is exact', async () => {
+  const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
+  assert.deepEqual(manifest.entries.map((entry) => entry.namedPins), [
+    { A: 'D2', B: 'GND1' },
+    { A: 'D3', B: 'GND1' },
+    { A: 'D2', B: 'D3', COM: 'GND2' },
+    { slideCom: 'D4', slideA: 'GND1', slideB: '5V', ncA: 'D5', ncB: 'GND1',
+      limitCom: 'D6', limitNC: 'GND1', limitNO: '5V' },
+    { encoderA: 'D2', encoderB: 'D3', encoderButton: 'D4', dip1: 'D5', dip2: 'D6',
+      dip3: 'D7', dip4: 'D8', changeoverCom: 'D9', contactsCommon: 'GND1', changeoverB: '5V' },
+    { reed: 'D7', emergencyStop: 'D8', footPedal: 'D9', common: 'three explicit 0 V references' },
+  ]);
+});
+
+test('safety and pedal example contains all three exact models', async () => {
+  const parsed = JSON.parse(await readFile(new URL('avr-safety-pedal-inputs.intent-mcu.json', ROOT), 'utf8'));
+  const types = parsed.project.candidateCircuit.components.map((component) => component.type);
+  for (const type of ['switch.reed-no-v1', 'switch.emergency-stop-nc-v1', 'switch.foot-pedal-no-v1']) {
+    assert.equal(types.filter((item) => item === type).length, 1, type);
+  }
+});
+
+test('advanced switch example contains DIP, changeover and encoder-with-button models', async () => {
+  const parsed = JSON.parse(await readFile(new URL('avr-advanced-switch-inputs.intent-mcu.json', ROOT), 'utf8'));
+  const types = parsed.project.candidateCircuit.components.map((component) => component.type);
+  for (const type of ['switch.dip-4-v1', 'switch.changeover-spdt-v1', 'input.rotary-encoder-button-v1']) {
+    assert.equal(types.filter((item) => item === type).length, 1, type);
+  }
+});
+
+test('combined mechanical example contains all three exact models', async () => {
+  const parsed = JSON.parse(await readFile(new URL('avr-mechanical-inputs.intent-mcu.json', ROOT), 'utf8'));
+  const components = parsed.project.candidateCircuit.components;
+  assert.deepEqual(['switch.slide-spdt-v1', 'button.momentary-nc-v1', 'switch.limit-spdt-v1']
+    .map((type) => components.filter((component) => component.type === type).length), [1, 1, 1]);
+});

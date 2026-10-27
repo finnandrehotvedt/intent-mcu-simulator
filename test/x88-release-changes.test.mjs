@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 binds the four-profile preserved-copy recovery release to coherent rc138 bytes', async () => {
+test('X88 binds the expanded example progression release to coherent rc140 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.138');
+  assert.equal(release.version, '1.1.0-rc.140');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,12 +38,12 @@ test('X88 binds the four-profile preserved-copy recovery release to coherent rc1
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.137', current: '1.1.0-rc.138' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.139', current: '1.1.0-rc.140' });
   assert.deepEqual(value.changes, [
     {
-      id: 'X59', classification: 'changed', capabilities: ['intent-mcu-shared-workbench-view@1'],
-      contracts: ['x59-four-profile-simple-advanced-view-v1'],
-      summary: 'Makes valid historical browser drafts discoverable across all four profiles and opens each as a separate validated copy while preserving original storage bytes and rejecting invalid entries unchanged.',
+      id: 'X72', classification: 'additive', capabilities: ['intent-mcu-example-progression@1'],
+      contracts: ['x72-example-progression-v1'],
+      summary: 'Adds 20 AVR chooser choices—an empty circuit plus 19 ready-made examples—and extends the guided path with trimmer, power-reference, traffic-light and four-digit-display lessons while preserving project bytes and model limits.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -106,7 +106,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.138');
+  assert.equal(discovery.identity.version, '1.1.0-rc.140');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);
@@ -114,7 +114,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   assert.equal('releaseChanges' in discovery, false);
   const baselineProjection = clone(discovery);
   baselineProjection.identity.version = '1.1.0-rc.81';
-  assert.equal(sha256(JSON.stringify(baselineProjection)), 'a5034ca1d445b66d58feccb8fa0eeda9529334b5b4c1d3e361c8b9663ae232fd');
+  assert.equal(sha256(JSON.stringify(baselineProjection)), '5b9b3680a9b94c783d55a4937326d5994ebed893b7d9d2c89a2aec5cd6c0f8be');
 });
 
 test('HTML, llms and Support discover the same static file without adding a public API', async () => {

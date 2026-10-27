@@ -4,8 +4,20 @@
 import { normalizeStoredRoute } from './route-model.mjs';
 import { withComponentAppearance, withComponentAppearanceBody } from './component-appearance.mjs';
 import {
-  GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
+  GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE,
 } from './bounded-3v3-authoring-contracts.mjs';
+import { ELECTROLYTIC_CAPACITOR_TYPE, FIXED_INDUCTOR_TYPE, NONPOLAR_CAPACITOR_TYPE,
+  PASSIVE_ENERGY_STORAGE_DEFINITIONS } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import { DIODE_COMPONENT_DEFINITIONS, SCHOTTKY_DIODE_TYPE,
+  SILICON_DIODE_TYPE, ZENER_DIODE_TYPE } from '../expansion-drafts/diode-components-v1.mjs';
+import { NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
+  TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
+import { FUSE_TYPE, RESETTABLE_FUSE_PTC_TYPE,
+  CIRCUIT_PROTECTION_DEFINITIONS } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { MINI_BREADBOARD_TYPE, TERMINAL_BLOCK_2_POSITION_TYPE,
+  CONNECTION_HARDWARE_DEFINITIONS } from '../expansion-drafts/connection-hardware-components-v1.mjs';
+import { OPTOCOUPLER_TYPE, P_CHANNEL_MOSFET_TYPE,
+  SEMICONDUCTOR_ACTIVE_DEFINITIONS } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
@@ -14,10 +26,18 @@ const sameEndpoint = (left, right) => endpointKey(left) === endpointKey(right);
 export const BOUNDED_COMPONENT_CATALOG_SCHEMA = 'intent-mcu-bounded-component-catalog@1';
 export const BOUNDED_RESISTOR_TYPE = 'resistor.fixed-v1';
 export const BOUNDED_LED_TYPE = 'led.basic-v1';
-export { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE };
+export { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE };
 const COMPONENT_ID_STEMS = Object.freeze({ [BOUNDED_RESISTOR_TYPE]: 'resistor', [BOUNDED_LED_TYPE]: 'led',
   [GROUND_REFERENCE_3V3_TYPE]: 'ground', [MOMENTARY_BUTTON_3V3_TYPE]: 'button',
-  [TOGGLE_SWITCH_3V3_TYPE]: 'switch' });
+  [TOGGLE_SWITCH_3V3_TYPE]: 'switch', [POTENTIOMETER_3V3_TYPE]: 'potentiometer',
+  [NONPOLAR_CAPACITOR_TYPE]: 'capacitor', [ELECTROLYTIC_CAPACITOR_TYPE]: 'electrolytic',
+  [FIXED_INDUCTOR_TYPE]: 'inductor', [SILICON_DIODE_TYPE]: 'diode',
+  [SCHOTTKY_DIODE_TYPE]: 'schottky', [ZENER_DIODE_TYPE]: 'zener',
+  [NPN_BJT_TYPE]: 'npn', [PNP_BJT_TYPE]: 'pnp', [N_CHANNEL_MOSFET_TYPE]: 'nmos',
+  [P_CHANNEL_MOSFET_TYPE]: 'pmos', [OPTOCOUPLER_TYPE]: 'optocoupler',
+  [FUSE_TYPE]: 'fuse', [RESETTABLE_FUSE_PTC_TYPE]: 'ptc',
+  [MINI_BREADBOARD_TYPE]: 'breadboard', [TERMINAL_BLOCK_2_POSITION_TYPE]: 'terminal-block' });
+
 const COMPONENT_ID_COUNTER_KEYS = Object.freeze([...new Set(Object.values(COMPONENT_ID_STEMS))].sort());
 
 export function normalizeBoundedIdCounters(value, components) {
@@ -113,6 +133,80 @@ export function createSeriesLedComponentPolicy({
         position: { x: 0.58, y: 0.72, rotation: 0 }, supportedProperties: {},
         pins: ['A', 'B'], limitation: 'Authoring-only passive 0–3.3 V contact; runtime behavior is intentionally unavailable.',
       }),
+      part({
+        id: 'potentiometer-1', type: POTENTIOMETER_3V3_TYPE,
+        displayName: 'Linear potentiometer', label: '10 kΩ linear potentiometer',
+        properties: { ohms: 10_000, taper: 'linear' },
+        position: { x: 0.42, y: 0.72, rotation: 0 },
+        supportedProperties: { ohms: { kind: 'number', minimum: 1, maximum: 10_000_000, unit: 'Ω' },
+          taper: { kind: 'enum', values: Object.freeze(['linear']) } },
+        pins: ['HIGH', 'WIPER', 'LOW'],
+        limitation: 'Authoring-only passive three-terminal network rated for 0–3.3 V; GPIO HIGH is not a proven supply, and no ADC runtime, loading, noise or physical tolerance model is provided.',
+      }),
+      ...Object.values(PASSIVE_ENERGY_STORAGE_DEFINITIONS).map((definition, index) => part({
+        id: `${COMPONENT_ID_STEMS[definition.type]}-1`, type: definition.type,
+        displayName: definition.displayName, label: definition.displayName,
+        properties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, definition.propertySchema[key].default])),
+        position: { x: 0.34 + index * 0.14, y: 0.84, rotation: 0 },
+        supportedProperties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, { ...definition.propertySchema[key] }])),
+        pins: definition.pins.map(({ id }) => id),
+        limitation: definition.support.limitations.join(' '),
+      })),
+      ...Object.values(DIODE_COMPONENT_DEFINITIONS).map((definition, index) => part({
+        id: `${COMPONENT_ID_STEMS[definition.type]}-1`, type: definition.type,
+        displayName: definition.displayName, label: definition.displayName,
+        properties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, definition.propertySchema[key].default])),
+        position: { x: 0.34 + index * 0.14, y: 0.92, rotation: 0 },
+        supportedProperties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, { ...definition.propertySchema[key] }])),
+        pins: definition.pins.map(({ id }) => id),
+        limitation: definition.support.limitations.join(' '),
+      })),
+      ...Object.values(TRANSISTOR_COMPONENT_DEFINITIONS).map((definition, index) => part({
+        id: `${COMPONENT_ID_STEMS[definition.type]}-1`, type: definition.type,
+        displayName: definition.displayName, label: definition.displayName,
+        properties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, definition.propertySchema[key].default])),
+        position: { x: 0.48 + index * 0.14, y: 0.78, rotation: 0 },
+        supportedProperties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, { ...definition.propertySchema[key] }])),
+        pins: definition.pins.map(({ id }) => id),
+        limitation: definition.support.limitations.join(' '),
+      })),
+      ...Object.values(CIRCUIT_PROTECTION_DEFINITIONS).map((definition, index) => part({
+        id: `${COMPONENT_ID_STEMS[definition.type]}-1`, type: definition.type,
+        displayName: definition.displayName, label: definition.displayName,
+        properties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, definition.propertySchema[key].default])),
+        position: { x: 0.28 + index * 0.2, y: 0.7, rotation: 0 },
+        supportedProperties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, { ...definition.propertySchema[key] }])),
+        pins: definition.pins.map(({ id }) => id),
+        limitation: definition.support.limitations.join(' '),
+      })),
+      ...Object.values(CONNECTION_HARDWARE_DEFINITIONS).map((definition, index) => part({
+        id: COMPONENT_ID_STEMS[definition.type] + '-1', type: definition.type,
+        displayName: definition.displayName, label: definition.displayName,
+        properties: {},
+        position: { x: 0.25 + index * 0.3, y: 0.58, rotation: 0 },
+        supportedProperties: {},
+        pins: definition.pins.map(({ id }) => id),
+        limitation: definition.support.limitations.join(' '),
+      })),
+      ...Object.values(SEMICONDUCTOR_ACTIVE_DEFINITIONS).map((definition, index) => part({
+        id: `${COMPONENT_ID_STEMS[definition.type]}-1`, type: definition.type,
+        displayName: definition.displayName, label: definition.displayName,
+        properties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, definition.propertySchema[key].default])),
+        position: { x: 0.55 + index * 0.16, y: 0.7, rotation: 0 },
+        supportedProperties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, { ...definition.propertySchema[key] }])),
+        pins: definition.pins.map(({ id }) => id),
+        limitation: definition.support.limitations.join(' '),
+      })),
     ]),
   });
 }
@@ -156,7 +250,12 @@ export function createSeriesLedConnectionPolicy({
       if (board?.pin === groundPin) return led?.component === 'led-1' ? 'net-ground' : `net-${led.component}-ground`;
       return `net-${led.component}-${board?.pin.toLowerCase()}-ground`.slice(0, 48);
     }
-    const authoringOnly = new Set([GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
+    const authoringOnly = new Set([GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE,
+      TOGGLE_SWITCH_3V3_TYPE, POTENTIOMETER_3V3_TYPE,
+      ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS), ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
+      ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS), ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
+      ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS)]);
+    for (const type of Object.keys(CIRCUIT_PROTECTION_DEFINITIONS)) authoringOnly.add(type);
     if (authoringOnly.has(endpointType(draft, left)) || authoringOnly.has(endpointType(draft, right))) {
       return `net-${[endpointKey(left), endpointKey(right)].sort().join('-').replaceAll('.', '-')}`.toLowerCase().slice(0, 48);
     }
@@ -364,6 +463,9 @@ export class NamedSeriesLedCircuitEditor {
           }
           if (target.type === BOUNDED_LED_TYPE && operation.key === 'color') {
             target.label = `External ${operation.value} LED`;
+          }
+          if (target.type === POTENTIOMETER_3V3_TYPE && operation.key === 'ohms') {
+            target.label = `${operation.value} Ω linear potentiometer`;
           }
         } else if (operation.command === 'wire.connect') {
           if (!endpointKnown(operation.from) || !endpointKnown(operation.to) || connected(operation.from) || connected(operation.to)
@@ -575,7 +677,7 @@ export class NamedSeriesLedCircuitEditor {
     const component = this.draft.components.find((candidate) => candidate.id === componentId);
     const policy = component && this.componentPolicy.parts.find((part) => part.type === component.type);
     const contract = policy?.supportedProperties[key];
-    if (!component || !policy || !contract || Object.keys(component.properties).length !== 1) {
+    if (!component || !policy || !contract || !Object.hasOwn(component.properties, key)) {
       return this.fail('COMPONENT_PROPERTY_UNSUPPORTED', { componentId, key });
     }
     if (contract.kind === 'number' && (typeof value !== 'number' || !Number.isFinite(value)
@@ -590,6 +692,23 @@ export class NamedSeriesLedCircuitEditor {
     target.properties[key] = value;
     if (target.type === BOUNDED_RESISTOR_TYPE && key === 'ohms') target.label = `${value} Ω series resistor`;
     if (target.type === BOUNDED_LED_TYPE && key === 'color') target.label = `External ${value} LED`;
+    if (target.type === POTENTIOMETER_3V3_TYPE && key === 'ohms') target.label = `${value} Ω linear potentiometer`;
+    if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[target.type]) {
+      target.label = PASSIVE_ENERGY_STORAGE_DEFINITIONS[target.type].displayName;
+    }
+    if (DIODE_COMPONENT_DEFINITIONS[target.type]) target.label = DIODE_COMPONENT_DEFINITIONS[target.type].displayName;
+    if (TRANSISTOR_COMPONENT_DEFINITIONS[target.type]) {
+      target.label = TRANSISTOR_COMPONENT_DEFINITIONS[target.type].displayName;
+    }
+    if (CIRCUIT_PROTECTION_DEFINITIONS[target.type]) {
+      target.label = CIRCUIT_PROTECTION_DEFINITIONS[target.type].displayName;
+    }
+    if (CONNECTION_HARDWARE_DEFINITIONS[target.type]) {
+      target.label = CONNECTION_HARDWARE_DEFINITIONS[target.type].displayName;
+    }
+    if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[target.type]) {
+      target.label = SEMICONDUCTOR_ACTIVE_DEFINITIONS[target.type].displayName;
+    }
     const electrical = this.validatePropertyPair(next);
     if (!electrical.ok) {
       return this.fail('COMPONENT_PROPERTY_ELECTRICAL_LIMIT', {

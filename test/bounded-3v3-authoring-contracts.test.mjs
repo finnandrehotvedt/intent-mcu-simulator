@@ -2,22 +2,58 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  ELECTROLYTIC_CAPACITOR_TYPE, FIXED_INDUCTOR_TYPE, NONPOLAR_CAPACITOR_TYPE,
+} from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import {
+  SCHOTTKY_DIODE_TYPE, SILICON_DIODE_TYPE, ZENER_DIODE_TYPE,
+} from '../expansion-drafts/diode-components-v1.mjs';
+import {
+  NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
+} from '../expansion-drafts/transistor-components-v1.mjs';
+import { FUSE_TYPE, RESETTABLE_FUSE_PTC_TYPE } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { MINI_BREADBOARD_TYPE,
+  TERMINAL_BLOCK_2_POSITION_TYPE } from '../expansion-drafts/connection-hardware-components-v1.mjs';
+import { OPTOCOUPLER_TYPE, P_CHANNEL_MOSFET_TYPE } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
+import {
   BOUNDED_3V3_AUTHORING_CONTRACTS, GROUND_REFERENCE_3V3_TYPE,
-  MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph,
+  MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph,
 } from '../src/bounded-3v3-authoring-contracts.mjs';
 import { RP2040_PICO_BOARD_DEFINITION, RP2040_PICO_PROFILE } from '../src/rp2040-pico-circuit.mjs';
 import { ESP32C3_BOARD_DEFINITION, ESP32C3_PUBLIC_PROFILE } from '../src/esp32c3-public-circuit.mjs';
 import { STM32_BOARD_DEFINITION, STM32_PUBLIC_PROFILE } from '../src/stm32-public-circuit.mjs';
+import { defaultControls, defaultProperties } from '../src/component-catalog.mjs';
 
-test('three explicit 3.3 V contracts are separately versioned and authoring-only', () => {
+test('nineteen explicit 3.3 V contracts are separately versioned and authoring-only', () => {
   assert.equal(BOUNDED_3V3_AUTHORING_CONTRACTS.schema, 'intent-mcu-bounded-3v3-authoring@1');
   assert.equal(BOUNDED_3V3_AUTHORING_CONTRACTS.execution, 'authoring-only');
   assert.deepEqual(Object.keys(BOUNDED_3V3_AUTHORING_CONTRACTS.components).sort(),
-    [GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE].sort());
+    [GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE,
+      TOGGLE_SWITCH_3V3_TYPE, NONPOLAR_CAPACITOR_TYPE, ELECTROLYTIC_CAPACITOR_TYPE,
+      FIXED_INDUCTOR_TYPE, SILICON_DIODE_TYPE, SCHOTTKY_DIODE_TYPE, ZENER_DIODE_TYPE,
+      NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
+      FUSE_TYPE, RESETTABLE_FUSE_PTC_TYPE,
+      MINI_BREADBOARD_TYPE, TERMINAL_BLOCK_2_POSITION_TYPE,
+      P_CHANNEL_MOSFET_TYPE, OPTOCOUPLER_TYPE].sort());
+
   for (const definition of Object.values(BOUNDED_3V3_AUTHORING_CONTRACTS.components)) {
     assert.equal(definition.version, 1);
     assert.equal(definition.pins.every(({ voltageMin, voltageMax }) => voltageMin >= 0 && voltageMax <= 3.3), true);
   }
+});
+
+test('potentiometer contract requires bounded resistance and a linear taper', () => {
+  assert.deepEqual(defaultProperties(POTENTIOMETER_3V3_TYPE), { ohms: 10_000, taper: 'linear' });
+  assert.deepEqual(defaultControls(POTENTIOMETER_3V3_TYPE), {});
+  const board = RP2040_PICO_BOARD_DEFINITION;
+  const graph = (properties) => validateBounded3v3AuthoringGraph({ board, components: [
+    { id: 'pico-1', type: RP2040_PICO_PROFILE },
+    { id: 'potentiometer-1', type: POTENTIOMETER_3V3_TYPE, properties },
+  ], nets: [{ id: 'analogue', endpoints: [
+    { component: 'pico-1', pin: 'GP26' }, { component: 'potentiometer-1', pin: 'WIPER' },
+  ] }] });
+  assert.equal(graph({ ohms: 10_000, taper: 'linear' }).ok, true);
+  assert.equal(graph({ ohms: 0, taper: 'linear' }).code, 'AUTHORING_POTENTIOMETER_PROPERTIES_UNSUPPORTED');
+  assert.equal(graph({ ohms: 10_000, taper: 'logarithmic' }).code, 'AUTHORING_POTENTIOMETER_PROPERTIES_UNSUPPORTED');
 });
 
 for (const profile of [

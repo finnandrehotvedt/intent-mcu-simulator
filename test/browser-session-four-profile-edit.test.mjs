@@ -30,6 +30,14 @@ for (const [label, create] of profiles) test(`${label} canonical API batch is at
   assert.equal(editor.undoApi(transactionId).ok, true);
   assert.equal(JSON.stringify(editor.snapshot().draft), before);
 
+  const rejectedProperty = editor.applyApiBatch([
+    { command: 'component.property.set', component_id: 'resistor-1', key: 'ohms', value: 330 },
+    { command: 'component.property.set', component_id: 'resistor-1', key: 'ohms', value: 0 },
+  ], `${transactionId}:negative-property`);
+  assert.equal(rejectedProperty.ok, false);
+  assert.match(rejectedProperty.code, /(?:RP2040|C3|STM32)_API_PROPERTY_INVALID/u);
+  assert.equal(JSON.stringify(editor.snapshot().draft), before);
+
   const ledTransaction = `${transactionId}:led`;
   assert.equal(editor.applyApiBatch([{ command: 'component.property.set', component_id: 'led-1',
     key: 'color', value: 'blue' }], ledTransaction).ok, true);

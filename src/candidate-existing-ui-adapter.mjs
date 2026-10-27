@@ -11,6 +11,12 @@ import {
 } from '../expansion-drafts/ground-reference-integration-v1.mjs';
 import { createGroundReferenceArtwork } from '../expansion-drafts/ground-reference-artwork-v1.mjs';
 import {
+  POWER_REFERENCE_DEFINITION,
+  POWER_REFERENCE_TYPE,
+  createPowerReferenceComponent,
+} from '../expansion-drafts/power-reference-integration-v1.mjs';
+import { createPowerReferenceArtwork } from '../expansion-drafts/power-reference-artwork-v1.mjs';
+import {
   SPDT_CONTACT_DEFINITION,
   SPDT_CONTACT_TYPE,
   createSwitchContactComponent,
@@ -22,6 +28,23 @@ import {
   createToggleSwitchComponent,
 } from '../expansion-drafts/toggle-switch-integration-v1.mjs';
 import { createToggleSwitchArtwork } from '../expansion-drafts/toggle-switch-artwork-v1.mjs';
+import {
+  LIMIT_SWITCH_TYPE, MECHANICAL_INPUT_DEFINITIONS, NC_BUTTON_TYPE, SLIDE_SWITCH_TYPE,
+  createMechanicalInputComponent,
+} from '../expansion-drafts/mechanical-inputs-v1.mjs';
+import { createMechanicalInputArtwork } from '../expansion-drafts/mechanical-inputs-artwork-v1.mjs';
+import { ADVANCED_SWITCH_INPUT_DEFINITIONS, DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
+  createAdvancedSwitchInput } from '../expansion-drafts/advanced-switch-inputs-v1.mjs';
+import { createAdvancedSwitchInputArtwork } from '../expansion-drafts/advanced-switch-inputs-artwork-v1.mjs';
+import { EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE,
+  SAFETY_PEDAL_INPUT_DEFINITIONS, createSafetyPedalInput } from '../expansion-drafts/safety-pedal-inputs-v1.mjs';
+import { createSafetyPedalInputArtwork } from '../expansion-drafts/safety-pedal-inputs-artwork-v1.mjs';
+import { ANALOG_JOYSTICK_TYPE, JOYSTICK_KEYPAD_DEFINITIONS,
+  createJoystickKeypad } from '../expansion-drafts/joystick-keypads-v1.mjs';
+import { createJoystickKeypadArtwork } from '../expansion-drafts/joystick-keypads-artwork-v1.mjs';
+import { ROTARY_SELECTOR_INDICATOR_DEFINITIONS, ROTARY_SELECTOR_TYPE,
+  createRotarySelectorIndicator } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
+import { createRotarySelectorIndicatorArtwork } from '../expansion-drafts/rotary-selector-indicators-artwork-v1.mjs';
 import {
   LIGHT_ANALOGUE_SENSOR_DEFINITION,
   LIGHT_ANALOGUE_SENSOR_TYPE,
@@ -51,6 +74,12 @@ import {
 } from '../expansion-drafts/common-cathode-rgb-led-v1.mjs';
 import { createCommonCathodeRgbLedArtwork } from '../expansion-drafts/common-cathode-rgb-led-artwork-v1.mjs';
 import {
+  TRAFFIC_LIGHT_DEFINITION,
+  TRAFFIC_LIGHT_TYPE,
+  createTrafficLightComponent,
+} from '../expansion-drafts/traffic-light-module-v1.mjs';
+import { createTrafficLightArtwork } from '../expansion-drafts/traffic-light-module-artwork-v1.mjs';
+import {
   ACTIVE_BUZZER_DEFINITION,
   ACTIVE_BUZZER_TYPE,
   createActiveBuzzerComponent,
@@ -63,11 +92,29 @@ import {
 } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { createSevenSegmentArtwork } from '../expansion-drafts/seven-segment-common-cathode-artwork-v1.mjs';
 import {
+  FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION,
+  FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+  createFourDigitSevenSegmentComponent,
+} from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
+import { createFourDigitSevenSegmentArtwork } from '../expansion-drafts/seven-segment-four-digit-common-cathode-artwork-v1.mjs';
+import {
   CHARACTER_LCD_DEFINITION,
   CHARACTER_LCD_TYPE,
   createCharacterLcdComponent,
 } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
 import { createCharacterLcdArtwork } from '../expansion-drafts/character-lcd-16x2-4bit-artwork-v1.mjs';
+import {
+  CHARACTER_LCD_20X4_DEFINITION,
+  CHARACTER_LCD_20X4_TYPE,
+  createCharacterLcd20x4Component,
+} from '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs';
+import { createCharacterLcd20x4Artwork } from '../expansion-drafts/character-lcd-20x4-4bit-artwork-v1.mjs';
+import {
+  PCF8574_LCD_DEFINITION,
+  PCF8574_LCD_TYPE,
+  createPcf8574LcdComponent,
+} from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
+import { createPcf8574LcdArtwork } from '../expansion-drafts/pcf8574-lcd-backpack-artwork-v1.mjs';
 import {
   ROTARY_ENCODER_DEFINITION,
   ROTARY_ENCODER_TYPE,
@@ -75,6 +122,73 @@ import {
   rotaryEncoderDigitalSequence,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
 import { createRotaryEncoderArtwork } from '../expansion-drafts/rotary-encoder-quadrature-artwork-v1.mjs';
+import {
+  CAPACITIVE_TOUCH_TYPE,
+  DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
+  HALL_SWITCH_TYPE,
+  PIR_MOTION_TYPE,
+  createDigitalPresenceSensor,
+} from '../expansion-drafts/digital-presence-sensors-v1.mjs';
+import { createDigitalPresenceSensorArtwork } from '../expansion-drafts/digital-presence-sensors-artwork-v1.mjs';
+import { DIGITAL_PULSE_SENSOR_DEFINITIONS, createDigitalPulseSensor } from '../expansion-drafts/digital-pulse-sensors-v1.mjs';
+import { createDigitalPulseSensorArtwork } from '../expansion-drafts/digital-pulse-sensors-artwork-v1.mjs';
+import {
+  DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
+  IR_OBSTACLE_SENSOR_TYPE,
+  LINE_TRACKING_SENSOR_TYPE,
+  createDigitalReflectiveSensor,
+} from '../expansion-drafts/digital-reflective-sensors-v1.mjs';
+import { createDigitalReflectiveSensorArtwork } from '../expansion-drafts/digital-reflective-sensors-artwork-v1.mjs';
+import {
+  ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
+  ANALOGUE_WATER_LEVEL_TYPE,
+  CAPACITIVE_SOIL_MOISTURE_TYPE,
+  RESISTIVE_SOIL_MOISTURE_TYPE,
+  createAnalogueMoistureLevelSensor,
+} from '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs';
+import { createAnalogueMoistureLevelArtwork } from '../expansion-drafts/analogue-moisture-level-sensors-artwork-v1.mjs';
+import {
+  ANALOGUE_DETECTION_DEFINITIONS,
+  createAnalogueDetectionSensor,
+} from '../expansion-drafts/analogue-detection-sensors-v1.mjs';
+import { createAnalogueDetectionArtwork } from '../expansion-drafts/analogue-detection-sensors-artwork-v1.mjs';
+import {
+  ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
+  HALL_MAGNETIC_ANALOGUE_TYPE,
+  WIND_DIRECTION_ANALOGUE_TYPE,
+  analogueDirectionFieldVoltage,
+  createAnalogueDirectionFieldSensor,
+} from '../expansion-drafts/analogue-direction-field-sensors-v1.mjs';
+import { createAnalogueDirectionFieldArtwork } from '../expansion-drafts/analogue-direction-field-sensors-artwork-v1.mjs';
+import {
+  ANALOGUE_TEMPERATURE_IC_DEFINITIONS,
+  analogueTemperatureIcVoltage,
+  createAnalogueTemperatureIcSensor,
+} from '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs';
+import { createAnalogueTemperatureIcArtwork } from '../expansion-drafts/analogue-temperature-ic-sensors-artwork-v1.mjs';
+import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, createResistiveDividerSensor,
+  resistiveDividerSensorVoltage } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
+import { createResistiveDividerSensorArtwork } from '../expansion-drafts/resistive-divider-sensors-artwork-v1.mjs';
+import { PASSIVE_ENERGY_STORAGE_DEFINITIONS,
+  createPassiveEnergyStorageComponent } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import { createPassiveEnergyStorageArtwork } from '../expansion-drafts/passive-energy-storage-components-artwork-v1.mjs';
+import { DIODE_COMPONENT_DEFINITIONS,
+  createDiodeComponent } from '../expansion-drafts/diode-components-v1.mjs';
+import { createDiodeArtwork } from '../expansion-drafts/diode-components-artwork-v1.mjs';
+import { TRANSISTOR_COMPONENT_DEFINITIONS,
+  createTransistorComponent } from '../expansion-drafts/transistor-components-v1.mjs';
+import { createTransistorArtwork } from '../expansion-drafts/transistor-components-artwork-v1.mjs';
+import { CIRCUIT_PROTECTION_DEFINITIONS,
+  createCircuitProtectionComponent } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { createCircuitProtectionArtwork } from '../expansion-drafts/circuit-protection-components-artwork-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS,
+  createConnectionHardwareComponent } from '../expansion-drafts/connection-hardware-components-v1.mjs';
+import { createConnectionHardwareArtwork } from '../expansion-drafts/connection-hardware-components-artwork-v1.mjs';
+import { SEMICONDUCTOR_ACTIVE_DEFINITIONS,
+  createSemiconductorActiveComponent } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
+import { createSemiconductorActiveArtwork } from '../expansion-drafts/semiconductor-active-components-artwork-v1.mjs';
+import { CONTACT_SENSOR_DEFINITIONS, createContactSensor } from '../expansion-drafts/contact-sensors-v1.mjs';
+import { createContactSensorArtwork } from '../expansion-drafts/contact-sensors-artwork-v1.mjs';
 
 export const CANDIDATE_EXISTING_UI_ADAPTER_SCHEMA = 'intent-mcu-candidate-existing-ui@1';
 
@@ -119,16 +233,41 @@ const SPDT_UI_DEFINITION = Object.freeze({
 
 export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [GROUND_REFERENCE_TYPE]: GROUND_REFERENCE_DEFINITION,
+  [POWER_REFERENCE_TYPE]: POWER_REFERENCE_DEFINITION,
   [TOGGLE_SWITCH_TYPE]: TOGGLE_SWITCH_DEFINITION,
+  ...MECHANICAL_INPUT_DEFINITIONS,
+  ...ADVANCED_SWITCH_INPUT_DEFINITIONS,
+  ...SAFETY_PEDAL_INPUT_DEFINITIONS,
+  ...JOYSTICK_KEYPAD_DEFINITIONS,
+  ...ROTARY_SELECTOR_INDICATOR_DEFINITIONS,
   [SPDT_CONTACT_TYPE]: SPDT_UI_DEFINITION,
   [LIGHT_ANALOGUE_SENSOR_TYPE]: LIGHT_ANALOGUE_SENSOR_DEFINITION,
   [TEMPERATURE_ANALOGUE_SENSOR_TYPE]: TEMPERATURE_ANALOGUE_SENSOR_DEFINITION,
   [DIGITAL_LIGHT_THRESHOLD_TYPE]: DIGITAL_LIGHT_THRESHOLD_DEFINITION,
   [COMMON_CATHODE_RGB_LED_TYPE]: COMMON_CATHODE_RGB_LED_DEFINITION,
+  [TRAFFIC_LIGHT_TYPE]: TRAFFIC_LIGHT_DEFINITION,
   [ACTIVE_BUZZER_TYPE]: ACTIVE_BUZZER_DEFINITION,
   [SEVEN_SEGMENT_TYPE]: SEVEN_SEGMENT_DEFINITION,
+  [FOUR_DIGIT_SEVEN_SEGMENT_TYPE]: FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION,
   [CHARACTER_LCD_TYPE]: CHARACTER_LCD_DEFINITION,
+  [CHARACTER_LCD_20X4_TYPE]: CHARACTER_LCD_20X4_DEFINITION,
+  [PCF8574_LCD_TYPE]: PCF8574_LCD_DEFINITION,
   [ROTARY_ENCODER_TYPE]: ROTARY_ENCODER_DEFINITION,
+  ...DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
+  ...DIGITAL_PULSE_SENSOR_DEFINITIONS,
+  ...DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
+  ...ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
+  ...ANALOGUE_DETECTION_DEFINITIONS,
+  ...ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
+  ...ANALOGUE_TEMPERATURE_IC_DEFINITIONS,
+  ...RESISTIVE_DIVIDER_SENSOR_DEFINITIONS,
+  ...PASSIVE_ENERGY_STORAGE_DEFINITIONS,
+  ...DIODE_COMPONENT_DEFINITIONS,
+  ...TRANSISTOR_COMPONENT_DEFINITIONS,
+  ...CIRCUIT_PROTECTION_DEFINITIONS,
+  ...CONNECTION_HARDWARE_DEFINITIONS,
+  ...SEMICONDUCTOR_ACTIVE_DEFINITIONS,
+  ...CONTACT_SENSOR_DEFINITIONS,
 });
 
 export function candidateUiDefinition(type) {
@@ -139,8 +278,24 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (component?.type === GROUND_REFERENCE_TYPE) {
     return createGroundReferenceArtwork(documentObject, definition, component, options);
   }
+  if (component?.type === POWER_REFERENCE_TYPE) {
+    return createPowerReferenceArtwork(documentObject, definition, component, options);
+  }
   if (component?.type === TOGGLE_SWITCH_TYPE) {
     return createToggleSwitchArtwork(documentObject, definition, component, options);
+  }
+  if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(component?.type)) {
+    return createMechanicalInputArtwork(documentObject, definition, component, options);
+  }
+  if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(component?.type)) {
+    return createAdvancedSwitchInputArtwork(documentObject, definition, component, options);
+  }
+  if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component?.type)) {
+    return createSafetyPedalInputArtwork(documentObject, definition, component, options);
+  }
+  if (JOYSTICK_KEYPAD_DEFINITIONS[component?.type]) return createJoystickKeypadArtwork(documentObject, definition, component, options);
+  if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[component?.type]) {
+    return createRotarySelectorIndicatorArtwork(documentObject, definition, component, options);
   }
   if (component?.type === SPDT_CONTACT_TYPE) {
     return createSwitchContactArtwork(documentObject, definition, component.controls.selectedThrow, options);
@@ -157,33 +312,121 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (component?.type === COMMON_CATHODE_RGB_LED_TYPE) {
     return createCommonCathodeRgbLedArtwork(documentObject, definition, component, options);
   }
+  if (component?.type === TRAFFIC_LIGHT_TYPE) {
+    return createTrafficLightArtwork(documentObject, definition, component, options);
+  }
   if (component?.type === ACTIVE_BUZZER_TYPE) {
     return createActiveBuzzerArtwork(documentObject, definition, component, options);
   }
   if (component?.type === SEVEN_SEGMENT_TYPE) {
     return createSevenSegmentArtwork(documentObject, definition, component, options);
   }
+  if (component?.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
+    return createFourDigitSevenSegmentArtwork(documentObject, definition, component, options);
+  }
   if (component?.type === CHARACTER_LCD_TYPE) {
     return createCharacterLcdArtwork(documentObject, definition, component, options);
   }
+  if (component?.type === CHARACTER_LCD_20X4_TYPE) {
+    return createCharacterLcd20x4Artwork(documentObject, definition, component, options);
+  }
+  if (component?.type === PCF8574_LCD_TYPE) {
+    return createPcf8574LcdArtwork(documentObject, definition, component, options);
+  }
   if (component?.type === ROTARY_ENCODER_TYPE) {
     return createRotaryEncoderArtwork(documentObject, definition, component, options);
+  }
+  if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component?.type]) {
+    return createDigitalPresenceSensorArtwork(documentObject, definition, component, options);
+  }
+  if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component?.type]) {
+    return createDigitalPulseSensorArtwork(documentObject, definition, component, options);
+  }
+  if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component?.type]) {
+    return createDigitalReflectiveSensorArtwork(documentObject, definition, component, options);
+  }
+  if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component?.type]) {
+    return createAnalogueMoistureLevelArtwork(documentObject, definition, component, options);
+  }
+  if (ANALOGUE_DETECTION_DEFINITIONS[component?.type]) {
+    return createAnalogueDetectionArtwork(documentObject, definition, component, options);
+  }
+  if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component?.type]) {
+    return createAnalogueDirectionFieldArtwork(documentObject, definition, component, options);
+  }
+  if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component?.type]) {
+    return createAnalogueTemperatureIcArtwork(documentObject, definition, component, options);
+  }
+  if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component?.type]) {
+    return createResistiveDividerSensorArtwork(documentObject, definition, component, options);
+  }
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component?.type]) {
+    return createPassiveEnergyStorageArtwork(documentObject, definition, component, options);
+  }
+  if (DIODE_COMPONENT_DEFINITIONS[component?.type]) {
+    return createDiodeArtwork(documentObject, definition, component, options);
+  }
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[component?.type]) {
+    return createTransistorArtwork(documentObject, definition, component, options);
+  }
+  if (CIRCUIT_PROTECTION_DEFINITIONS[component?.type]) {
+    return createCircuitProtectionArtwork(documentObject, definition, component, options);
+  }
+  if (CONNECTION_HARDWARE_DEFINITIONS[component?.type]) {
+    return createConnectionHardwareArtwork(documentObject, definition, component, options);
+  }
+  if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component?.type]) {
+    return createSemiconductorActiveArtwork(documentObject, definition, component, options);
+  }
+  if (CONTACT_SENSOR_DEFINITIONS[component?.type]) {
+    return createContactSensorArtwork(documentObject, definition, component, options);
   }
   throw new TypeError('CANDIDATE_UI_COMPONENT');
 }
 
 export function createCandidateUiComponent(type, id) {
   if (type === GROUND_REFERENCE_TYPE) return createGroundReferenceComponent(id);
+  if (type === POWER_REFERENCE_TYPE) return createPowerReferenceComponent(id);
   if (type === TOGGLE_SWITCH_TYPE) return createToggleSwitchComponent(id);
+  if ([SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE].includes(type)) {
+    return createMechanicalInputComponent(type, id);
+  }
+  if ([DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(type)) {
+    return createAdvancedSwitchInput(type, id);
+  }
+  if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(type)) {
+    return createSafetyPedalInput(type, id);
+  }
+  if (JOYSTICK_KEYPAD_DEFINITIONS[type]) return createJoystickKeypad(type, id);
+  if (ROTARY_SELECTOR_INDICATOR_DEFINITIONS[type]) return createRotarySelectorIndicator(type, id);
   if (type === SPDT_CONTACT_TYPE) return createSwitchContactComponent(id, 'SPDT changeover contact', { selectedThrow: 'A' });
   if (type === LIGHT_ANALOGUE_SENSOR_TYPE) return createLightAnalogueSensorComponent(id);
   if (type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return createTemperatureAnalogueSensorComponent(id);
   if (type === DIGITAL_LIGHT_THRESHOLD_TYPE) return createDigitalLightThresholdComponent(id);
   if (type === COMMON_CATHODE_RGB_LED_TYPE) return createCommonCathodeRgbLedComponent(id);
+  if (type === TRAFFIC_LIGHT_TYPE) return createTrafficLightComponent(id);
   if (type === ACTIVE_BUZZER_TYPE) return createActiveBuzzerComponent(id);
   if (type === SEVEN_SEGMENT_TYPE) return createSevenSegmentComponent(id);
+  if (type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) return createFourDigitSevenSegmentComponent(id);
   if (type === CHARACTER_LCD_TYPE) return createCharacterLcdComponent(id);
+  if (type === CHARACTER_LCD_20X4_TYPE) return createCharacterLcd20x4Component(id);
+  if (type === PCF8574_LCD_TYPE) return createPcf8574LcdComponent(id);
   if (type === ROTARY_ENCODER_TYPE) return createRotaryEncoderComponent(id);
+  if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[type]) return createDigitalPresenceSensor(type, id);
+  if (DIGITAL_PULSE_SENSOR_DEFINITIONS[type]) return createDigitalPulseSensor(type, id);
+  if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[type]) return createDigitalReflectiveSensor(type, id);
+  if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[type]) return createAnalogueMoistureLevelSensor(type, id);
+  if (ANALOGUE_DETECTION_DEFINITIONS[type]) return createAnalogueDetectionSensor(type, id);
+  if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[type]) return createAnalogueDirectionFieldSensor(type, id);
+  if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[type]) return createAnalogueTemperatureIcSensor(type, id);
+  if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[type]) return createResistiveDividerSensor(type, id);
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[type]) return createPassiveEnergyStorageComponent(type, id);
+  if (DIODE_COMPONENT_DEFINITIONS[type]) return createDiodeComponent(type, id);
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[type]) return createTransistorComponent(type, id);
+  if (CIRCUIT_PROTECTION_DEFINITIONS[type]) return createCircuitProtectionComponent(type, id);
+  if (CONNECTION_HARDWARE_DEFINITIONS[type]) return createConnectionHardwareComponent(type, id);
+  if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[type]) return createSemiconductorActiveComponent(type, id);
+  if (CONTACT_SENSOR_DEFINITIONS[type]) return createContactSensor(type, id);
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');
 }
 
@@ -198,7 +441,22 @@ export function candidateRuntimeInputs(session) {
   if (session?.kind !== 'candidate-project-v3') return [];
   const runnable = session.runnable;
   if (!runnable.ok) throw Object.assign(new Error(runnable.code), { code: runnable.code, details: runnable.details });
-  const inputs = session.runtimeSupport
+  const runtimeGraph = session.runtimeProject?.circuit;
+  const board = runtimeGraph?.components?.find((component) => component.type === 'board.atmega328p-16mhz-v1');
+  const fixedReferences = board ? runtimeGraph.nets.flatMap((net) => {
+    const boardPins = net.endpoints.filter((endpoint) => endpoint.component === board.id).map((endpoint) => endpoint.pin);
+    const sourcePin = boardPins.includes('5V') ? '5V'
+      : boardPins.some((pin) => /^GND[1-3]$/u.test(pin)) ? 'GND' : null;
+    if (!sourcePin) return [];
+    return boardPins.filter((pin) => /^D(?:[0-9]|1[0-3])$/u.test(pin)).map((pinLabel) => ({
+      componentId: board.id,
+      pin: Number(pinLabel.slice(1)),
+      pinLabel,
+      level: sourcePin === '5V',
+      fixedReference: sourcePin,
+    }));
+  }).sort((left, right) => left.pin - right.pin) : [];
+  const inputs = [...fixedReferences, ...session.runtimeSupport
     .filter((item) => item.type === SPDT_CONTACT_TYPE)
     .map((item) => session.evaluateSpdtRuntime(item.componentId))
     .map((result) => {
@@ -210,7 +468,7 @@ export function candidateRuntimeInputs(session) {
         level: result.projection.level,
         selectedThrow: result.projection.selectedThrow,
       };
-    });
+    })];
   for (const support of session.runtimeSupport.filter((item) => item.type === ROTARY_ENCODER_TYPE)) {
     const projection = support.runtimeProjection;
     for (const phase of ['A', 'B']) inputs.push({
@@ -244,6 +502,85 @@ export function candidateContactControl(session, componentId, key, value) {
       transition: transition ? clone(transition.transition) : null,
     };
   }
+  if (component.type === SLIDE_SWITCH_TYPE && key === 'selectedThrow' && ['A', 'B'].includes(value)) {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === NC_BUTTON_TYPE && key === 'pressed' && typeof value === 'boolean') {
+    return {
+      ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value: !value },
+    };
+  }
+  if (component.type === LIMIT_SWITCH_TYPE && key === 'actuated' && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === DIP_SWITCH_4_TYPE && /^switch[1-4]$/u.test(key)
+      && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === ROTARY_ENCODER_BUTTON_TYPE && key === 'pressed'
+      && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === ROTARY_ENCODER_BUTTON_TYPE && key === 'detent'
+      && Number.isInteger(value) && Math.abs(value - component.controls.detent) === 1) {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      direction: value > component.controls.detent ? 'cw' : 'ccw' };
+  }
+  if (component.type === REED_SWITCH_TYPE && key === 'magnetPresent' && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === EMERGENCY_STOP_TYPE && key === 'latched' && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === FOOT_PEDAL_TYPE && key === 'pressed' && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (CONTACT_SENSOR_DEFINITIONS[component.type]
+      && key === CONTACT_SENSOR_DEFINITIONS[component.type].controlKeys[0]
+      && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if ([CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE].includes(component.type)
+      && key === DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].controlKeys[0]
+      && typeof value === 'boolean') {
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value: !value },
+    };
+  }
+  if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type] && key === 'pulseHigh'
+      && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value: !value } };
+  }
+  if ([IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE].includes(component.type)
+      && key === DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].controlKeys[0]
+      && typeof value === 'boolean') {
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value },
+    };
+  }
+  if (component.type === ANALOG_JOYSTICK_TYPE && ['x', 'y'].includes(key)
+      && Number.isFinite(value) && value >= 0 && value <= 1) {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId: `${componentId}-${key}`, key: 'position', value } };
+  }
+  if (component.type === ANALOG_JOYSTICK_TYPE && key === 'pressed' && typeof value === 'boolean') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId: `${componentId}-sw`, key: 'pressed', value } };
+  }
+  if (['input.matrix-keypad-3x4-v1', 'input.matrix-keypad-4x4-v1'].includes(component.type)
+      && key === 'pressedKey' && typeof value === 'string') {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
+  if (component.type === ROTARY_SELECTOR_TYPE && key === 'position'
+      && Number.isInteger(value) && value >= 1 && value <= 4) {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+  }
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE && key === 'lightLevel'
       && Number.isFinite(value) && value >= 0 && value <= 1) {
     return {
@@ -261,6 +598,63 @@ export function candidateContactControl(session, componentId, key, value) {
         command: 'control', componentId, key: 'position', value: temperatureCToVoltage(value) / 5,
       },
     };
+  }
+  if ([RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE,
+    ANALOGUE_WATER_LEVEL_TYPE].includes(component.type)
+      && key === ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type].controlKeys[0]
+      && Number.isFinite(value) && value >= 0 && value <= 1) {
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'position', value },
+    };
+  }
+  if (ANALOGUE_DETECTION_DEFINITIONS[component.type]
+      && key === ANALOGUE_DETECTION_DEFINITIONS[component.type].controlKeys[0]
+      && Number.isFinite(value) && value >= 0 && value <= 1) {
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'position', value },
+    };
+  }
+  if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]
+      && key === ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type].controlKeys[0]) {
+    const control = ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type].control;
+    if (!Number.isFinite(value) || value < control.minimum || value > control.maximum) {
+      return failure('PROJECT_CONTACT_ANALOGUE_DIRECTION_FIELD_SENSOR_STATE', [componentId]);
+    }
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'position',
+        value: analogueDirectionFieldVoltage(component.type, value) / 5 },
+    };
+  }
+  if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]
+      && key === 'temperatureC') {
+    const control = ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type].control;
+    if (!Number.isFinite(value) || value < control.minimum || value > control.maximum) {
+      return failure('PROJECT_CONTACT_ANALOGUE_TEMPERATURE_IC_SENSOR_STATE', [componentId]);
+    }
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'position',
+        value: analogueTemperatureIcVoltage(component.type, value) / 5 },
+    };
+  }
+  if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) {
+    const definition = RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type];
+    const controlKey = definition.controlKeys[0];
+    if (key !== controlKey || !Number.isFinite(value)
+        || value < definition.control.minimum || value > definition.control.maximum) {
+      return failure('PROJECT_CONTACT_RESISTIVE_DIVIDER_SENSOR_STATE', [componentId]);
+    }
+    return { ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'position',
+        value: resistiveDividerSensorVoltage(component.type, value) / 5 } };
   }
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     try {

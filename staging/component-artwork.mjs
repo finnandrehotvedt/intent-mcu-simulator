@@ -2,6 +2,18 @@
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
 import { ARTWORK_RENDERER_IDS } from '../src/component-catalog.mjs';
+import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import { createPassiveEnergyStorageArtwork } from '../expansion-drafts/passive-energy-storage-components-artwork-v1.mjs';
+import { DIODE_COMPONENT_DEFINITIONS } from '../expansion-drafts/diode-components-v1.mjs';
+import { createDiodeArtwork } from '../expansion-drafts/diode-components-artwork-v1.mjs';
+import { TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
+import { createTransistorArtwork } from '../expansion-drafts/transistor-components-artwork-v1.mjs';
+import { CIRCUIT_PROTECTION_DEFINITIONS } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { createCircuitProtectionArtwork } from '../expansion-drafts/circuit-protection-components-artwork-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS } from '../expansion-drafts/connection-hardware-components-v1.mjs';
+import { createConnectionHardwareArtwork } from '../expansion-drafts/connection-hardware-components-artwork-v1.mjs';
+import { SEMICONDUCTOR_ACTIVE_DEFINITIONS } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
+import { createSemiconductorActiveArtwork } from '../expansion-drafts/semiconductor-active-components-artwork-v1.mjs';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -147,8 +159,11 @@ function resistor(svg, definition, component, { appearancePreset = 'standard-bei
   );
   const bandScale = `translate(75 24) scale(${body.widthPct / 100} ${body.heightPct / 100}) translate(-75 -24)`;
   resistorBands(component.properties.ohms).forEach((color, index) => {
-    svg.append(element('rect', { x: 55 + index * 13, y: 11, width: 5, height: 26, rx: 1, fill: color, transform: bandScale }));
+    svg.append(element('rect', { x: 55 + index * 13, y: 11, width: 5, height: 26, rx: 1, fill: color,
+      transform: bandScale, 'data-resistor-band': String(index + 1) }));
   });
+  svg.append(element('text', { x: 75, y: 46, 'text-anchor': 'middle', class: 'component-identity-mark',
+    'data-component-identity': 'resistance' }, `${component.properties.ohms} Ω`));
   drawTerminals(svg, definition, 2.8);
 }
 
@@ -178,6 +193,10 @@ function led(svg, definition, component, { appearancePreset = 'round-5mm', appea
     element('path', { d: 'M 20 52 H 54', class: 'led-rim', transform: bodyScale }),
     element('path', { d: 'M 47 35 V 48', class: 'led-cathode-flat', transform: bodyScale }),
     element('ellipse', { cx: 30, cy: 30, rx: 5, ry: 8, class: 'led-highlight', transform: bodyScale }),
+    element('text', { x: 20, y: 89, class: 'component-identity-mark', 'text-anchor': 'middle',
+      'data-component-identity': 'led-anode' }, 'A +'),
+    element('text', { x: 52, y: 89, class: 'component-identity-mark', 'text-anchor': 'middle',
+      'data-component-identity': 'led-cathode' }, 'K −'),
   );
   drawTerminals(svg, definition, 3);
 }
@@ -191,6 +210,8 @@ function button(svg, definition) {
     element('rect', { x: 17, y: 10, width: 66, height: 58, rx: 7, class: 'button-body' }),
     element('rect', { x: 27, y: 19, width: 46, height: 40, rx: 7, class: 'button-frame' }),
     element('circle', { cx: 50, cy: 39, r: 15, class: 'button-cap' }),
+    element('text', { x: 50, y: 42, class: 'component-identity-mark button-identity-mark',
+      'text-anchor': 'middle', 'data-component-identity': 'momentary-push' }, 'PUSH'),
   );
   for (const [x, y, label] of [[8, 20, 'A1'], [8, 58, 'A2'], [92, 20, 'B1'], [92, 58, 'B2']]) {
     svg.append(element('circle', { cx: x, cy: y, r: 2.2, class: 'art-terminal-secondary', 'data-physical-terminal': label }));
@@ -230,6 +251,26 @@ function potentiometer(svg, definition) {
   drawTerminals(svg, definition, 3);
 }
 
+function trimmerPotentiometer(svg, definition, component) {
+  const position = Math.max(0, Math.min(1, Number(component?.controls?.position) || 0));
+  const angle = -140 + position * 280;
+  const radians = angle * Math.PI / 180;
+  const x2 = 50 + Math.cos(radians) * 17;
+  const y2 = 39 + Math.sin(radians) * 17;
+  append(svg,
+    element('rect', { x: 12, y: 9, width: 76, height: 61, rx: 8, class: 'pot-body' }),
+    element('circle', { cx: 50, cy: 39, r: 25, class: 'pot-case' }),
+    element('circle', { cx: 50, cy: 39, r: 15, class: 'pot-shaft' }),
+    element('line', { x1: 50, y1: 39, x2, y2, class: 'pot-index' }),
+    element('line', { x1: 38, y1: 39, x2: 62, y2: 39, class: 'pot-index' }),
+    element('text', { x: 50, y: 67, 'text-anchor': 'middle', class: 'pico-board-subtitle' }, 'TRIM'),
+    element('line', { x1: 20, y1: 69, x2: 20, y2: 84, class: 'metal-lead' }),
+    element('line', { x1: 50, y1: 68, x2: 50, y2: 88, class: 'metal-lead' }),
+    element('line', { x1: 80, y1: 69, x2: 80, y2: 84, class: 'metal-lead' }),
+  );
+  drawTerminals(svg, definition, 3);
+}
+
 function serialInstrument(svg) {
   append(svg,
     element('rect', { x: 4, y: 5, width: 92, height: 50, rx: 6, class: 'board-module' }),
@@ -250,6 +291,7 @@ const renderers = Object.freeze({
   'ground-reference-3v3': groundReference3v3,
   'switch-toggle-3v3': toggleSwitch3v3,
   'potentiometer-rotary': potentiometer,
+  'potentiometer-trimmer': trimmerPotentiometer,
   'instrument-serial': serialInstrument,
 });
 
@@ -259,6 +301,36 @@ if (JSON.stringify(COMPONENT_ARTWORK_RENDERER_IDS) !== JSON.stringify(ARTWORK_RE
 }
 
 export function createComponentArtwork(definition, component, options = {}) {
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component?.type]) {
+    const svg = createPassiveEnergyStorageArtwork(document, definition, component);
+    if (options.thumbnail) svg.classList.add('catalog-thumbnail');
+    return svg;
+  }
+  if (DIODE_COMPONENT_DEFINITIONS[component?.type]) {
+    const svg = createDiodeArtwork(document, definition, component);
+    if (options.thumbnail) svg.classList.add('catalog-thumbnail');
+    return svg;
+  }
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[component?.type]) {
+    const svg = createTransistorArtwork(document, definition, component);
+    if (options.thumbnail) svg.classList.add('catalog-thumbnail');
+    return svg;
+  }
+  if (CIRCUIT_PROTECTION_DEFINITIONS[component?.type]) {
+    const svg = createCircuitProtectionArtwork(document, definition, component);
+    if (options.thumbnail) svg.classList.add('catalog-thumbnail');
+    return svg;
+  }
+  if (CONNECTION_HARDWARE_DEFINITIONS[component?.type]) {
+    const svg = createConnectionHardwareArtwork(document, definition, component);
+    if (options.thumbnail) svg.classList.add('catalog-thumbnail');
+    return svg;
+  }
+  if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component?.type]) {
+    const svg = createSemiconductorActiveArtwork(document, definition, component);
+    if (options.thumbnail) svg.classList.add('catalog-thumbnail');
+    return svg;
+  }
   const { thumbnail = false, appearancePreset, appearanceBody } = options;
   const svg = element('svg', {
     class: `component-artwork${thumbnail ? ' catalog-thumbnail' : ''}`,

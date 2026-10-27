@@ -1,0 +1,37 @@
+{
+  "schema": "intent-mcu-digital-reflective-sensor-example-manifest@1",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "entries": [
+    {
+      "id": "avr-digital-reflective-sensors",
+      "requirementIds": [
+        "CMP-122",
+        "CMP-123"
+      ],
+      "file": "avr-digital-reflective-sensors.intent-mcu.json",
+      "projectSha256": "e1b134928dfbc3500aeb55efe01d2af938c96d140bc729d7824ec7425db74a1d",
+      "sourceSha256": "182f5c189c0081304298878ba96c12fcf0158e6b391a0ea318dbad75af1b8b48",
+      "expectedBehavior": "D7 and D8 report independent active-low reflected-obstacle and dark-line states.",
+      "namedPins": {
+        "supply": "VCC → 5V",
+        "ground": "GND → GND1",
+        "obstacle": "OUT → D7",
+        "line": "OUT → D8"
+      },
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable active-low INPUT_PULLUP adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "unavailable",
+        "board.esp32-c3-devmodule-v1": "unavailable",
+        "board.stm32f429zi-nucleo144-v1": "unavailable"
+      },
+      "provenance": "Original project-owned contracts, SVG artwork, deterministic active-low projection, firmware source and canonical project envelope."
+    }
+  ]
+}

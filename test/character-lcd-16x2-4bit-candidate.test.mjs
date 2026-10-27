@@ -26,6 +26,7 @@ import {
   openCandidateUiSession,
 } from '../src/candidate-existing-ui-adapter.mjs';
 import { openPortableEditorSession } from '../src/candidate-project-session.mjs';
+import { prepareApiBatch } from '../src/browser-session-edit.mjs';
 
 const SIGNAL_PINS = Object.freeze({ RS: 'D3', E: 'D4', D4: 'D5', D5: 'D6', D6: 'D7', D7: 'D8' });
 
@@ -78,6 +79,48 @@ function wireSignals(session, mapping = SIGNAL_PINS) {
     });
   }
 }
+
+test('canonical API batch adds and wires direct LCD with exact transaction undo/redo', () => {
+  const session = openSession();
+  const operations = [
+    { command: 'component.add', id: 'character-lcd-1', type: CHARACTER_LCD_TYPE,
+      position: { x: 0.72, y: 0.64, rotation: 0 } },
+    ...['VCC', 'GND', 'RW'].map((pin) => ({ command: 'wire.branch.connect',
+      net_id: pin === 'VCC' ? 'net-5v' : 'net-ground-branch', endpoint: { component: 'character-lcd-1', pin } })),
+    ...Object.entries(SIGNAL_PINS).map(([pin, boardPin]) => ({ command: 'wire.connect',
+      net_id: `net-api-lcd-${pin.toLowerCase()}`, from: { component: 'character-lcd-1', pin },
+      to: { component: 'board-1', pin: boardPin } })),
+  ];
+  const transactionId = 'transaction-character-lcd-api-1';
+  const commands = prepareApiBatch({ profile: 'board.atmega328p-16mhz-v1', circuit: session.visualProject.circuit }, operations);
+  assert.equal(session.apply({ type: 'edit.batch', revision: session.revision, transactionId, commands }).ok, true);
+  assert.equal(session.runnable.ok, true);
+  assert.equal(session.apply({ type: 'edit.undo', revision: session.revision, transactionId }).ok, true);
+  assert.equal(session.visualProject.circuit.components.some((item) => item.id === 'character-lcd-1'), false);
+  assert.equal(session.apply({ type: 'edit.redo', revision: session.revision, transactionId }).ok, true);
+  assert.equal(session.runnable.ok, true);
+});
+
+test('canonical API duplicate places an LCD exactly and remains one undo transaction', () => {
+  const session = openSession(); addDisplay(session);
+  const position = { x: 0.6, y: 0.55, rotation: 0 };
+  const [command] = prepareApiBatch(
+    { profile: 'board.atmega328p-16mhz-v1', circuit: session.visualProject.circuit },
+    [{ command: 'component.duplicate', component_id: 'character-lcd-1',
+      id: 'character-lcd-api-review-1', position }],
+  );
+  const transactionId = 'transaction-character-lcd-api-duplicate';
+  const applied = session.apply({ type: 'edit.batch', revision: session.revision, transactionId,
+    commands: [command] });
+  assert.equal(applied.ok, true, applied.code);
+  assert.deepEqual(session.visualProject.layout.positions['character-lcd-api-review-1'], position);
+  assert.equal(session.visualProject.circuit.nets.some((net) => net.endpoints.some(
+    (endpoint) => endpoint.component === 'character-lcd-api-review-1')),
+  false);
+  assert.equal(session.apply({ type: 'edit.undo', revision: session.revision, transactionId }).ok, true);
+  assert.equal(session.visualProject.circuit.components.some(
+    (component) => component.id === 'character-lcd-api-review-1'), false);
+});
 
 function traceWriter(mapping = SIGNAL_PINS) {
   const levels = Object.fromEntries(CHARACTER_LCD_SIGNALS.map((signal) => [signal, false]));
@@ -145,7 +188,7 @@ test('character LCD is an original explicit nine-terminal bounded candidate', ()
   assert.match(limits, /I²C, backpacks/u);
   assert.match(CHARACTER_LCD_DEFINITION.artwork.provenance, /Original IntentForce SVG/u);
   assert(!Object.hasOwn(COMPONENT_CATALOG, CHARACTER_LCD_TYPE));
-  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((item) => item.selectable).length, 11);
+  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((item) => item.selectable).length, 71);
   assert.deepEqual(createCandidateUiComponent(CHARACTER_LCD_TYPE, 'character-lcd-2'), {
     id: 'character-lcd-2', type: CHARACTER_LCD_TYPE,
     label: '16×2 character LCD 4-bit GPIO', properties: {}, controls: {},
@@ -235,6 +278,47 @@ test('decoder renders compiled-style Hello text and a later updated two-line val
   writer.cycle = writeLine(writer, 'Count: 42', 0x40, writer.cycle);
   snapshot = decoder.consume(writer.events.slice(priorLength));
   assert.deepEqual(snapshot.lines, ['Updated by AVR  ', 'Count: 42       ']);
+});
+
+test('display control, cursor, blink, clear, home and 16x2 wrapping update incrementally', () => {
+  const decoder = createCharacterLcd4BitDecoder(SIGNAL_PINS);
+  const writer = initializedTrace();
+  let offset = 0;
+  let snapshot = decoder.consume(writer.events);
+  offset = writer.events.length;
+  assert.deepEqual({ displayOn: snapshot.displayOn, cursorOn: snapshot.cursorOn, blinkOn: snapshot.blinkOn },
+    { displayOn: true, cursorOn: false, blinkOn: false });
+
+  writer.cycle = writer.byte(0x0f, false, writer.cycle);
+  writer.cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+  snapshot = decoder.consume(writer.events.slice(offset)); offset = writer.events.length;
+  assert.deepEqual({ displayOn: snapshot.displayOn, cursorOn: snapshot.cursorOn, blinkOn: snapshot.blinkOn },
+    { displayOn: true, cursorOn: true, blinkOn: true });
+
+  writer.cycle = writer.byte(0x80, false, writer.cycle);
+  writer.cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+  for (const character of 'ABCDEFGHIJKLMNOPq') {
+    writer.cycle = writer.byte(character.charCodeAt(0), true, writer.cycle);
+    writer.cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+  }
+  snapshot = decoder.consume(writer.events.slice(offset)); offset = writer.events.length;
+  assert.deepEqual(snapshot.lines, ['ABCDEFGHIJKLMNOP', 'q               ']);
+  assert.equal(snapshot.address, 0x41);
+
+  writer.cycle = writer.byte(0x02, false, writer.cycle);
+  writer.cycle += CHARACTER_LCD_TIMING.clearHomeMinimumCycles;
+  writer.cycle = writer.byte('H'.charCodeAt(0), true, writer.cycle);
+  writer.cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+  snapshot = decoder.consume(writer.events.slice(offset)); offset = writer.events.length;
+  assert.deepEqual(snapshot.lines, ['HBCDEFGHIJKLMNOP', 'q               ']);
+
+  writer.cycle = writer.byte(0x08, false, writer.cycle);
+  writer.cycle += CHARACTER_LCD_TIMING.instructionMinimumCycles;
+  writer.cycle = writer.byte(0x01, false, writer.cycle);
+  snapshot = decoder.consume(writer.events.slice(offset));
+  assert.deepEqual(snapshot.lines, ['                ', '                ']);
+  assert.deepEqual({ displayOn: snapshot.displayOn, cursorOn: snapshot.cursorOn, blinkOn: snapshot.blinkOn },
+    { displayOn: false, cursorOn: false, blinkOn: false });
 });
 
 test('unsupported command, inadequate timing and trace loss are explicit terminal errors', () => {

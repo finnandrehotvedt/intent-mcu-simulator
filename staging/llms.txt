@@ -5,7 +5,7 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current source release: 1.1.0-rc.137
+Current source release: 1.1.0-rc.140
 Machine-readable release changes: /release-changes.json (strict static
 intent-mcu-release-changes@1 metadata; no Apply, Build, Run, replay or verdict authority).
 Offline support matrix: /offline-support-matrix.json (strict static
@@ -32,7 +32,7 @@ board or parts as interchangeable with another profile.
 
 ## Supported public workflow
 
-- Start with an empty project, one of fifteen validated AVR starters, or either paired UART/LED example on each bounded Pico, ESP32-C3 and STM32 profile.
+- Start with an empty project, one of nineteen ready-made AVR examples, or either paired UART/LED example on each bounded Pico, ESP32-C3 and STM32 profile.
 - The thermostat starter compiles the visible source and runs four reset-isolated virtual-time scenarios: below, equal, above and disabled. Pass requires executed D13, matching UART and complete ordered input evidence; its known-bad equality variant must fail exactly at 30 C.
 - The partial X49 instrument compares only the exact AVR thermostat baseline 0 with candidate +1 C through one explicit temporary same-origin build and two fresh dedicated workers. Other offsets are calculated previews only. Accepted evidence is transient and retires on authority drift; physical evidence is absent.
 - In AVR, add any of 16 selectable supported components and connect named pin anchors manually.
@@ -54,6 +54,7 @@ board or parts as interchangeable with another profile.
 - In any narrow controller profile, restore one deleted resistor or LED from Supported parts after Save/Open, then explicitly reconnect its named pins. Add never infers a cable, and Open never restores executable authority.
 - In the general AVR editor, click-add or drag a selectable part to a bounded canvas position. Duplicate makes one disconnected copy with a fresh stable ID; move/rotate/delete and complete Undo/Redo preserve existing IDs and named-pin references.
 - In any narrow controller profile, select a cable to add an orthogonal bend, move an eligible snapped section, or choose one of six fixed colours. Crossings remain electrically separate unless a declared junction dot says otherwise.
+- CMP-019 treats a junction as graph topology rather than a component: AVR stores an explicit junction ID, while Pico, ESP32-C3 and STM32 derive the visible dot from one validated net with at least three named endpoints. A different net crossing the same drawing point remains separate, and no junction restores Build/Run authority.
 - In every controller profile, open Connections in Inspector to inspect every net and named pin as text, then select, delete, reconnect, or create compatible connections with the keyboard under the same strict revision and electrical checks as the canvas.
 - In the AVR profile, create the finite resistor-and-LED reusable subcircuit by binding its explicit source and ground ports to existing nets. Instance move and collapse/expand are presentation-only; deterministic expansion, delete/Undo, Save/Open, recovery and local history retain the ordinary validated graph. This is not nested, arbitrary-topology or other-profile subcircuit support.
 - Open Search current project to find and activate current components, named pins, nets, files, source lines, saved requirement/test owners and AVR scenario owners. Search is transient local presentation, makes no search-service request, saves no query/result state and rejects stale project identities.

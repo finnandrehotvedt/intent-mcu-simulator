@@ -28,6 +28,7 @@ export const ARTWORK_RENDERER_IDS = Object.freeze([
   'ground-reference-3v3',
   'switch-toggle-3v3',
   'potentiometer-rotary',
+  'potentiometer-trimmer',
   'instrument-serial',
 ]);
 
@@ -182,6 +183,29 @@ export const COMPONENT_CATALOG = Object.freeze({
       interfaces: ['analogue'], supplyVolts: { min: 0, max: 5 }, package: 'three-terminal rotary through-hole',
     },
     support: { status: 'simulated', limitations: ['Linear 5 V divider only; no loading, tolerance or non-linear taper model.'] },
+  }),
+  'potentiometer.trimmer-v1': freezeDefinition({
+    family: 'input.potentiometer-trimmer', variant: 'linear-three-terminal-top-adjust',
+    type: 'potentiometer.trimmer-v1', version: 1, displayName: 'Top-adjust trimmer potentiometer', manufacturer: 'Generic', partNumber: 'POT-TRIM-LIN-3',
+    pins: [
+      pin('HIGH', 'High terminal', 'passive', ['power.5v-reference'], 0.2, 0.9),
+      pin('WIPER', 'Wiper', 'passive', ['analogue.scalar-0-5v'], 0.5, 0.95),
+      pin('LOW', 'Low terminal', 'passive', ['ground.reference'], 0.8, 0.9),
+    ],
+    propertyKeys: ['ohms', 'taper'], propertySchema: {
+      ohms: { kind: 'number', minimum: 1, maximum: 10_000_000, default: 10_000, unit: 'Ω' },
+      taper: { kind: 'enum', values: ['linear'], default: 'linear' },
+    },
+    controlKeys: ['position'], modelRef: 'model.trimmer-divider-v1', internalTerminalGroups: [], selectable: true,
+    artwork: { ...commonArtwork, renderer: 'potentiometer-trimmer', thumbnail: 'potentiometer-trimmer', viewBox: [0, 0, 100, 90], cssWidth: 100, cssHeight: 90 },
+    catalog: {
+      category: 'inputs', aliases: ['trimmer', 'trimpot', 'preset potentiometer'], functions: ['analogue calibration', 'voltage divider'],
+      interfaces: ['analogue'], supplyVolts: { min: 0, max: 5 }, package: 'three-terminal top-adjust through-hole',
+    },
+    support: { status: 'simulated', limitations: [
+      'Ideal unloaded linear 5 V divider only; adjustment position is retained as authored data.',
+      'No tolerance, loading, contact noise, end-stop, screw mechanics, turn count, power or thermal model.',
+    ] },
   }),
   'terminal.serial-uart-v1': freezeDefinition({
     family: 'instrument.serial-terminal', variant: 'uart0',
@@ -369,6 +393,8 @@ export function defaultProperties(type) {
   if (type === 'resistor.fixed-v1') return { ohms: 220 };
   if (type === 'button.momentary-v1') return { normallyOpen: true };
   if (type === 'potentiometer.linear-v1') return { ohms: 10_000, taper: 'linear' };
+  if (type === 'potentiometer.trimmer-v1') return { ohms: 10_000, taper: 'linear' };
+  if (type === 'potentiometer.linear-3v3-v1') return { ohms: 10_000, taper: 'linear' };
   if (type === 'terminal.serial-uart-v1') return { baud: 9_600, encoding: 'utf-8', historyLimit: 512 };
   throw new Error(`Unknown component type: ${type}`);
 }
@@ -376,6 +402,8 @@ export function defaultProperties(type) {
 export function defaultControls(type) {
   if (type === 'button.momentary-v1') return { pressed: false };
   if (type === 'potentiometer.linear-v1') return { position: 0.5 };
+  if (type === 'potentiometer.trimmer-v1') return { position: 0.5 };
+  if (type === 'potentiometer.linear-3v3-v1') return {};
   if (catalogType(type)) return {};
   throw new Error(`Unknown component type: ${type}`);
 }

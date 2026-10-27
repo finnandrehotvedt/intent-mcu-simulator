@@ -17,12 +17,19 @@ import {
   validateContactPersistenceDraft,
 } from './project-v3-contact-persistence.mjs';
 import { GROUND_REFERENCE_TYPE } from './ground-reference-integration-v1.mjs';
+import { POWER_REFERENCE_TYPE } from './power-reference-integration-v1.mjs';
 import { SPDT_CONTACT_TYPE } from './switch-contact-graph-v1.mjs';
 import {
   createSpdtDigitalTransition,
   evaluateSpdtDigitalInput,
 } from './spdt-contact-runtime-adapter-v1.mjs';
 import { TOGGLE_SWITCH_TYPE } from './toggle-switch-integration-v1.mjs';
+import { LIMIT_SWITCH_TYPE, NC_BUTTON_TYPE, SLIDE_SWITCH_TYPE } from './mechanical-inputs-v1.mjs';
+import { DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE } from './advanced-switch-inputs-v1.mjs';
+import { EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE } from './safety-pedal-inputs-v1.mjs';
+import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE,
+  ROTARY_SELECTOR_TYPE } from './rotary-selector-indicators-v1.mjs';
+import { TRAFFIC_LIGHT_TYPE } from './traffic-light-module-v1.mjs';
 import { LIGHT_ANALOGUE_SENSOR_TYPE } from './light-analogue-sensor-v1.mjs';
 import {
   TEMPERATURE_ANALOGUE_SENSOR_TYPE,
@@ -33,6 +40,32 @@ import {
   DIGITAL_LIGHT_THRESHOLD_TYPE,
   updateDigitalLightThresholdControl,
 } from './digital-light-threshold-module-v1.mjs';
+import { ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE } from './joystick-keypads-v1.mjs';
+import { CAPACITIVE_TOUCH_TYPE, DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
+  HALL_SWITCH_TYPE, PIR_MOTION_TYPE } from './digital-presence-sensors-v1.mjs';
+import { DIGITAL_PULSE_SENSOR_DEFINITIONS } from './digital-pulse-sensors-v1.mjs';
+import { DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS, IR_OBSTACLE_SENSOR_TYPE,
+  LINE_TRACKING_SENSOR_TYPE } from './digital-reflective-sensors-v1.mjs';
+import { ANALOGUE_MOISTURE_LEVEL_DEFINITIONS, ANALOGUE_WATER_LEVEL_TYPE,
+  CAPACITIVE_SOIL_MOISTURE_TYPE, RESISTIVE_SOIL_MOISTURE_TYPE,
+} from './analogue-moisture-level-sensors-v1.mjs';
+import { ANALOGUE_DETECTION_DEFINITIONS, CO2_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
+  MQ_GAS_ANALOGUE_TYPE, RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
+} from './analogue-detection-sensors-v1.mjs';
+import { ANALOGUE_DIRECTION_FIELD_DEFINITIONS, HALL_MAGNETIC_ANALOGUE_TYPE,
+  WIND_DIRECTION_ANALOGUE_TYPE,
+} from './analogue-direction-field-sensors-v1.mjs';
+import { ANALOGUE_TEMPERATURE_IC_DEFINITIONS, LM35_TEMPERATURE_TYPE,
+  TMP36_TEMPERATURE_TYPE,
+} from './analogue-temperature-ic-sensors-v1.mjs';
+import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS } from './resistive-divider-sensors-v1.mjs';
+import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from './passive-energy-storage-components-v1.mjs';
+import { DIODE_COMPONENT_DEFINITIONS } from './diode-components-v1.mjs';
+import { TRANSISTOR_COMPONENT_DEFINITIONS } from './transistor-components-v1.mjs';
+import { CIRCUIT_PROTECTION_DEFINITIONS } from './circuit-protection-components-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS } from './connection-hardware-components-v1.mjs';
+import { SEMICONDUCTOR_ACTIVE_DEFINITIONS } from './semiconductor-active-components-v1.mjs';
+import { CONTACT_SENSOR_DEFINITIONS } from './contact-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
 export const CANDIDATE_EDITOR_HISTORY_LIMIT = 64;
@@ -41,9 +74,31 @@ const clone = (value) => structuredClone(value);
 const failure = (code, revision, details = []) => ({ ok: false, code, revision, details });
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
 const CANDIDATE_COMPONENT_TYPES = new Set([
-  GROUND_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+  GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
+  SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
+  DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE,
+  REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE,
+  ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
+  TRAFFIC_LIGHT_TYPE,
   LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
+  ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
+  CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+  ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
+  IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
+  RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
+  RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
+  MQ_GAS_ANALOGUE_TYPE, CO2_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
+  WIND_DIRECTION_ANALOGUE_TYPE, HALL_MAGNETIC_ANALOGUE_TYPE,
+  TMP36_TEMPERATURE_TYPE, LM35_TEMPERATURE_TYPE,
+  ...Object.keys(RESISTIVE_DIVIDER_SENSOR_DEFINITIONS),
+  ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
+  ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
+  ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
+  ...Object.keys(CIRCUIT_PROTECTION_DEFINITIONS),
+  ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
+  ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
+  ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
 ]);
 
 function validPoint(value) {
@@ -148,14 +203,20 @@ function contactSupport(result) {
       status: spdt && !spdt.ok ? 'runtime-unsupported' : 'projected-simulated',
       runtimeAdapter: contact.type === GROUND_REFERENCE_TYPE
         ? 'board-ground-projection'
+        : contact.type === POWER_REFERENCE_TYPE
+          ? 'board-5v-source-projection'
         : contact.type === TOGGLE_SWITCH_TYPE
           ? 'button.momentary-v1'
+        : CONTACT_SENSOR_DEFINITIONS[contact.type]
+          ? 'button.momentary-v1-passive-contact-adapter'
           : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
             ? 'potentiometer.linear-v1'
           : contact.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE
             ? 'potentiometer.linear-v1'
           : contact.type === DIGITAL_LIGHT_THRESHOLD_TYPE
             ? 'button.momentary-v1'
+          : DIGITAL_PULSE_SENSOR_DEFINITIONS[contact.type]
+            ? 'button.momentary-v1-active-high-inverted-manual-pulse-level-adapter'
           : spdt?.ok
             ? 'spdt-digital-reference-v1'
             : null,
@@ -165,6 +226,8 @@ function contactSupport(result) {
         ? 'Ideal linear -50 to 150 °C module signal only; no physical-sensor accuracy or thermal response is modelled.'
         : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
         ? 'Ideal linear 0–5 V module signal only; no lux accuracy or physical LDR response is modelled.'
+        : DIGITAL_PULSE_SENSOR_DEFINITIONS[contact.type]
+        ? 'Manually authored instantaneous active-high pulse level only; no automatic frequency, pulse train, rate calibration or physical flow/wind behavior is modelled.'
         : contact.type === SPDT_CONTACT_TYPE
         ? spdt?.ok
           ? 'Direct digital-input GND/5 V references are simulated; generic dynamic nets, analogue contacts and output-drive inference remain unsupported.'
@@ -455,8 +518,8 @@ export class CandidateEditorSession {
           }
           const component = draft.candidateCircuit.components.find((item) => item.id === command.componentId);
           if (!component) return failure('EDITOR_COMPONENT_MISSING', this.revision);
-          if (component.type === GROUND_REFERENCE_TYPE) {
-            return failure('CANDIDATE_EDITOR_GROUND_IMMUTABLE', this.revision);
+          if (component.type === GROUND_REFERENCE_TYPE || component.type === POWER_REFERENCE_TYPE) {
+            return failure('CANDIDATE_EDITOR_REFERENCE_IMMUTABLE', this.revision);
           }
           if (component.type === TOGGLE_SWITCH_TYPE) {
             if (command.key !== 'closed' || typeof command.value !== 'boolean') {
@@ -479,6 +542,82 @@ export class CandidateEditorSession {
             runtimeDirty = true;
             break;
           }
+          if (component.type === SLIDE_SWITCH_TYPE) {
+            if (command.key !== 'selectedThrow' || !['A', 'B'].includes(command.value)) {
+              return failure('PROJECT_CONTACT_MECHANICAL_INPUT_STATE', this.revision);
+            }
+            component.controls.selectedThrow = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === NC_BUTTON_TYPE) {
+            if (command.key !== 'pressed' || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_MECHANICAL_INPUT_STATE', this.revision);
+            }
+            component.controls.pressed = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === LIMIT_SWITCH_TYPE) {
+            if (command.key !== 'actuated' || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_MECHANICAL_INPUT_STATE', this.revision);
+            }
+            component.controls.actuated = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === DIP_SWITCH_4_TYPE) {
+            if (!/^switch[1-4]$/u.test(command.key) || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_ADVANCED_SWITCH_STATE', this.revision);
+            }
+            component.controls[command.key] = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === ROTARY_ENCODER_BUTTON_TYPE) {
+            if (command.key === 'pressed' && typeof command.value === 'boolean') {
+              component.controls.pressed = command.value; runtimeDirty = true; break;
+            }
+            if (command.key === 'detent' && Number.isInteger(command.value)
+                && Math.abs(command.value - component.controls.detent) === 1) {
+              component.controls.detent = command.value; runtimeDirty = true; break;
+            }
+            return failure('PROJECT_CONTACT_ADVANCED_SWITCH_STATE', this.revision);
+          }
+          if ([REED_SWITCH_TYPE, EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE].includes(component.type)) {
+            const expectedKey = component.type === REED_SWITCH_TYPE ? 'magnetPresent'
+              : component.type === EMERGENCY_STOP_TYPE ? 'latched' : 'pressed';
+            if (command.key !== expectedKey || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_SAFETY_PEDAL_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value; runtimeDirty = true; break;
+          }
+          if (CONTACT_SENSOR_DEFINITIONS[component.type]) {
+            const expectedKey = CONTACT_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+            if (command.key !== expectedKey || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_SENSOR_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value; runtimeDirty = true; break;
+          }
+          if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) {
+            const expectedKey = DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+            if (command.key !== expectedKey || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_DIGITAL_PRESENCE_SENSOR_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value; runtimeDirty = true; break;
+          }
+          if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) {
+            if (command.key !== 'pulseHigh' || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_DIGITAL_PULSE_SENSOR_STATE', this.revision);
+            }
+            component.controls.pulseHigh = command.value; runtimeDirty = true; break;
+          }
+          if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
+            const expectedKey = DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+            if (command.key !== expectedKey || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_DIGITAL_REFLECTIVE_SENSOR_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value; runtimeDirty = true; break;
+          }
+          if (component.type === ROTARY_SELECTOR_TYPE) {
+            if (command.key !== 'position' || !Number.isInteger(command.value)
+                || command.value < 1 || command.value > 4) {
+              return failure('PROJECT_CONTACT_ROTARY_SELECTOR_INDICATOR_STATE', this.revision);
+            }
+            component.controls.position = command.value; runtimeDirty = true; break;
+          }
           if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) {
             if (command.key !== 'lightLevel' || !Number.isFinite(command.value)
                 || command.value < 0 || command.value > 1) {
@@ -494,6 +633,116 @@ export class CandidateEditorSession {
               return failure('PROJECT_CONTACT_TEMPERATURE_SENSOR_STATE', this.revision);
             }
             component.controls.temperatureC = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) {
+            const expectedKey = ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type].controlKeys[0];
+            if (command.key !== expectedKey || !Number.isFinite(command.value)
+                || command.value < 0 || command.value > 1) {
+              return failure('PROJECT_CONTACT_ANALOGUE_MOISTURE_LEVEL_SENSOR_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) {
+            const expectedKey = ANALOGUE_DETECTION_DEFINITIONS[component.type].controlKeys[0];
+            if (command.key !== expectedKey || !Number.isFinite(command.value)
+                || command.value < 0 || command.value > 1) {
+              return failure('PROJECT_CONTACT_ANALOGUE_DETECTION_SENSOR_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) {
+            const definition = ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type];
+            const expectedKey = definition.controlKeys[0];
+            if (command.key !== expectedKey || !Number.isFinite(command.value)
+                || command.value < definition.control.minimum
+                || command.value > definition.control.maximum) {
+              return failure('PROJECT_CONTACT_ANALOGUE_DIRECTION_FIELD_SENSOR_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) {
+            const definition = ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type];
+            if (command.key !== 'temperatureC' || !Number.isFinite(command.value)
+                || command.value < definition.control.minimum
+                || command.value > definition.control.maximum) {
+              return failure('PROJECT_CONTACT_ANALOGUE_TEMPERATURE_IC_SENSOR_STATE', this.revision);
+            }
+            component.controls.temperatureC = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) {
+            const definition = RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type];
+            const expectedKey = definition.controlKeys[0];
+            if (command.key !== expectedKey || !Number.isFinite(command.value)
+                || command.value < definition.control.minimum
+                || command.value > definition.control.maximum) {
+              return failure('PROJECT_CONTACT_RESISTIVE_DIVIDER_SENSOR_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) {
+            const definition = PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type];
+            const contract = definition.propertySchema[command.key];
+            if (!contract || !Number.isFinite(command.value)
+                || command.value < contract.minimum || command.value > contract.maximum) {
+              return failure('PROJECT_CONTACT_PASSIVE_ENERGY_STORAGE_STATE', this.revision);
+            }
+            component.properties[command.key] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (DIODE_COMPONENT_DEFINITIONS[component.type]) {
+            const definition = DIODE_COMPONENT_DEFINITIONS[component.type];
+            const contract = definition.propertySchema[command.key];
+            if (!contract || !Number.isFinite(command.value)
+                || command.value < contract.minimum || command.value > contract.maximum) {
+              return failure('PROJECT_CONTACT_DIODE_STATE', this.revision);
+            }
+            component.properties[command.key] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) {
+            const definition = TRANSISTOR_COMPONENT_DEFINITIONS[component.type];
+            const contract = definition.propertySchema[command.key];
+            if (!contract || !Number.isFinite(command.value)
+                || command.value < contract.minimum || command.value > contract.maximum) {
+              return failure('PROJECT_CONTACT_TRANSISTOR_STATE', this.revision);
+            }
+            component.properties[command.key] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (CIRCUIT_PROTECTION_DEFINITIONS[component.type]) {
+            const definition = CIRCUIT_PROTECTION_DEFINITIONS[component.type];
+            const contract = definition.propertySchema[command.key];
+            if (!contract || !Number.isFinite(command.value)
+                || command.value < contract.minimum || command.value > contract.maximum) {
+              return failure('PROJECT_CONTACT_CIRCUIT_PROTECTION_STATE', this.revision);
+            }
+            component.properties[command.key] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) {
+            const definition = SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type];
+            const contract = definition.propertySchema[command.key];
+            if (!contract || !Number.isFinite(command.value)
+                || command.value < contract.minimum || command.value > contract.maximum) {
+              return failure('PROJECT_CONTACT_SEMICONDUCTOR_ACTIVE_STATE', this.revision);
+            }
+            component.properties[command.key] = command.value;
             runtimeDirty = true;
             break;
           }

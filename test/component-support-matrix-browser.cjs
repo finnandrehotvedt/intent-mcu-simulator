@@ -27,9 +27,9 @@ let browser;
 
   await page.click('.starter-card[data-example="temperature-lcd-threshold"]');
   await page.waitForFunction(() => window.__M6_PROJECT__().schema === 'intent-mcu-project-contact-persistence@1');
-  await page.waitForFunction(() => document.querySelectorAll('#catalog-list .catalog-item').length === 13);
+  await page.waitForFunction(() => document.querySelectorAll('#catalog-list .catalog-item').length === 20);
   await page.selectOption('#catalog-status', 'all');
-  await page.waitForFunction(() => document.querySelectorAll('#catalog-list .catalog-item').length === 16);
+  await page.waitForFunction(() => document.querySelectorAll('#catalog-list .catalog-item').length === 20);
 
   const beforeMatrix = await page.evaluate(() => ({
     project: JSON.stringify(window.__M6_PROJECT__()), history: JSON.stringify(window.__M6_HISTORY__?.() ?? null),

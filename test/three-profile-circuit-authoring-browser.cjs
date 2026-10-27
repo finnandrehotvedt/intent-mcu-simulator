@@ -45,7 +45,7 @@ const profiles = [
       await page.waitForFunction(({ api }) => Boolean(window[api]?.state().active), profile);
       await page.waitForFunction(({ list }) => {
         const cards = [...document.querySelectorAll(`${list} .bounded-part-card`)];
-        return cards.length === 6 && cards.every((card) => card.querySelector('.bounded-part-thumbnail svg[role="img"]'));
+        return cards.length === 20 && cards.every((card) => card.querySelector('.bounded-part-thumbnail svg[role="img"]'));
       }, profile);
       const catalogueArtwork = await page.evaluate(({ list }) => ({
         cards: document.querySelectorAll(`${list} .bounded-part-card`).length,
@@ -57,7 +57,17 @@ const profiles = [
           return box.width >= 40 && box.height >= 40 && box.left >= 0 && box.right <= document.documentElement.clientWidth;
         }),
       }), profile);
-      assert.deepEqual(catalogueArtwork, { cards: 6, thumbnails: 6, empty: 0, labels: true, visible: true });
+      assert.deepEqual(catalogueArtwork, { cards: 18, thumbnails: 18, empty: 0, labels: true, visible: true });
+      const recognizableBasics = await page.evaluate(({ list }) => ({
+        resistorBands: document.querySelectorAll(`${list} [data-type="resistor.fixed-v1"] [data-resistor-band]`).length,
+        resistorValue: document.querySelector(`${list} [data-type="resistor.fixed-v1"] [data-component-identity="resistance"]`)?.textContent,
+        ledAnode: document.querySelector(`${list} [data-type="led.basic-v1"] [data-component-identity="led-anode"]`)?.textContent,
+        ledCathode: document.querySelector(`${list} [data-type="led.basic-v1"] [data-component-identity="led-cathode"]`)?.textContent,
+        buttonMark: document.querySelector(`${list} [data-type="button.momentary-3v3-v1"] [data-component-identity="momentary-push"]`)?.textContent,
+      }), profile);
+      assert.deepEqual(recognizableBasics,
+        { resistorBands: 4, resistorValue: '220 Ω', ledAnode: 'A +', ledCathode: 'K −', buttonMark: 'PUSH' },
+        `${profile.id}: recognisable resistor/LED/button artwork drifted`);
       await page.evaluate((selector) => document.querySelector(selector).click(), profile.button);
       await page.waitForFunction(({ api }) => {
         const state = window[api].state();
@@ -313,17 +323,23 @@ const profiles = [
       }, profile), unsafeBefore);
       assert.deepEqual(pageErrors.map((error) => error.message), []);
     }
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ width: 511, height: 770 });
     for (const profile of profiles) {
       await page.selectOption('#board-select', profile.id);
       await page.waitForFunction(({ api }) => Boolean(window[api]?.state().active), profile);
-      assert.equal(await page.evaluate(({ list }) => {
-        const root = document.querySelector(list);
-        const graphics = [...root.querySelectorAll('.bounded-part-thumbnail svg[role="img"]')];
-        return graphics.length === 6
-          && graphics.every((svg) => { const box = svg.getBoundingClientRect(); return box.width >= 40 && box.height >= 40; })
-          && document.documentElement.scrollWidth <= document.documentElement.clientWidth;
-      }, profile), true);
+      const narrowDesktop = await page.evaluate(() => {
+        const workbench = document.querySelector('#top-workbench-shell');
+        const stage = document.querySelector('#active-canvas-stage');
+        const graphics = [...document.querySelectorAll('#simple-parts-mount .bounded-part-thumbnail svg[role="img"]')];
+        return { graphics: graphics.length,
+          visible: graphics.every((svg) => { const box = svg.getBoundingClientRect(); return box.width >= 40 && box.height >= 40; }),
+          stageWidth: stage.getBoundingClientRect().width,
+          scrollContained: workbench.scrollWidth > workbench.clientWidth,
+          documentContained: document.documentElement.scrollWidth <= document.documentElement.clientWidth };
+      });
+      assert.deepEqual(narrowDesktop,
+        { graphics: 7, visible: true, stageWidth: 980, scrollContained: true, documentContained: true },
+        `${profile.id}: narrow desktop workbench did not preserve readable art and contained scrolling`);
     }
     if (process.env.ARTWORK_SCREENSHOT_DIR) {
       await page.screenshot({ path: path.join(process.env.ARTWORK_SCREENSHOT_DIR, 'parts-drawer-narrow-390.png'), fullPage: true });

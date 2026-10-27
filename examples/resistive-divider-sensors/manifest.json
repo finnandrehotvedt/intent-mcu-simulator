@@ -1,0 +1,46 @@
+{
+  "schema": "intent-mcu-resistive-divider-sensor-example-manifest@1",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "entries": [
+    {
+      "id": "avr-resistive-divider-sensors",
+      "requirementIds": [
+        "CMP-085",
+        "CMP-088",
+        "CMP-116"
+      ],
+      "file": "avr-resistive-divider-sensors.intent-mcu.json",
+      "namedPins": {
+        "supply": "VCC → 5V",
+        "ground": "GND → GND1",
+        "ldr": "AOUT → A0",
+        "ntc": "AOUT → A1",
+        "flex": "AOUT → A2"
+      },
+      "values": {
+        "fixedLowSideOhms": 10000,
+        "ldrLightLevel": 0.6,
+        "ntcTemperatureC": 30,
+        "flexBendRatio": 0.4
+      },
+      "expectedBehavior": "Compiled firmware prints three ADC readings while each original control applies its declared integrated divider transfer.",
+      "firmwareLimits": "AVR-only integrated 5 V dividers. No raw two-terminal network solver, lux or angle calibration, tolerance, hysteresis, thermal dynamics or physical equivalence.",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable integrated-divider adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "unavailable",
+        "board.esp32-c3-devmodule-v1": "unavailable",
+        "board.stm32f429zi-nucleo144-v1": "unavailable"
+      },
+      "sourceSha256": "a45c454a3d400b2f489e17acb3aa35b5574bc689ecd09d5a1fc56f48f3db9350",
+      "projectSha256": "47f7f67fd4cd0f4597db83199c761f825b85a77709e695c6db402d4243fabc4a",
+      "provenance": "Original project-owned contracts, SVG artwork, deterministic divider transfer models, firmware source and canonical project envelope."
+    }
+  ]
+}

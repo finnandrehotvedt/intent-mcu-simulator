@@ -92,6 +92,7 @@ export function allocateStableId(graph, type) {
     'resistor.fixed-v1': 'resistor',
     'button.momentary-v1': 'button',
     'potentiometer.linear-v1': 'pot',
+    'potentiometer.trimmer-v1': 'trimmer',
     'terminal.serial-uart-v1': 'serial',
   };
   const prefix = prefixes[type];

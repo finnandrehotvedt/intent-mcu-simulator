@@ -22,6 +22,7 @@ export const MODEL_LIBRARY_TEST_AUTHORITY = Symbol('MODEL_LIBRARY_TEST_AUTHORITY
 const ID = /^[a-z][a-z0-9-]{0,47}$/;
 const LABEL = /^[\p{L}\p{N} ._#()°Ω×+\-]{1,64}$/u;
 const ACCEPTED_BAUD = new Set([9_600, 19_200, 38_400, 57_600, 115_200]);
+const POTENTIOMETER_TYPES = new Set(['potentiometer.linear-v1', 'potentiometer.trimmer-v1']);
 
 function diagnostic(code, details = {}) {
   return Object.freeze({
@@ -64,7 +65,7 @@ function validateProperties(type, properties, controls, componentId) {
       && (properties.normallyOpen !== true || typeof controls.pressed !== 'boolean')) {
     fail('INVALID_COMPONENT_PROPERTIES', { componentId });
   }
-  if (type === 'potentiometer.linear-v1'
+  if (POTENTIOMETER_TYPES.has(type)
       && (!Number.isFinite(properties.ohms) || properties.ohms < 1 || properties.ohms > 10_000_000
         || properties.taper !== 'linear' || !Number.isFinite(controls.position)
         || controls.position < 0 || controls.position > 1)) {
@@ -220,6 +221,37 @@ function analyzeElectrical(graph, options = {}) {
     const cathodeNet = connectedNet(indexes, led.id, 'CATHODE');
     const anodeGround = anodeNet && boardEndpoint(indexes, anodeNet, (pin) => /^GND[123]$/.test(pin));
     const cathodeSource = cathodeNet && boardEndpoint(indexes, cathodeNet, (pin) => /^D\d+$/.test(pin));
+    const anodePower = anodeNet && boardEndpoint(indexes, anodeNet, (pin) => pin === '5V');
+    if (anodePower && cathodeNet && !cathodeSource) {
+      const candidates = [];
+      for (const resistor of graph.components.filter((component) => component.type === 'resistor.fixed-v1')) {
+        for (const [near, far] of [['A', 'B'], ['B', 'A']]) {
+          if (connectedNet(indexes, resistor.id, near) !== cathodeNet) continue;
+          const sourceNet = connectedNet(indexes, resistor.id, far);
+          const source = sourceNet && boardEndpoint(indexes, sourceNet, (pin) => /^D\d+$/.test(pin));
+          if (source) candidates.push({ resistor, sourcePin: source.pin });
+        }
+      }
+      if (candidates.length !== 1 || indexes.nets.get(cathodeNet).endpoints.length !== 2) {
+        diagnostics.push(diagnostic('LED_UNSUPPORTED_PATH', { componentId: led.id, netId: cathodeNet }));
+        continue;
+      }
+      const candidate = candidates[0];
+      const ledReference = modelLibrary.evaluateReference('led.basic-v1', { volts: 5, color: led.properties.color });
+      const resistorReference = modelLibrary.evaluateReference('resistor.fixed-v1', {
+        volts: 5 - ledReference.result?.forwardVolts, ohms: candidate.resistor.properties.ohms,
+      });
+      const currentAmps = resistorReference.result?.amps;
+      if (!Number.isFinite(currentAmps) || currentAmps <= 0 || currentAmps > 0.02) {
+        diagnostics.push(diagnostic('LED_OVERCURRENT', { componentId: led.id, netId: cathodeNet }));
+        continue;
+      }
+      consumedResistors.add(candidate.resistor.id);
+      models.leds.push({ componentId: led.id, resistorId: candidate.resistor.id,
+        sourcePin: candidate.sourcePin, currentAmps, brightness: Math.min(currentAmps / 0.02, 1),
+        color: led.properties.color, activeLow: true });
+      continue;
+    }
     if (anodeGround || cathodeSource) {
       diagnostics.push(diagnostic('LED_REVERSE_POLARITY', { componentId: led.id, netId: anodeNet ?? cathodeNet }));
       continue;
@@ -276,11 +308,14 @@ function analyzeElectrical(graph, options = {}) {
     const accepted = cases.find(([sourceNet, groundNet]) => sourceNet && groundNet
       && boardEndpoint(indexes, sourceNet, (pin) => /^D\d+$/.test(pin))
       && boardEndpoint(indexes, groundNet, (pin) => /^GND[123]$/.test(pin)));
-    if (!accepted) {
+    const bridgePins = [netA, netB].map((netId) => netId
+      ? boardEndpoint(indexes, netId, (pin) => /^D\d+$/.test(pin))?.pin ?? null : null);
+    const bridge = !accepted && bridgePins.every(Boolean) && bridgePins[0] !== bridgePins[1];
+    if (!accepted && !bridge) {
       diagnostics.push(diagnostic('BUTTON_UNSUPPORTED_PATH', { componentId: button.id, netId: netA ?? netB }));
       continue;
     }
-    const source = boardEndpoint(indexes, accepted[0], (pin) => /^D\d+$/.test(pin));
+    const source = accepted ? boardEndpoint(indexes, accepted[0], (pin) => /^D\d+$/.test(pin)) : null;
     const reference = modelLibrary.evaluateReference('button.momentary-v1', {
       pressed: button.controls.pressed,
     });
@@ -288,11 +323,13 @@ function analyzeElectrical(graph, options = {}) {
       diagnostics.push(diagnostic(reference.code, { componentId: button.id, netId: accepted[0] }));
       continue;
     }
-    models.buttons.push({ componentId: button.id, boardPin: source.pin,
-      pressed: button.controls.pressed, connected: reference.result.connected });
+    models.buttons.push(bridge
+      ? { componentId: button.id, bridgePins, pressed: button.controls.pressed, connected: reference.result.connected }
+      : { componentId: button.id, boardPin: source.pin,
+        pressed: button.controls.pressed, connected: reference.result.connected });
   }
 
-  for (const pot of graph.components.filter((component) => component.type === 'potentiometer.linear-v1')) {
+  for (const pot of graph.components.filter((component) => POTENTIOMETER_TYPES.has(component.type))) {
     const highNet = connectedNet(indexes, pot.id, 'HIGH');
     const lowNet = connectedNet(indexes, pot.id, 'LOW');
     const wiperNet = connectedNet(indexes, pot.id, 'WIPER');
@@ -304,7 +341,7 @@ function analyzeElectrical(graph, options = {}) {
       diagnostics.push(diagnostic('UNSUPPORTED_ANALOG_TOPOLOGY', { componentId: pot.id, netId: wiperNet ?? highNet ?? lowNet }));
       continue;
     }
-    const reference = modelLibrary.evaluateReference('potentiometer.linear-v1', {
+    const reference = modelLibrary.evaluateReference(pot.type, {
       supplyVolts: 5, position: pot.controls.position,
     });
     if (!reference.ok) {
@@ -313,6 +350,7 @@ function analyzeElectrical(graph, options = {}) {
     }
     models.potentiometers.push({
       componentId: pot.id,
+      modelType: pot.type,
       boardPin: input.pin,
       position: pot.controls.position,
       voltage: reference.result.outputVolts,
@@ -439,12 +477,14 @@ export class CircuitRuntime {
       const pressed = this.controls[button.componentId].pressed;
       const reference = resolveModelLibrary(this.modelLibraryLock).implementation
         .evaluateReference('button.momentary-v1', { pressed });
-      adapter.setDigitalPin(Number(button.boardPin.slice(1)), !reference.result.connected);
+      if (button.bridgePins) adapter.setDigitalBridge(button.componentId,
+        Number(button.bridgePins[0].slice(1)), Number(button.bridgePins[1].slice(1)), reference.result.connected);
+      else adapter.setDigitalPin(Number(button.boardPin.slice(1)), !reference.result.connected);
     }
     for (const pot of this.models.potentiometers) {
       const position = this.controls[pot.componentId].position;
       const reference = resolveModelLibrary(this.modelLibraryLock).implementation
-        .evaluateReference('potentiometer.linear-v1', { supplyVolts: 5, position });
+        .evaluateReference(pot.modelType, { supplyVolts: 5, position });
       adapter.setAnalogChannel(Number(pot.boardPin.slice(1)), reference.result.outputVolts);
     }
   }
@@ -466,12 +506,13 @@ export class CircuitRuntime {
       const duty = Number.isFinite(pin?.pwm?.duty)
         ? Math.max(0, Math.min(1, pin.pwm.duty))
         : Number(Boolean(snapshot.digitalPins?.[model.sourcePin]));
-      const on = duty > 0;
+      const effectiveDuty = model.activeLow ? 1 - duty : duty;
+      const on = effectiveDuty > 0;
       return {
         componentId: model.componentId,
         on,
-        currentAmps: model.currentAmps * duty,
-        brightness: model.brightness * duty,
+        currentAmps: model.currentAmps * effectiveDuty,
+        brightness: model.brightness * effectiveDuty,
         color: model.color,
       };
     });
@@ -482,7 +523,7 @@ export class CircuitRuntime {
         componentId: model.componentId,
         boardPin: model.boardPin,
         voltage: resolveModelLibrary(this.modelLibraryLock).implementation
-          .evaluateReference('potentiometer.linear-v1', {
+          .evaluateReference(model.modelType, {
             supplyVolts: 5, position: this.controls[model.componentId].position,
           }).result.outputVolts,
       })),

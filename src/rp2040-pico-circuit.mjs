@@ -8,7 +8,19 @@ import {
 import { normalizeStoredRoute } from './route-model.mjs';
 import { emptyComponentAppearance, normalizeComponentAppearance } from './component-appearance.mjs';
 import { exactKeys, parseStrictJson } from './strict-json.mjs';
-import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
+import { GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE, validateBounded3v3AuthoringGraph } from './bounded-3v3-authoring-contracts.mjs';
+import { PASSIVE_ENERGY_STORAGE_DEFINITIONS,
+  validatePassiveEnergyStorageComponent } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import { DIODE_COMPONENT_DEFINITIONS,
+  validateDiodeComponent } from '../expansion-drafts/diode-components-v1.mjs';
+import { TRANSISTOR_COMPONENT_DEFINITIONS,
+  validateTransistorComponent } from '../expansion-drafts/transistor-components-v1.mjs';
+import { CIRCUIT_PROTECTION_DEFINITIONS,
+  validateCircuitProtectionComponent } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS,
+  validateConnectionHardwareComponent } from '../expansion-drafts/connection-hardware-components-v1.mjs';
+import { SEMICONDUCTOR_ACTIVE_DEFINITIONS,
+  validateSemiconductorActiveComponent } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 
 export const RP2040_PICO_CIRCUIT_SCHEMA = 'intent-mcu-rp2040-pico-circuit@1';
 export const RP2040_PICO_PROFILE = 'board.rp2040-pico-v1';
@@ -23,7 +35,7 @@ export const RP2040_PICO_PIN_MAP = Object.freeze({
 export const RP2040_PICO_AUTHORING_PIN_MAP_V2 = Object.freeze({
   source: Object.freeze({ url: 'https://www.raspberrypi.com/documentation/microcontrollers/images/pico-pinout.svg', board: 'Raspberry Pi Pico' }),
   pins: Object.freeze({ GP0: { physicalPin: 1 }, GP1: { physicalPin: 2 }, GND3: { physicalPin: 3 },
-    GP2: { physicalPin: 4 }, GP3: { physicalPin: 5 }, GND8: { physicalPin: 8 } }),
+    GP2: { physicalPin: 4 }, GP3: { physicalPin: 5 }, GND8: { physicalPin: 8 }, GP26: { physicalPin: 31 } }),
 });
 
 const picoPin = (id, label, role, signals, x, y, constraints) => Object.freeze({
@@ -48,6 +60,8 @@ export const RP2040_PICO_BOARD_DEFINITION = Object.freeze({
       { voltageMin: 0, voltageMax: 3.3, physicalPin: 5, authoringOnly: true }),
     picoPin('GND8', 'GND · physical pin 8 · authoring only', 'ground', ['ground.reference'], 8 / 132, 118 / 300,
       { physicalPin: 8, authoringOnly: true }),
+    picoPin('GP26', 'GPIO26 / ADC0 · physical pin 31 · authoring only', 'analogue-input', ['analogue.input'], 124 / 132, 196 / 300,
+      { voltageMin: 0, voltageMax: 3.3, physicalPin: 31, adcChannel: 0, authoringOnly: true }),
   ]),
   propertyKeys: Object.freeze([]), controlKeys: Object.freeze([]), propertySchema: Object.freeze({}),
   modelRef: 'model.rp2040-pico-gpio0-public-v1', internalTerminalGroups: Object.freeze([]), selectable: false,
@@ -90,6 +104,19 @@ const TYPE_PINS = Object.freeze({
   [GROUND_REFERENCE_3V3_TYPE]: new Set(['GND']),
   [MOMENTARY_BUTTON_3V3_TYPE]: new Set(['A', 'B']),
   [TOGGLE_SWITCH_3V3_TYPE]: new Set(['A', 'B']),
+  [POTENTIOMETER_3V3_TYPE]: new Set(['HIGH', 'WIPER', 'LOW']),
+  ...Object.fromEntries(Object.values(PASSIVE_ENERGY_STORAGE_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(DIODE_COMPONENT_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(TRANSISTOR_COMPONENT_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(CIRCUIT_PROTECTION_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(CONNECTION_HARDWARE_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(SEMICONDUCTOR_ACTIVE_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
 });
 const COMPONENT_POLICY = createSeriesLedComponentPolicy({
   profile: BOARD, boardId: 'pico-1', boardLabel: 'RP2040 Pico profile',
@@ -153,6 +180,31 @@ function normalizeComponent(value) {
   if (value.type === GROUND_REFERENCE_3V3_TYPE && !exactKeys(value.properties, [])) throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
   if ([MOMENTARY_BUTTON_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE].includes(value.type)
       && (!exactKeys(value.properties, ['defaultClosed']) || typeof value.properties.defaultClosed !== 'boolean')) throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+  if (value.type === POTENTIOMETER_3V3_TYPE
+      && (!exactKeys(value.properties, ['ohms', 'taper']) || !Number.isFinite(value.properties.ohms)
+        || value.properties.ohms < 1 || value.properties.ohms > 10_000_000 || value.properties.taper !== 'linear')) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[value.type]
+      && !validatePassiveEnergyStorageComponent(value)) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (DIODE_COMPONENT_DEFINITIONS[value.type] && !validateDiodeComponent(value)) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[value.type] && !validateTransistorComponent(value)) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (CIRCUIT_PROTECTION_DEFINITIONS[value.type] && !validateCircuitProtectionComponent(value)) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (CONNECTION_HARDWARE_DEFINITIONS[value.type] && !validateConnectionHardwareComponent(value)) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[value.type]
+      && !validateSemiconductorActiveComponent(value)) {
+    throw Object.assign(new Error('RP2040_CIRCUIT_COMPONENT_INVALID'), { code: 'RP2040_CIRCUIT_COMPONENT_INVALID' });
+  }
   return clone(value);
 }
 

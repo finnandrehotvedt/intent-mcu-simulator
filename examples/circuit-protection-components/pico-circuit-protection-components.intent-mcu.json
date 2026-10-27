@@ -1,0 +1,156 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.rp2040-pico-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-rp2040-public-project@1",
+    "name": "pico raw circuit-protection authoring",
+    "profile": "board.rp2040-pico-v1",
+    "source": "/* Intent MCU Simulator public RP2040 source v1 */\nint main(void)\n{\n  intent_gpio0_output(1u);\n  intent_uart0_text(\"PICO PUBLIC\");\n  intent_halt();\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-rp2040-pico-circuit@1",
+      "boardProfile": "board.rp2040-pico-v1",
+      "components": [
+        {
+          "id": "fuse-1",
+          "type": "protection.fuse-v1",
+          "label": "Fuse",
+          "properties": {
+            "ratedCurrentAmps": 1,
+            "ratedVoltageVolts": 250,
+            "breakingCapacityAmps": 100
+          },
+          "controls": {}
+        },
+        {
+          "id": "pico-1",
+          "type": "board.rp2040-pico-v1",
+          "label": "RP2040 Pico profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "ptc-1",
+          "type": "protection.resettable-fuse-ptc-v1",
+          "label": "Resettable PTC fuse",
+          "properties": {
+            "holdCurrentAmps": 0.5,
+            "tripCurrentAmps": 1,
+            "maxVoltageVolts": 30
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-fuse-1-a-pico-1-gp1",
+          "endpoints": [
+            {
+              "component": "fuse-1",
+              "pin": "A"
+            },
+            {
+              "component": "pico-1",
+              "pin": "GP1"
+            }
+          ]
+        },
+        {
+          "id": "net-fuse-1-b-ptc-1-a",
+          "endpoints": [
+            {
+              "component": "fuse-1",
+              "pin": "B"
+            },
+            {
+              "component": "ptc-1",
+              "pin": "A"
+            }
+          ]
+        },
+        {
+          "id": "net-pico-1-gnd8-ptc-1-b",
+          "endpoints": [
+            {
+              "component": "pico-1",
+              "pin": "GND8"
+            },
+            {
+              "component": "ptc-1",
+              "pin": "B"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "fuse-1": {
+            "x": 0.28,
+            "y": 0.7,
+            "rotation": 0
+          },
+          "pico-1": {
+            "x": 0.78,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "ptc-1": {
+            "x": 0.48000000000000004,
+            "y": 0.7,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-fuse-1-a-pico-1-gp1": "#39dff2",
+          "net-fuse-1-b-ptc-1-a": "#39dff2",
+          "net-pico-1-gnd8-ptc-1-b": "#39dff2"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        },
+        "idCounters": {
+          "breadboard": 0,
+          "button": 0,
+          "capacitor": 0,
+          "diode": 0,
+          "electrolytic": 0,
+          "fuse": 1,
+          "ground": 0,
+          "inductor": 0,
+          "led": 1,
+          "nmos": 0,
+          "npn": 0,
+          "optocoupler": 0,
+          "pmos": 0,
+          "pnp": 0,
+          "potentiometer": 0,
+          "ptc": 1,
+          "resistor": 1,
+          "schottky": 0,
+          "switch": 0,
+          "terminal-block": 0,
+          "zener": 0
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "schema": "intent-mcu-analogue-moisture-level-sensor-example-manifest@1",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "entries": [
+    {
+      "id": "avr-analogue-moisture-level-sensors",
+      "requirementIds": [
+        "CMP-101",
+        "CMP-102",
+        "CMP-104"
+      ],
+      "file": "avr-analogue-moisture-level-sensors.intent-mcu.json",
+      "projectSha256": "b7595be6935e856de19a5cc68fb5896378c83ff921fb035910d1845524ccf2d8",
+      "sourceSha256": "a8fedc513e2dd6fc646a52699e9cc3d6170881cf82ea2129d0c3b2e54c296732",
+      "expectedBehavior": "A2, A3 and A4 report independent idealized 0–5 V resistive moisture, capacitive moisture and water-level signals.",
+      "namedPins": {
+        "supply": "VCC → 5V",
+        "ground": "GND → GND1",
+        "resistive": "AOUT → A2",
+        "capacitive": "AOUT → A3",
+        "waterLevel": "AOUT → A4"
+      },
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable ideal analogue adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "unavailable",
+        "board.esp32-c3-devmodule-v1": "unavailable",
+        "board.stm32f429zi-nucleo144-v1": "unavailable"
+      },
+      "provenance": "Original project-owned contracts, SVG artwork, deterministic analogue projection, firmware source and canonical project envelope."
+    }
+  ]
+}

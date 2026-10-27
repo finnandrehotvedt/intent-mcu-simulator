@@ -86,6 +86,56 @@ test('candidate reconnect failures are byte-atomic and add no history', () => {
   assert.equal(session.saveText(), before);
 });
 
+test('candidate junction removal preserves every endpoint and rejects unsafe multi-pin removal atomically', () => {
+  const created = createContactPersistenceExample();
+  assert.equal(created.ok, true);
+  const session = new CandidateEditorSession(created.project);
+  const net = session.accepted.project.candidateCircuit.nets.find((item) => item.id === 'net-ground-branch');
+  const junction = session.accepted.project.candidateCircuit.junctions.find((item) => item.net === net.id);
+  assert(net.endpoints.length > 2);
+  assert(junction);
+  const before = session.saveText();
+  const revision = session.revision;
+  const history = session.undoStack.length;
+
+  const rejected = session.apply({
+    type: 'junction.remove', revision,
+    junctionId: junction.id, detachEndpoint: null,
+  });
+  assert.equal(rejected.ok, false);
+  assert.equal(rejected.code, 'EDITOR_JUNCTION_REQUIRED_FOR_MULTI_ENDPOINT_NET');
+  assert.equal(session.saveText(), before);
+  assert.equal(session.revision, revision);
+  assert.equal(session.undoStack.length, history);
+
+  const detachRejected = session.apply({
+    type: 'junction.remove', revision,
+    junctionId: junction.id, detachEndpoint: clone(net.endpoints.at(-1)),
+  });
+  assert.equal(detachRejected.ok, false);
+  assert.equal(detachRejected.code, 'EDITOR_JUNCTION_BRANCH_REMOVAL_REQUIRES_EXPLICIT_BRANCH');
+  assert.equal(session.saveText(), before);
+  assert.equal(session.revision, revision);
+  assert.equal(session.undoStack.length, history);
+});
+
+test('candidate API property batch reports the exact model error and rejects all operations atomically', () => {
+  const created = createContactPersistenceExample();
+  assert.equal(created.ok, true);
+  const session = new CandidateEditorSession(created.project);
+  const before = session.saveText();
+  const revision = session.revision;
+  const result = session.apply({ type: 'edit.batch', revision, transactionId: 'api-negative-property', commands: [
+    { type: 'component.property.set', componentId: 'resistor-1', key: 'ohms', value: 330 },
+    { type: 'component.property.set', componentId: 'resistor-1', key: 'ohms', value: 0 },
+  ] });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'MODEL_LIBRARY_PROPERTY_VALUE');
+  assert.equal(session.saveText(), before);
+  assert.equal(session.revision, revision);
+  assert.equal(session.undoStack.length, 0);
+});
+
 test('electrically unsafe candidate reconnect rejects before history commit', () => {
   const created = createContactPersistenceExample();
   assert.equal(created.ok, true);

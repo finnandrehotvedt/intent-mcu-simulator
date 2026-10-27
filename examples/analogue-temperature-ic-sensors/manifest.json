@@ -1,0 +1,37 @@
+{
+  "schema": "intent-mcu-analogue-temperature-ic-sensor-example-manifest@1",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "7b39338e59c2403377012ca142049ffa287f1517249ab55e1ad8e547e796f16d",
+    "implementationSha256": "d8d96e4751cb25e56aecd4c9f64c9ead2297d573af80f0a8e31745fa8c42dc8c"
+  },
+  "entries": [
+    {
+      "id": "avr-analogue-temperature-ic-sensors",
+      "requirementIds": [
+        "CMP-089",
+        "CMP-090"
+      ],
+      "file": "avr-analogue-temperature-ic-sensors.intent-mcu.json",
+      "projectSha256": "c600fe0990afb58b86acbcc70c72d5958f0139648b2482701193ea6b04451044",
+      "sourceSha256": "e366dad801ee75f32060fadc32d41422f00e7697a534a5171cc14ae0e7b55556",
+      "expectedBehavior": "A0 compares a TMP36-style 500 mV offset plus 10 mV/°C transfer with A1 using an LM35-style nonnegative 10 mV/°C transfer.",
+      "namedPins": {
+        "supply": "VCC → 5V",
+        "ground": "GND → GND1",
+        "tmp36": "AOUT → A0",
+        "lm35": "AOUT → A1"
+      },
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable ideal analogue adapters available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "unavailable",
+        "board.esp32-c3-devmodule-v1": "unavailable",
+        "board.stm32f429zi-nucleo144-v1": "unavailable"
+      },
+      "provenance": "Original project-owned contracts, SVG artwork, deterministic transfer functions, firmware source and canonical project envelope."
+    }
+  ]
+}

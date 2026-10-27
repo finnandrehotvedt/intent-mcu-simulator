@@ -11,8 +11,35 @@ import { ESP32C3_PUBLIC_COMPONENT_CATALOG } from '../src/esp32c3-public-circuit.
 import { STM32_PUBLIC_COMPONENT_CATALOG } from '../src/stm32-public-circuit.mjs';
 import { controlContractsFor } from '../src/model-control-contracts.mjs';
 import * as existingSnapshots from '../src/model-library-snapshots.mjs';
+const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
+  '../src/model-bundles/pre-lcd-current-manifest.json', import.meta.url), 'utf8'));
+const PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
+  '../src/model-bundles/pre-lcd-api-duplicate-fix-current-manifest.json', import.meta.url), 'utf8'));
+const PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = JSON.parse(await readFile(new URL(
+  '../src/model-bundles/pre-lcd-persistence-fix-current-manifest.json', import.meta.url), 'utf8'));
+const PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 
 const { RETAINED_MODEL_LIBRARY_MANIFEST } = existingSnapshots;
@@ -219,6 +246,7 @@ const CURRENT_CLOSURE = Object.freeze([
   '../src/runtime-identity.mjs',
   '../src/candidate-project-session.mjs', '../src/candidate-spdt-runtime.mjs',
   '../src/candidate-existing-ui-adapter.mjs', '../src/rp2040-pico-circuit.mjs',
+  '../src/bounded-3v3-authoring-contracts.mjs', '../src/named-series-led-circuit-editor.mjs',
   '../src/esp32c3-public-circuit.mjs', '../src/stm32-public-circuit.mjs',
   '../src/rp2040-public-workbench.mjs', '../src/esp32c3-public-workbench.mjs',
   '../src/stm32-public-workbench.mjs', '../c3/public-service.mjs',
@@ -227,7 +255,39 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/rp2040-conformance-fixtures-v1.mjs',
   '../expansion-drafts/rp2040-firmware-artifact-v1.mjs',
   '../expansion-drafts/project-v3-contact-persistence.mjs',
+  '../expansion-drafts/joystick-keypads-v1.mjs',
+  '../expansion-drafts/joystick-keypads-artwork-v1.mjs',
+  '../expansion-drafts/digital-presence-sensors-v1.mjs',
+  '../expansion-drafts/digital-presence-sensors-artwork-v1.mjs',
+  '../expansion-drafts/digital-pulse-sensors-v1.mjs',
+  '../expansion-drafts/digital-pulse-sensors-artwork-v1.mjs',
+  '../expansion-drafts/digital-reflective-sensors-v1.mjs',
+  '../expansion-drafts/digital-reflective-sensors-artwork-v1.mjs',
+  '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs',
+  '../expansion-drafts/analogue-moisture-level-sensors-artwork-v1.mjs',
+  '../expansion-drafts/analogue-detection-sensors-v1.mjs',
+  '../expansion-drafts/analogue-detection-sensors-artwork-v1.mjs',
+  '../expansion-drafts/analogue-direction-field-sensors-v1.mjs',
+  '../expansion-drafts/analogue-direction-field-sensors-artwork-v1.mjs',
+  '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs',
+  '../expansion-drafts/analogue-temperature-ic-sensors-artwork-v1.mjs',
+  '../expansion-drafts/resistive-divider-sensors-v1.mjs',
+  '../expansion-drafts/resistive-divider-sensors-artwork-v1.mjs',
+  '../expansion-drafts/passive-energy-storage-components-v1.mjs',
+  '../expansion-drafts/passive-energy-storage-components-artwork-v1.mjs',
+  '../expansion-drafts/diode-components-v1.mjs',
+  '../expansion-drafts/diode-components-artwork-v1.mjs',
+  '../expansion-drafts/transistor-components-v1.mjs',
+  '../expansion-drafts/transistor-components-artwork-v1.mjs',
+  '../expansion-drafts/circuit-protection-components-v1.mjs',
+  '../expansion-drafts/circuit-protection-components-artwork-v1.mjs',
+  '../expansion-drafts/semiconductor-active-components-v1.mjs',
+  '../expansion-drafts/semiconductor-active-components-artwork-v1.mjs',
+  '../expansion-drafts/contact-sensors-v1.mjs',
+  '../expansion-drafts/contact-sensors-artwork-v1.mjs',
   '../expansion-drafts/ground-reference-integration-v1.mjs',
+  '../expansion-drafts/power-reference-integration-v1.mjs',
+  '../expansion-drafts/power-reference-artwork-v1.mjs',
   '../expansion-drafts/toggle-switch-integration-v1.mjs',
   '../expansion-drafts/switch-contact-graph-v1.mjs',
   '../expansion-drafts/ideal-three-pin-analogue-module-v1.mjs',
@@ -235,9 +295,18 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/temperature-analogue-sensor-v1.mjs',
   '../expansion-drafts/digital-light-threshold-module-v1.mjs',
   '../expansion-drafts/common-cathode-rgb-led-v1.mjs',
+  '../expansion-drafts/traffic-light-module-v1.mjs',
+  '../expansion-drafts/traffic-light-module-artwork-v1.mjs',
   '../expansion-drafts/active-buzzer-module-v1.mjs',
   '../expansion-drafts/seven-segment-common-cathode-v1.mjs',
+  '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs',
+  '../expansion-drafts/seven-segment-four-digit-common-cathode-artwork-v1.mjs',
   '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs',
+  '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs',
+  '../expansion-drafts/character-lcd-20x4-4bit-artwork-v1.mjs',
+  '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs',
+  '../expansion-drafts/pcf8574-lcd-backpack-artwork-v1.mjs',
+  '../expansion-drafts/pcf8574-lcd-hello-example-v1.mjs',
   '../expansion-drafts/rotary-encoder-quadrature-v1.mjs',
 ]);
 
@@ -254,7 +323,7 @@ function manifest(version, implementationId, implementation, lineage = null) {
   const ownedEntries = entries.map((entry) => {
     const pipelineId = entry.profile === 'board.atmega328p-16mhz-v1'
       ? (entry.componentType.startsWith('board.') || ['resistor.fixed-v1', 'led.basic-v1',
-        'button.momentary-v1', 'potentiometer.linear-v1'].includes(entry.componentType)
+        'button.momentary-v1', 'potentiometer.linear-v1', 'potentiometer.trimmer-v1'].includes(entry.componentType)
         ? 'avr-base-circuit-runtime-v1' : 'avr-candidate-reconstruction-ordered-v1')
       : `${entry.profile}-validation-observation-v1`;
     const observerId = entry.componentType.startsWith('output.')
@@ -286,16 +355,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-thumbnail-artwork.1-current',
-  'intent-mcu-model-bundle-current-thumbnail-artwork-1@46',
+  '2.0.0-lcd-20x4-cgram.1-current',
+  'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@50',
   currentImplementation,
   {
-    priorVersion: PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'component, firmware and electrical semantics remain unchanged',
-    presentationDisposition: 'original SVG thumbnails are rendered in all four parts drawers with readable stacked copy',
-    baselineClosureDisposition: 'the accepted rc.139 identity and every earlier identity remain immutable and migration-only; this source candidate performs no firmware compile, native run, image build or deployment',
+    semanticDisposition: 'adds the separate AVR-only twelve-terminal four-digit common-cathode multiplex display as a manifest-owned simulated model while retaining every prior component contract',
+    presentationDisposition: 'CMP-043 uses original four-digit artwork and named a-through-g, dp and DIG1-through-DIG4 terminals distinct from the single-digit display',
+    baselineClosureDisposition: 'accepted CMP-041 head db730407 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -316,6 +385,11 @@ export const PRE_PWM_LED_SHORT_ROUTING_CURRENT_MODEL_LIBRARY_MANIFEST = Object.f
 export const PRE_X46_USART_CONFIG_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X46_USART_CONFIG_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X46_USART_RX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_LCD_PERSISTENCE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_READY_DEADLINE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_HOTPATH_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X43_STACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
@@ -352,6 +426,11 @@ export const PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Obj
 export const PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP003_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP043_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

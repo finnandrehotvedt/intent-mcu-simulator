@@ -1,4 +1,39 @@
-# Intent MCU Simulator 1.1.0-rc.138
+# Intent MCU Simulator 1.1.0-rc.140
+
+## Daily component and example expansion
+
+Rc.140 makes today's component work visible as one coherent learning update.
+The AVR chooser now has 20 choices: one empty circuit plus 19 ready-made
+examples. New guided examples cover trimmer calibration, explicit ground and
+5 V references, a traffic-light sequence and a four-digit multiplex display.
+Each card states what to learn, try and observe, its model limits and a small
+next step.
+
+The wider catalogue now exposes 84 public models across the four exact
+controller profiles. AVR has 62 executable models; raw passive,
+semiconductor, protection and connection symbols remain explicitly
+authoring-only where no runtime model exists. Profile-specific unavailable
+states are preserved instead of implying cross-controller support.
+
+Release identity, machine-readable changes, public documentation and sitemap
+are synchronized to rc.140. Existing project files retain their migration
+anchors, and no example file restores compiled or runtime authority. Actual
+public deployment state and rollback evidence remain owned by the separate
+deployment checkpoint.
+
+---
+
+## 1.1.0-rc.139
+
+## Three-profile circuit authoring
+
+Rc.139 added empty-circuit starts and bounded multi-instance resistor/LED
+authoring for Pico, ESP32-C3 and STM32 while preserving their exact named-pin,
+Undo/Redo, local-file, recovery and runtime limits.
+
+---
+
+## 1.1.0-rc.138
 
 ## Four-profile preserved-draft recovery
 

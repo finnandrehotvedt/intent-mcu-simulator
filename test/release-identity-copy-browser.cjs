@@ -20,31 +20,24 @@ let browser;
   const response = await page.goto(base, { waitUntil: 'networkidle' });
   assert.equal(response?.status(), 200);
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  assert.match(await page.locator('footer').textContent(), /Intent MCU Simulator 1\.1\.0-rc\.48 public release/u);
-
-  await page.selectOption('#example-select', 'avr-thermostat-boundary-v1');
-  await page.click('#project-demo');
-  assert.equal(await page.locator('#thermostat-run-tests').textContent(), 'Run 4 boundary tests');
-  assert.match(await page.locator('#thermostat-experiment-message').textContent(), /four boundary scenarios/u);
-  assert.equal(await page.inputValue('#seeded-property-seed'), '305419896');
-  assert.equal(await page.locator('#seeded-property-seed').getAttribute('aria-describedby'), 'seeded-property-exact-value');
-  assert.equal(await page.locator('#seeded-property-exact-value').textContent(), 'Exact seed value: 305419896');
-  await page.click('#seeded-property-generate');
-  assert.equal(await page.evaluate(() => window.__M6_STATE__.thermostatExperiment.authoredTimeline.propertySuite.seed), 305419896);
-  assert.equal(await page.inputValue('#seeded-property-seed'), '305419896');
-  assert.equal(await page.locator('#seeded-property-exact-value').textContent(), 'Exact seed value: 305419896');
-  await page.click('#thermostat-load-bad');
-  assert.match(await page.locator('#thermostat-experiment-message').textContent(),
-    /current authored timeline or the four fixed boundary scenarios/u);
-  await page.click('#fault-suite-load');
-  assert.match(await page.locator('#fault-suite-summary').textContent(), /Bus-response fault remains unsupported/iu);
+  assert.match(await page.locator('main > footer').textContent(), /Intent MCU Simulator 1\.1\.0-rc\.140 public release/u);
+  assert.equal(await page.locator('#release-version').textContent(), '1.1.0-rc.140');
+  assert.equal(await page.locator('#example-select option').count(), 20);
+  const delta = await page.evaluate(async () => {
+    const result = await fetch('/release-changes.json', { cache: 'no-store', credentials: 'omit' });
+    return { status: result.status, value: await result.json() };
+  });
+  assert.equal(delta.status, 200);
+  assert.deepEqual(delta.value.release, { previous: '1.1.0-rc.139', current: '1.1.0-rc.140' });
+  assert.deepEqual(delta.value.changes.map(({ id, classification }) => ({ id, classification })),
+    [{ id: 'X72', classification: 'additive' }]);
   if (screenshot) {
     fs.mkdirSync(path.dirname(screenshot), { recursive: true });
     await page.screenshot({ path: screenshot, fullPage: true, animations: 'disabled' });
   }
   assert.deepEqual(errors, []);
   assert.equal((await context.cookies()).length, 0);
-  console.log(JSON.stringify({ result: 'pass', version: '1.1.0-rc.48', boundaryCases: 4,
-    exactSeed: '305419896', faultCases: 3, busResponse: 'unsupported', screenshot }));
+  console.log(JSON.stringify({ result: 'pass', version: '1.1.0-rc.140', avrChooserChoices: 20,
+    release: delta.value.release, changes: delta.value.changes.map(({ id }) => id), screenshot }));
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; })
   .finally(async () => { if (browser) await browser.close(); });

@@ -20,24 +20,24 @@ test('public documentation facts derive from the current release and canonical c
     read('../staging/llms.txt'), read('../staging/sitemap.xml'),
   ]);
   const avrCount = exampleCatalog().length + 1 + 1 + avrReferenceStarterCatalog().length;
-  assert.equal(RELEASE_VERSION, '1.1.0-rc.138');
-  assert.equal(avrCount, 15);
+  assert.equal(RELEASE_VERSION, '1.1.0-rc.140');
+  assert.equal(avrCount, 19);
   assert.equal(THERMOSTAT_SCENARIOS.scenarios.length, 4);
   assert.match(THERMOSTAT_EXPERIMENT_CARD.outcome, /four reset-isolated/u);
   for (const page of [controllers, components, examples, support, llms]) {
-    assert.match(page, /1\.1\.0-rc\.138/u);
+    assert.match(page, /1\.1\.0-rc\.140/u);
     assert.doesNotMatch(page, /1\.1\.0-rc\.41/u);
   }
   assert.match(controllers, /four reset-isolated boundary scenarios/u);
   assert.match(examples, /four reset-isolated virtual-time scenarios/u);
-  assert.match(llms, /fifteen validated AVR starters/u);
+  assert.match(llms, /nineteen ready-made AVR examples/u);
   assert.match(llms, /four reset-isolated virtual-time scenarios/u);
   assert.match(llms, /finite resistor-and-LED reusable subcircuit/u);
   assert.match(support, /X66[^·]+complete only against their bounded original criteria/u);
   assert.match(support, /X46 remains partial beyond this bounded USART0 TX increment/u);
   assert.match(support, /X 86\/1\/9/u);
   assert.match(support, /no account[^\n]+nested or general-purpose subcircuit authority/u);
-  assert.match(sitemap, /<lastmod>2026-10-21<\/lastmod>/u);
+  assert.match(sitemap, /<lastmod>2026-10-27<\/lastmod>/u);
 });
 
 test('docs preserve canonical runtime/model boundaries and explain the Build privacy boundary', async () => {

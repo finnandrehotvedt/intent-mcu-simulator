@@ -4,6 +4,21 @@
 import { installX81Assessment } from './x81-assessment-controller.mjs';
 import { X81_RETAINED_ASSESSMENT } from '../src/x81-retained-assessment.mjs';
 import { BOUNDED_3V3_UI_COMPONENTS, validateBounded3v3AuthoringGraph } from '../src/bounded-3v3-authoring-contracts.mjs';
+import { ELECTROLYTIC_CAPACITOR_TYPE, FIXED_INDUCTOR_TYPE, NONPOLAR_CAPACITOR_TYPE,
+  PASSIVE_ENERGY_STORAGE_DEFINITIONS,
+  validatePassiveEnergyStorageAuthoringGraph } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
+import { DIODE_COMPONENT_DEFINITIONS, SCHOTTKY_DIODE_TYPE, SILICON_DIODE_TYPE,
+  ZENER_DIODE_TYPE, validateDiodeAuthoringGraph } from '../expansion-drafts/diode-components-v1.mjs';
+import { NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
+  TRANSISTOR_COMPONENT_DEFINITIONS,
+  validateTransistorAuthoringGraph } from '../expansion-drafts/transistor-components-v1.mjs';
+import { FUSE_TYPE, RESETTABLE_FUSE_PTC_TYPE, CIRCUIT_PROTECTION_DEFINITIONS,
+  validateCircuitProtectionAuthoringGraph } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS,
+  validateConnectionHardwareAuthoringGraph } from '../expansion-drafts/connection-hardware-components-v1.mjs';
+import { OPTOCOUPLER_TYPE, P_CHANNEL_MOSFET_TYPE,
+  SEMICONDUCTOR_ACTIVE_DEFINITIONS,
+  validateSemiconductorActiveAuthoringGraph } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 
 import {
   CATALOG_CATEGORIES,
@@ -120,6 +135,9 @@ import {
   createTemperatureLcdThresholdExample,
   openTemperatureLcdThresholdExample,
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
+import {
+  PCF8574_LCD_HELLO_CARD, PCF8574_LCD_HELLO_EXAMPLE_ID, createPcf8574LcdHelloExample,
+} from '../expansion-drafts/pcf8574-lcd-hello-example-v1.mjs';
 import {
   THERMOSTAT_EXPERIMENT_ID,
   THERMOSTAT_SCENARIOS,
@@ -431,6 +449,9 @@ import {
   openCandidateUiSession,
 } from '../src/candidate-existing-ui-adapter.mjs';
 import { CONTACT_PERSISTENCE_SCHEMA } from '../expansion-drafts/project-v3-contact-persistence.mjs';
+import { BALL_VIBRATION_SWITCH_TYPE, CONTACT_SENSOR_DEFINITIONS, FLOAT_SWITCH_TYPE,
+  TILT_SWITCH_TYPE } from '../expansion-drafts/contact-sensors-v1.mjs';
+import { POWER_REFERENCE_TYPE } from '../expansion-drafts/power-reference-integration-v1.mjs';
 import { controlRuntimeEvidenceMatrix } from '../src/control-runtime-evidence.mjs';
 import {
   TEMPERATURE_MAX_C,
@@ -447,12 +468,67 @@ import {
   LIGHT_THRESHOLD_MIN_PERCENT,
 } from '../expansion-drafts/digital-light-threshold-module-v1.mjs';
 import { COMMON_CATHODE_RGB_LED_TYPE } from '../expansion-drafts/common-cathode-rgb-led-v1.mjs';
+import { TRAFFIC_LIGHT_TYPE } from '../expansion-drafts/traffic-light-module-v1.mjs';
+import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE,
+  ROTARY_SELECTOR_TYPE } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
+import { FOUR_DIGIT_SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import {
   CHARACTER_LCD_TYPE,
-  createCharacterLcd4BitDecoder,
 } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
+import {
+  CHARACTER_LCD_20X4_RENDERER,
+  CHARACTER_LCD_20X4_TYPE,
+} from '../expansion-drafts/character-lcd-20x4-4bit-v1.mjs';
+import { PCF8574_LCD_TYPE } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
+import {
+  CAPACITIVE_TOUCH_TYPE,
+  DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
+  HALL_SWITCH_TYPE,
+  PIR_MOTION_TYPE,
+} from '../expansion-drafts/digital-presence-sensors-v1.mjs';
+import {
+  DIGITAL_PULSE_SENSOR_DEFINITIONS,
+  FLOW_PULSE_SENSOR_TYPE,
+  WIND_SPEED_PULSE_SENSOR_TYPE,
+} from '../expansion-drafts/digital-pulse-sensors-v1.mjs';
+import {
+  DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
+  IR_OBSTACLE_SENSOR_TYPE,
+  LINE_TRACKING_SENSOR_TYPE,
+} from '../expansion-drafts/digital-reflective-sensors-v1.mjs';
+import {
+  ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
+  ANALOGUE_WATER_LEVEL_TYPE,
+  CAPACITIVE_SOIL_MOISTURE_TYPE,
+  RESISTIVE_SOIL_MOISTURE_TYPE,
+} from '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs';
+import {
+  ANALOGUE_DETECTION_DEFINITIONS,
+  CO2_ANALOGUE_TYPE,
+  FLAME_ANALOGUE_TYPE,
+  MQ_GAS_ANALOGUE_TYPE,
+  RAIN_ANALOGUE_TYPE,
+  SOUND_LEVEL_ANALOGUE_TYPE,
+  UV_ANALOGUE_TYPE,
+} from '../expansion-drafts/analogue-detection-sensors-v1.mjs';
+import {
+  ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
+  HALL_MAGNETIC_ANALOGUE_TYPE,
+  WIND_DIRECTION_ANALOGUE_TYPE,
+  analogueDirectionFieldVoltage,
+} from '../expansion-drafts/analogue-direction-field-sensors-v1.mjs';
+import {
+  ANALOGUE_TEMPERATURE_IC_DEFINITIONS,
+  LM35_TEMPERATURE_TYPE,
+  TMP36_TEMPERATURE_TYPE,
+  analogueTemperatureIcVoltage,
+} from '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs';
+import {
+  FLEX_DIVIDER_TYPE, LDR_DIVIDER_TYPE, NTC_DIVIDER_TYPE,
+  RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, resistiveDividerSensorVoltage,
+} from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
 import {
   ROTARY_ENCODER_TYPE,
   nextRotaryEncoderDetent,
@@ -500,6 +576,7 @@ const elements = Object.fromEntries([
   'local-history-confirm-title', 'local-history-confirm-description', 'local-history-confirm-status',
   'local-history-confirm-cancel', 'local-history-confirm-accept',
   'project-reload', 'browser-draft-recovery', 'project-draft-recovery', 'project-draft-recover',
+  'project-draft-download',
   'project-draft-recovery-status', 'project-export', 'project-import',
   'project-import-mode', 'undo', 'redo', 'prompt-generate', 'prompt-copy', 'prompt-output', 'prompt-response',
   'prompt-mode', 'prompt-apply', 'prompt-message', 'component-controls',
@@ -1414,7 +1491,9 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
       id: `catalog-${part.type.replace(/[^a-z0-9]+/giu, '-')}`,
       type: part.type,
       label: part.displayName,
-      properties: definition?.propertyKeys?.length ? defaultProperties(part.type) : {},
+      properties: definition?.propertyKeys?.length
+        ? Object.fromEntries(definition.propertyKeys.map((key) => [key, definition.propertySchema[key].default]))
+        : {},
       controls: {},
     };
     if (definition) thumbnail.append(createComponentArtwork(definition, previewComponent, { thumbnail: true }));
@@ -1454,7 +1533,12 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     properties.replaceChildren(note); return;
   }
 
-  if (!['resistor.fixed-v1', 'led.basic-v1'].includes(selected.type)) {
+  if (!['resistor.fixed-v1', 'led.basic-v1', 'potentiometer.linear-3v3-v1',
+    ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
+    ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
+    ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
+    ...Object.keys(CIRCUIT_PROTECTION_DEFINITIONS),
+    ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS)].includes(selected.type)) {
     const note = document.createElement('p');
     note.textContent = `${selectedPart.displayName} is a 3.3 V authoring-only part. Its named pins persist, but it cannot grant Build or Run authority.`;
     const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
@@ -1467,11 +1551,33 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   const label = document.createElement('label');
   const limit = document.createElement('small');
   let input;
-  if (selected.type === 'resistor.fixed-v1') {
+  const authoringDefinition = PASSIVE_ENERGY_STORAGE_DEFINITIONS[selected.type]
+    ?? DIODE_COMPONENT_DEFINITIONS[selected.type]
+    ?? TRANSISTOR_COMPONENT_DEFINITIONS[selected.type]
+    ?? CIRCUIT_PROTECTION_DEFINITIONS[selected.type]
+    ?? SEMICONDUCTOR_ACTIVE_DEFINITIONS[selected.type];
+  if (['resistor.fixed-v1', 'potentiometer.linear-3v3-v1'].includes(selected.type)) {
     label.append('Resistance (Ω)');
-    limit.textContent = 'Accepted only when the selected LED remains within the exact 3.3 V / 12 mA ideal-model limit.';
+    limit.textContent = selected.type === 'resistor.fixed-v1'
+      ? 'Accepted only when the selected LED remains within the exact 3.3 V / 12 mA ideal-model limit.'
+      : 'Authoring value only. This does not prove a powered divider, ADC runtime, loading, noise or physical tolerance.';
     input = document.createElement('input'); input.type = 'number'; input.min = '1'; input.max = '10000000';
     input.step = '1'; input.value = String(selected.properties.ohms); input.dataset.boundedProperty = 'ohms';
+  } else if (authoringDefinition) {
+    const key = authoringDefinition.propertyKeys[0]; const contract = authoringDefinition.propertySchema[key];
+    label.append(`${key} (${contract.unit})`);
+    limit.textContent = DIODE_COMPONENT_DEFINITIONS[selected.type]
+      ? 'Authoring value only. No nonlinear I-V/reverse-breakdown model or Build/Run authority is added.'
+      : TRANSISTOR_COMPONENT_DEFINITIONS[selected.type]
+        ? 'Authoring value only. No bias/switching/current model or Build/Run authority is added.'
+      : CIRCUIT_PROTECTION_DEFINITIONS[selected.type]
+        ? 'Authoring value only. No trip/interruption/reset/thermal model, safety protection or Build/Run authority is added.'
+      : SEMICONDUCTOR_ACTIVE_DEFINITIONS[selected.type]
+        ? 'Authoring value only. No switching, optical-transfer, isolation model or Build/Run authority is added.'
+        : 'Authoring value only. No transient/frequency solver or Build/Run authority is added.';
+    input = document.createElement('input'); input.type = 'number'; input.min = String(contract.minimum);
+    input.max = String(contract.maximum); input.step = 'any'; input.value = String(selected.properties[key]);
+    input.dataset.boundedProperty = key;
   } else {
     label.append('LED colour');
     limit.textContent = 'Colour selects a tested ideal forward-voltage constant; it is not a wavelength, brightness or physical-accuracy claim.';
@@ -1483,10 +1589,6 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   }
   label.append(limit); input.id = `${selected.id}-${input.dataset.boundedProperty}`; label.htmlFor = input.id;
   row.append(label, input);
-  if (!['resistor.fixed-v1', 'led.basic-v1'].includes(selected.type)) {
-    properties.replaceChildren(row); return;
-  }
-
   const modelPanel = document.createElement('section');
   const modelStatus = document.createElement('p'); modelStatus.className = 'component-editor-invariant'; modelStatus.setAttribute('role', 'status');
   const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
@@ -1501,7 +1603,8 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   modelCancel.dataset.componentEditorCancel = 'model';
   const currentValue = selected.properties[input.dataset.boundedProperty];
   const previewValue = () => typeof currentValue === 'number' ? Number(input.value) : input.value;
-  const modelValid = () => input.checkValidity() && (typeof currentValue !== 'number' || Number.isInteger(previewValue()));
+  const modelValid = () => input.checkValidity() && (typeof currentValue !== 'number'
+    || (authoringDefinition ? Number.isFinite(previewValue()) : Number.isInteger(previewValue())));
   const modelChanged = () => previewValue() !== currentValue;
   const updateModel = () => {
     const valid = modelValid(); const changed = modelChanged();
@@ -1534,6 +1637,10 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   });
   const modelActions = document.createElement('div'); modelActions.className = 'component-editor-actions';
   modelActions.append(duplicate, modelCancel, modelApply); modelPanel.append(row, modelStatus, modelActions); updateModel();
+
+  if (selected.type === 'potentiometer.linear-3v3-v1' || authoringDefinition) {
+    properties.replaceChildren(modelPanel); return;
+  }
 
   const appearance = document.createElement('section'); appearance.className = 'bounded-property-row bounded-appearance-row';
   const appearanceLabel = document.createElement('label');
@@ -2689,6 +2796,7 @@ function renderPicoCircuitEditor(state) {
     card.addEventListener('pointerdown', (event) => startPicoEditorDrag(event, component.id, card));
     card.addEventListener('pointermove', movePicoEditorDrag); card.addEventListener('pointerup', finishPicoEditorDrag);
     card.addEventListener('pointercancel', finishPicoEditorDrag);
+    card.addEventListener('click', () => picoPublicWorkbench.selectCircuit({ kind: 'component', id: component.id }));
     card.addEventListener('keydown', (event) => {
       if (event.target === card && ['Enter', ' '].includes(event.key)) { event.preventDefault(); picoPublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); }
     });
@@ -2979,6 +3087,7 @@ function renderC3CircuitEditor(state) {
     card.addEventListener('pointerdown', (event) => startC3EditorDrag(event, component.id, card));
     card.addEventListener('pointermove', moveC3EditorDrag); card.addEventListener('pointerup', finishC3EditorDrag);
     card.addEventListener('pointercancel', finishC3EditorDrag);
+    card.addEventListener('click', () => c3PublicWorkbench.selectCircuit({ kind: 'component', id: component.id }));
     card.addEventListener('keydown', (event) => {
       if (event.target === card && ['Enter', ' '].includes(event.key)) { event.preventDefault(); c3PublicWorkbench.selectCircuit({ kind: 'component', id: component.id }); }
     });
@@ -3276,6 +3385,7 @@ function renderStm32CircuitEditor(state) {
     card.addEventListener('pointermove', moveStm32EditorDrag);
     card.addEventListener('pointerup', finishStm32EditorDrag);
     card.addEventListener('pointercancel', finishStm32EditorDrag);
+    card.addEventListener('click', () => stm32PublicWorkbench.selectCircuit({ kind: 'component', id: component.id }));
     card.addEventListener('keydown', (event) => {
       if (event.target === card && ['Enter', ' '].includes(event.key)) {
         event.preventDefault(); stm32PublicWorkbench.selectCircuit({ kind: 'component', id: component.id });
@@ -7714,6 +7824,22 @@ const commonProjectAdapters = Object.freeze({
     electrical: (result) => result.prepared?.runnable
       ?? modelLibraryImplementationForResult(result).validateAvrCircuit(result.project.circuit,
         { modelLibraryLock: result.modelLibrary }),
+    authoringAdmission: ({ project }) => {
+      const graph = project.candidateCircuit
+        ? { components: project.candidateCircuit.components, nets: project.candidateCircuit.nets }
+        : project.circuit;
+      const passive = validatePassiveEnergyStorageAuthoringGraph(graph);
+      if (passive.ok) return passive;
+      const diode = validateDiodeAuthoringGraph(graph);
+      if (diode.ok) return diode;
+      const transistor = validateTransistorAuthoringGraph(graph);
+      if (transistor.ok) return transistor;
+      const circuitProtection = validateCircuitProtectionAuthoringGraph(graph);
+      if (circuitProtection.ok) return circuitProtection;
+      const connectionHardware = validateConnectionHardwareAuthoringGraph(graph);
+      return connectionHardware.ok
+        ? connectionHardware : validateSemiconductorActiveAuthoringGraph(graph);
+    },
   }),
   [RP2040_PROFILE]: Object.freeze({
     schemas: Object.freeze([RP2040_PUBLIC_PROJECT_SCHEMA]),
@@ -11347,6 +11473,7 @@ function renderDraftRecoveryChoices() {
     choices.length ? 'Choose any preserved browser draft…' : 'No local drafts found', '', true, true,
   ), ...choices.map((item) => new Option(preservedDraftLabel(item), item.key)));
   elements.projectdraftrecover.disabled = true;
+  elements.projectdraftdownload.disabled = true;
 }
 function registerActiveDraft(name) {
   if (!activeDraftId) return;
@@ -11488,6 +11615,19 @@ function clearRuntimePresentation() {
       channel.classList.remove('on'); channel.style.opacity = '0.22'; channel.style.filter = '';
     }
   }
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-traffic-light-module"]')) {
+    artwork.dataset.redOn = 'false'; artwork.dataset.amberOn = 'false'; artwork.dataset.greenOn = 'false';
+    for (const lamp of artwork.querySelectorAll('.traffic-light-lamp')) lamp.classList.remove('on');
+  }
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-seven-segment-four-digit-common-cathode"]')) {
+    for (let digit = 1; digit <= 4; digit += 1) {
+      artwork.dataset[`digit${digit}Segments`] = '';
+      artwork.dataset[`digit${digit}DecimalPoint`] = 'false';
+    }
+    for (const segment of artwork.querySelectorAll('.four-digit-seven-segment-bar')) {
+      segment.classList.remove('on');
+    }
+  }
   for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-active-buzzer-module"]')) {
     artwork.dataset.enabled = 'false'; artwork.dataset.driveState = 'idle';
     artwork.querySelector('.active-buzzer-disc')?.classList.remove('on');
@@ -11495,11 +11635,13 @@ function clearRuntimePresentation() {
     for (const wave of artwork.querySelectorAll('.buzzer-wave')) wave.classList.remove('on');
   }
   characterLcdRuntime.clear();
-  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-character-lcd-16x2-4bit"]')) {
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key^="output-character-lcd-"]')) {
     artwork.dataset.protocolState = 'awaiting-initialization';
-    artwork.dataset.line1 = ''; artwork.dataset.line2 = '';
+    artwork.dataset.line1 = ''; artwork.dataset.line2 = ''; artwork.dataset.line3 = ''; artwork.dataset.line4 = '';
     artwork.querySelector('[data-lcd-line="1"]')?.replaceChildren();
     artwork.querySelector('[data-lcd-line="2"]')?.replaceChildren();
+    for (const cell of artwork.querySelectorAll('[data-lcd-cell]')) cell.replaceChildren();
+    for (const glyph of artwork.querySelectorAll('[data-lcd-runtime-glyph]')) glyph.remove();
   }
   publish({ runtime: null });
 }
@@ -12805,6 +12947,12 @@ function renderCatalog() {
   const interactive = catalogFixtureRecords === null;
   const buttons = windowRecords.map((definition) => createCatalogRow(definition, { interactive, thumbnail: true }));
   elements.cataloglist.replaceChildren(...buttons);
+  if (elements.cataloglist.closest('#simple-parts-mount')) {
+    for (const slot of elements.cataloglist.querySelectorAll('.catalog-thumbnail-slot')) {
+      hydrateCatalogThumbnail(slot);
+      catalogThumbnailObserver?.unobserve(slot);
+    }
+  }
   elements.cataloglist.scrollTop = 0;
   const first = matches.length ? catalogWindowStart + 1 : 0;
   const last = Math.min(matches.length, catalogWindowStart + windowRecords.length);
@@ -12817,6 +12965,12 @@ function renderCatalog() {
   if (catalogBenchmarkSession) catalogBenchmarkSession.renderDurations.push(milliseconds);
   return { matches: matches.length, rendered: windowRecords.length, first, last, milliseconds };
 }
+document.addEventListener('intent-simple-parts-mounted', () => {
+  for (const slot of elements.cataloglist.querySelectorAll('.catalog-thumbnail-slot')) {
+    hydrateCatalogThumbnail(slot);
+    catalogThumbnailObserver?.unobserve(slot);
+  }
+});
 
 function renderComponentSupportMatrix() {
   const profileId = elements.componentsupportprofile.value || selectedCompilerProfile || AVR_PROFILE;
@@ -12941,16 +13095,71 @@ async function benchmarkCatalogFixture(action = 'start') {
 function candidateComponentPrefix(type) {
   return {
       'reference.ground-v1': 'ground-reference',
+      [POWER_REFERENCE_TYPE]: 'power-reference',
       'switch.toggle-spst-v1': 'toggle-switch',
       'switch.changeover-spdt-v1': 'selector',
+      'switch.slide-spdt-v1': 'slide-switch',
+      'button.momentary-nc-v1': 'nc-button',
+      'switch.limit-spdt-v1': 'limit-switch',
+      'switch.dip-4-v1': 'dip-switch',
+      'input.rotary-encoder-button-v1': 'encoder-button',
+      'switch.reed-no-v1': 'reed-switch',
+      'switch.emergency-stop-nc-v1': 'emergency-stop',
+      'switch.foot-pedal-no-v1': 'foot-pedal',
+      [FLOAT_SWITCH_TYPE]: 'float-switch',
+      [TILT_SWITCH_TYPE]: 'tilt-switch',
+      [BALL_VIBRATION_SWITCH_TYPE]: 'vibration-switch',
+      [ROTARY_SELECTOR_TYPE]: 'rotary-selector',
       'sensor.light-analogue-v1': 'light-sensor',
       'sensor.temperature-analogue-v1': 'temperature-sensor',
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: 'light-threshold',
+      [CAPACITIVE_TOUCH_TYPE]: 'touch-button',
+      [PIR_MOTION_TYPE]: 'pir-motion',
+      [HALL_SWITCH_TYPE]: 'hall-switch',
+      [FLOW_PULSE_SENSOR_TYPE]: 'flow-pulse',
+      [WIND_SPEED_PULSE_SENSOR_TYPE]: 'wind-pulse',
+      [IR_OBSTACLE_SENSOR_TYPE]: 'ir-obstacle',
+      [LINE_TRACKING_SENSOR_TYPE]: 'line-tracker',
+      [RESISTIVE_SOIL_MOISTURE_TYPE]: 'soil-resistive',
+      [CAPACITIVE_SOIL_MOISTURE_TYPE]: 'soil-capacitive',
+      [ANALOGUE_WATER_LEVEL_TYPE]: 'water-level',
+      [RAIN_ANALOGUE_TYPE]: 'rain-sensor',
+      [SOUND_LEVEL_ANALOGUE_TYPE]: 'sound-level',
+      [FLAME_ANALOGUE_TYPE]: 'flame-sensor',
+      [MQ_GAS_ANALOGUE_TYPE]: 'mq-gas',
+      [CO2_ANALOGUE_TYPE]: 'co2-sensor',
+      [UV_ANALOGUE_TYPE]: 'uv-sensor',
+      [WIND_DIRECTION_ANALOGUE_TYPE]: 'wind-direction',
+      [HALL_MAGNETIC_ANALOGUE_TYPE]: 'hall-field',
+      [TMP36_TEMPERATURE_TYPE]: 'tmp36-temperature',
+      [LM35_TEMPERATURE_TYPE]: 'lm35-temperature',
+      [LDR_DIVIDER_TYPE]: 'ldr-divider',
+      [NTC_DIVIDER_TYPE]: 'ntc-divider',
+      [FLEX_DIVIDER_TYPE]: 'flex-divider',
       [COMMON_CATHODE_RGB_LED_TYPE]: 'rgb-led',
+      [TRAFFIC_LIGHT_TYPE]: 'traffic-light',
+      [RGB_COMMON_ANODE_TYPE]: 'rgb-led-ca',
+      [LED_BAR_GRAPH_TYPE]: 'led-bar',
       [ACTIVE_BUZZER_TYPE]: 'active-buzzer',
       [SEVEN_SEGMENT_TYPE]: 'seven-segment',
+      [FOUR_DIGIT_SEVEN_SEGMENT_TYPE]: 'four-digit-seven-segment',
       [CHARACTER_LCD_TYPE]: 'character-lcd',
+      [CHARACTER_LCD_20X4_TYPE]: 'character-lcd-20x4',
+      [PCF8574_LCD_TYPE]: 'pcf8574-lcd',
       [ROTARY_ENCODER_TYPE]: 'rotary-encoder',
+      [NONPOLAR_CAPACITOR_TYPE]: 'capacitor',
+      [ELECTROLYTIC_CAPACITOR_TYPE]: 'electrolytic-capacitor',
+      [FIXED_INDUCTOR_TYPE]: 'inductor',
+      [SILICON_DIODE_TYPE]: 'diode',
+      [SCHOTTKY_DIODE_TYPE]: 'schottky',
+      [ZENER_DIODE_TYPE]: 'zener',
+      [NPN_BJT_TYPE]: 'npn',
+      [PNP_BJT_TYPE]: 'pnp',
+      [N_CHANNEL_MOSFET_TYPE]: 'nmos',
+      [FUSE_TYPE]: 'fuse',
+      [RESETTABLE_FUSE_PTC_TYPE]: 'ptc',
+      [P_CHANNEL_MOSFET_TYPE]: 'pmos',
+      [OPTOCOUPLER_TYPE]: 'optocoupler',
   }[type] ?? null;
 }
 
@@ -12974,17 +13183,72 @@ function addComponent(type, point = null) {
       'led.basic-v1': { x: 0.77, y: 0.16 },
       'button.momentary-v1': { x: 0.77, y: 0.52 },
       'potentiometer.linear-v1': { x: 0.47, y: 0.76 },
+      'potentiometer.trimmer-v1': { x: 0.6, y: 0.76 },
       'reference.ground-v1': { x: 0.18, y: 0.78 },
+      [POWER_REFERENCE_TYPE]: { x: 0.18, y: 0.64 },
       'switch.toggle-spst-v1': { x: 0.48, y: 0.78 },
       'switch.changeover-spdt-v1': { x: 0.78, y: 0.78 },
+      'switch.slide-spdt-v1': { x: 0.54, y: 0.76 },
+      'button.momentary-nc-v1': { x: 0.68, y: 0.76 },
+      'switch.limit-spdt-v1': { x: 0.82, y: 0.76 },
+      'switch.dip-4-v1': { x: 0.62, y: 0.7 },
+      'input.rotary-encoder-button-v1': { x: 0.78, y: 0.66 },
+      'switch.reed-no-v1': { x: 0.58, y: 0.72 },
+      'switch.emergency-stop-nc-v1': { x: 0.72, y: 0.72 },
+      'switch.foot-pedal-no-v1': { x: 0.84, y: 0.72 },
+      [FLOAT_SWITCH_TYPE]: { x: 0.58, y: 0.62 },
+      [TILT_SWITCH_TYPE]: { x: 0.72, y: 0.62 },
+      [BALL_VIBRATION_SWITCH_TYPE]: { x: 0.84, y: 0.62 },
+      [ROTARY_SELECTOR_TYPE]: { x: 0.82, y: 0.66 },
       'sensor.light-analogue-v1': { x: 0.62, y: 0.76 },
       'sensor.temperature-analogue-v1': { x: 0.78, y: 0.76 },
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: { x: 0.78, y: 0.72 },
+      [CAPACITIVE_TOUCH_TYPE]: { x: 0.58, y: 0.7 },
+      [PIR_MOTION_TYPE]: { x: 0.72, y: 0.7 },
+      [HALL_SWITCH_TYPE]: { x: 0.84, y: 0.7 },
+      [FLOW_PULSE_SENSOR_TYPE]: { x: 0.58, y: 0.26 },
+      [WIND_SPEED_PULSE_SENSOR_TYPE]: { x: 0.72, y: 0.26 },
+      [IR_OBSTACLE_SENSOR_TYPE]: { x: 0.68, y: 0.62 },
+      [LINE_TRACKING_SENSOR_TYPE]: { x: 0.82, y: 0.62 },
+      [RESISTIVE_SOIL_MOISTURE_TYPE]: { x: 0.58, y: 0.56 },
+      [CAPACITIVE_SOIL_MOISTURE_TYPE]: { x: 0.72, y: 0.56 },
+      [ANALOGUE_WATER_LEVEL_TYPE]: { x: 0.86, y: 0.56 },
+      [RAIN_ANALOGUE_TYPE]: { x: 0.58, y: 0.5 },
+      [SOUND_LEVEL_ANALOGUE_TYPE]: { x: 0.72, y: 0.5 },
+      [FLAME_ANALOGUE_TYPE]: { x: 0.86, y: 0.5 },
+      [MQ_GAS_ANALOGUE_TYPE]: { x: 0.58, y: 0.44 },
+      [CO2_ANALOGUE_TYPE]: { x: 0.72, y: 0.44 },
+      [UV_ANALOGUE_TYPE]: { x: 0.86, y: 0.44 },
+      [WIND_DIRECTION_ANALOGUE_TYPE]: { x: 0.58, y: 0.38 },
+      [HALL_MAGNETIC_ANALOGUE_TYPE]: { x: 0.72, y: 0.38 },
+      [TMP36_TEMPERATURE_TYPE]: { x: 0.58, y: 0.32 },
+      [LM35_TEMPERATURE_TYPE]: { x: 0.72, y: 0.32 },
+      [LDR_DIVIDER_TYPE]: { x: 0.56, y: 0.26 },
+      [NTC_DIVIDER_TYPE]: { x: 0.7, y: 0.26 },
+      [FLEX_DIVIDER_TYPE]: { x: 0.84, y: 0.26 },
       [COMMON_CATHODE_RGB_LED_TYPE]: { x: 0.78, y: 0.7 },
+      [TRAFFIC_LIGHT_TYPE]: { x: 0.8, y: 0.66 },
+      [RGB_COMMON_ANODE_TYPE]: { x: 0.78, y: 0.7 },
+      [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },
       [ACTIVE_BUZZER_TYPE]: { x: 0.78, y: 0.68 },
       [SEVEN_SEGMENT_TYPE]: { x: 0.76, y: 0.66 },
+      [FOUR_DIGIT_SEVEN_SEGMENT_TYPE]: { x: 0.72, y: 0.64 },
       [CHARACTER_LCD_TYPE]: { x: 0.72, y: 0.64 },
+      [CHARACTER_LCD_20X4_TYPE]: { x: 0.7, y: 0.62 },
       [ROTARY_ENCODER_TYPE]: { x: 0.72, y: 0.64 },
+      [NONPOLAR_CAPACITOR_TYPE]: { x: 0.56, y: 0.2 },
+      [ELECTROLYTIC_CAPACITOR_TYPE]: { x: 0.7, y: 0.2 },
+      [FIXED_INDUCTOR_TYPE]: { x: 0.84, y: 0.2 },
+      [SILICON_DIODE_TYPE]: { x: 0.56, y: 0.14 },
+      [SCHOTTKY_DIODE_TYPE]: { x: 0.7, y: 0.14 },
+      [ZENER_DIODE_TYPE]: { x: 0.84, y: 0.14 },
+      [NPN_BJT_TYPE]: { x: 0.56, y: 0.08 },
+      [PNP_BJT_TYPE]: { x: 0.7, y: 0.08 },
+      [N_CHANNEL_MOSFET_TYPE]: { x: 0.84, y: 0.08 },
+      [FUSE_TYPE]: { x: 0.28, y: 0.04 },
+      [RESETTABLE_FUSE_PTC_TYPE]: { x: 0.44, y: 0.04 },
+      [P_CHANNEL_MOSFET_TYPE]: { x: 0.56, y: 0.04 },
+      [OPTOCOUPLER_TYPE]: { x: 0.76, y: 0.04 },
     }[type];
     const sameTypeCount = currentProject().circuit.components.filter((item) => item.type === type).length;
     const slot = index % 16;
@@ -13328,9 +13592,13 @@ function renderInspector() {
   elements.wirecolor.disabled = !net;
   if (net) elements.wirecolor.value = currentProject().layout.wireStyles[net.id].color;
   const junction = net && currentProject().circuit.junctions.find((item) => item.net === net.id);
-  elements.removejunction.disabled = !junction;
+  const junctionRemovalBlocked = Boolean(junction && net.endpoints.length > 2);
+  elements.removejunction.disabled = !junction || junctionRemovalBlocked;
+  elements.removejunction.title = junctionRemovalBlocked
+    ? 'This junction is required by the multi-pin net. Remove a named branch instead.'
+    : junction ? 'Remove this redundant junction without changing any pin connection.' : 'This net has no junction.';
   elements.netmembers.textContent = net
-    ? `${selectedRouteSegment ? `Selected branch: ${selectedRouteSegment.endpoint}\n` : ''}${net.endpoints.map(endpointKey).join('\n')}${junction ? '\n\nPolicy: the explicit junction hub stays fixed during section moves.' : '\n\nPolicy: crossings and overlaps never connect.'}`
+    ? `${selectedRouteSegment ? `Selected branch: ${selectedRouteSegment.endpoint}\n` : ''}${net.endpoints.map(endpointKey).join('\n')}${junctionRemovalBlocked ? '\n\nJunction removal unavailable: this multi-pin net requires its explicit junction. Select a named branch to disconnect it safely.' : junction ? '\n\nPolicy: the explicit junction hub stays fixed during section moves.' : '\n\nPolicy: crossings and overlaps never connect.'}`
     : 'Select a net to inspect all connected pins.';
   renderWireBends(net);
 }
@@ -13390,6 +13658,171 @@ function renderRuntimeControls() {
       });
       row.append(label, button); return [row];
     }
+    if (editor.kind === 'candidate-project-v3'
+        && ['switch.slide-spdt-v1', 'button.momentary-nc-v1', 'switch.limit-spdt-v1'].includes(component.type)) {
+      const row = document.createElement('div');
+      const label = document.createElement('span'); label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      const key = component.type === 'switch.slide-spdt-v1' ? 'selectedThrow'
+        : component.type === 'button.momentary-nc-v1' ? 'pressed' : 'actuated';
+      const value = component.controls[key];
+      button.dataset.control = `${component.id}.${key}`;
+      button.setAttribute('aria-pressed', String(key === 'selectedThrow' ? value === 'B' : value));
+      button.textContent = key === 'selectedThrow' ? `Throw ${value}`
+        : key === 'pressed' ? (value ? 'Pressed · open' : 'Released · closed')
+          : (value ? 'Actuated · NO' : 'Resting · NC');
+      button.addEventListener('click', () => {
+        const next = key === 'selectedThrow' ? (component.controls.selectedThrow === 'A' ? 'B' : 'A') : !component.controls[key];
+        const prepared = selectedCandidateContactControl(component.id, key, next);
+        if (!prepared.ok) { showActionableError(elements.projectmessage, prepared.code, 'Mechanical input rejected.'); return; }
+        const changed = editor.apply({ ...prepared.command, revision: editor.revision });
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Mechanical input rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker);
+        elements.projectmessage.textContent = `${component.label} contact state changed.`; renderProject();
+      });
+      row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === 'switch.dip-4-v1') {
+      return [1, 2, 3, 4].map((index) => {
+        const row = document.createElement('div'); const label = document.createElement('span');
+        const key = `switch${index}`; const value = component.controls[key];
+        label.textContent = `${component.label} · ${index}`;
+        const button = document.createElement('button'); button.type = 'button';
+        button.dataset.control = `${component.id}.${key}`; button.setAttribute('aria-pressed', String(value));
+        button.textContent = value ? 'On · closed' : 'Off · open';
+        button.addEventListener('click', () => {
+          const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
+          const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+          if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'DIP switch rejected.'); return; }
+          applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+        }); row.append(label, button); return row;
+      });
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === 'input.rotary-encoder-button-v1') {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      label.textContent = `${component.label} · detent ${component.controls.detent}`;
+      const ccw = document.createElement('button'); ccw.type = 'button'; ccw.textContent = 'CCW −1';
+      const cw = document.createElement('button'); cw.type = 'button'; cw.textContent = 'CW +1';
+      const pressed = document.createElement('button'); pressed.type = 'button';
+      pressed.dataset.control = `${component.id}.pressed`; pressed.textContent = component.controls.pressed ? 'Pressed' : 'Released';
+      const applyControl = (key, value) => {
+        const prepared = selectedCandidateContactControl(component.id, key, value);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Encoder control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+      };
+      ccw.addEventListener('click', () => applyControl('detent', component.controls.detent - 1));
+      cw.addEventListener('click', () => applyControl('detent', component.controls.detent + 1));
+      pressed.addEventListener('click', () => applyControl('pressed', !component.controls.pressed));
+      row.append(label, ccw, cw, pressed); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3'
+        && ['switch.reed-no-v1', 'switch.emergency-stop-nc-v1', 'switch.foot-pedal-no-v1'].includes(component.type)) {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      const key = component.type === 'switch.reed-no-v1' ? 'magnetPresent'
+        : component.type === 'switch.emergency-stop-nc-v1' ? 'latched' : 'pressed';
+      const value = component.controls[key]; label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      button.dataset.control = `${component.id}.${key}`; button.setAttribute('aria-pressed', String(value));
+      button.textContent = component.type === 'switch.reed-no-v1' ? (value ? 'Magnet present · closed' : 'No magnet · open')
+        : component.type === 'switch.emergency-stop-nc-v1' ? (value ? 'Latched · open' : 'Reset · closed')
+          : (value ? 'Pressed · closed' : 'Released · open');
+      button.addEventListener('click', () => {
+        const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Input control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+      }); row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && CONTACT_SENSOR_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      const key = CONTACT_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+      const value = component.controls[key]; label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      button.dataset.control = `${component.id}.${key}`; button.setAttribute('aria-pressed', String(value));
+      button.textContent = component.type === FLOAT_SWITCH_TYPE
+        ? (value ? 'Liquid high · closed' : 'Liquid low · open')
+        : component.type === TILT_SWITCH_TYPE
+          ? (value ? 'Tilted · closed' : 'Level · open')
+          : (value ? 'Vibration detected · closed' : 'Still · open');
+      button.addEventListener('click', () => {
+        const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Contact sensor control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+      }); row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      const key = DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+      const value = component.controls[key]; label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      button.dataset.control = `${component.id}.${key}`; button.setAttribute('aria-pressed', String(value));
+      button.textContent = component.type === CAPACITIVE_TOUCH_TYPE ? (value ? 'Touched' : 'Released')
+        : component.type === PIR_MOTION_TYPE ? (value ? 'Motion detected' : 'Clear')
+          : (value ? 'Magnet present' : 'Clear');
+      button.addEventListener('click', () => {
+        const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Digital sensor control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker);
+        elements.projectmessage.textContent = `${component.label} active-high state changed.`; renderProject();
+      }); row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      const value = component.controls.pulseHigh; label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      button.dataset.control = `${component.id}.pulseHigh`;
+      button.setAttribute('aria-pressed', String(value));
+      button.textContent = value ? 'Pulse HIGH' : 'Pulse LOW';
+      button.setAttribute('aria-label', `${component.label}: manually authored pulse level ${value ? 'high' : 'low'}.`);
+      button.addEventListener('click', () => {
+        const prepared = selectedCandidateContactControl(component.id, 'pulseHigh', !value);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Pulse level control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker);
+        elements.projectmessage.textContent = `${component.label} manual pulse level changed; no automatic pulse train is generated.`;
+        renderProject();
+      }); row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      const key = DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+      const value = component.controls[key]; label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      button.dataset.control = `${component.id}.${key}`; button.setAttribute('aria-pressed', String(value));
+      button.textContent = component.type === IR_OBSTACLE_SENSOR_TYPE
+        ? (value ? 'Obstacle detected' : 'Clear') : (value ? 'Dark line detected' : 'Light surface');
+      button.addEventListener('click', () => {
+        const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Reflective sensor control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker);
+        elements.projectmessage.textContent = `${component.label} active-low state changed.`; renderProject();
+      }); row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === ROTARY_SELECTOR_TYPE) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      label.textContent = component.label;
+      const select = document.createElement('select'); select.dataset.control = `${component.id}.position`;
+      select.setAttribute('aria-label', `${component.label}: selected position`);
+      for (let position = 1; position <= 4; position += 1) {
+        const option = document.createElement('option'); option.value = String(position);
+        option.textContent = `Position ${position}`; option.selected = component.controls.position === position;
+        select.append(option);
+      }
+      select.addEventListener('change', () => {
+        const prepared = selectedCandidateContactControl(component.id, 'position', Number(select.value));
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Rotary selector rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+      }); row.append(label, select); return [row];
+    }
     if (component.type === 'button.momentary-v1') {
       const row = document.createElement('div');
       const label = document.createElement('span'); label.textContent = component.label;
@@ -13447,6 +13880,121 @@ function renderRuntimeControls() {
       });
       row.append(label, input); return [row];
     }
+    if (editor.kind === 'candidate-project-v3' && ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      const key = ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type].controlKeys[0];
+      const ratio = component.controls[key]; const percent = Math.round(ratio * 100);
+      label.textContent = `${component.label} · idealized ${percent}% · ${(ratio * 5).toFixed(2)} V`;
+      const input = document.createElement('input'); input.type = 'range';
+      input.min = '0'; input.max = '100'; input.step = '1'; input.value = String(percent);
+      input.dataset.control = `${component.id}.${key}`; input.id = `control-${component.id}-${key}`;
+      label.htmlFor = input.id;
+      input.setAttribute('aria-label', `${component.label} idealized signal, 0 to 100 percent`);
+      input.addEventListener('input', () => {
+        const value = Number(input.value) / 100;
+        const prepared = selectedCandidateContactControl(component.id, key, value);
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'Analogue environment sensor control rejected.');
+          return;
+        }
+        const result = applyEditor(prepared.command, `${component.label} idealized signal ${input.value}%`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && ANALOGUE_DETECTION_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      const key = ANALOGUE_DETECTION_DEFINITIONS[component.type].controlKeys[0];
+      const ratio = component.controls[key]; const percent = Math.round(ratio * 100);
+      label.textContent = `${component.label} · idealized ${percent}% · ${(ratio * 5).toFixed(2)} V`;
+      const input = document.createElement('input'); input.type = 'range';
+      input.min = '0'; input.max = '100'; input.step = '1'; input.value = String(percent);
+      input.dataset.control = `${component.id}.${key}`; input.id = `control-${component.id}-${key}`;
+      label.htmlFor = input.id;
+      input.setAttribute('aria-label', `${component.label} idealized response, 0 to 100 percent`);
+      input.addEventListener('input', () => {
+        const value = Number(input.value) / 100;
+        const prepared = selectedCandidateContactControl(component.id, key, value);
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'Analogue detector control rejected.');
+          return;
+        }
+        const result = applyEditor(prepared.command, `${component.label} idealized response ${input.value}%`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      const definition = ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type];
+      const key = definition.controlKeys[0]; const value = component.controls[key];
+      const isDirection = component.type === WIND_DIRECTION_ANALOGUE_TYPE;
+      const display = isDirection ? `${Math.round(value)}°` : `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
+      label.textContent = `${component.label} · idealized ${display} · ${analogueDirectionFieldVoltage(component.type, value).toFixed(2)} V`;
+      const input = document.createElement('input'); input.type = 'range';
+      input.min = String(definition.control.minimum); input.max = String(definition.control.maximum);
+      input.step = isDirection ? '1' : '0.01'; input.value = String(value);
+      input.dataset.control = `${component.id}.${key}`; input.id = `control-${component.id}-${key}`;
+      label.htmlFor = input.id;
+      input.setAttribute('aria-label', isDirection
+        ? `${component.label} idealized direction, 0 to 360 degrees`
+        : `${component.label} idealized signed field ratio, minus 1 to plus 1`);
+      input.addEventListener('input', () => {
+        const nextValue = Number(input.value);
+        const prepared = selectedCandidateContactControl(component.id, key, nextValue);
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'Analogue direction or field control rejected.');
+          return;
+        }
+        const messageValue = isDirection ? `${input.value}°` : input.value;
+        const result = applyEditor(prepared.command, `${component.label} idealized signal ${messageValue}`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      const definition = ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type];
+      const value = component.controls.temperatureC;
+      label.textContent = `${component.label} · idealized ${value.toFixed(1)} °C · ${analogueTemperatureIcVoltage(component.type, value).toFixed(2)} V`;
+      const input = document.createElement('input'); input.type = 'range';
+      input.min = String(definition.control.minimum); input.max = String(definition.control.maximum);
+      input.step = '0.5'; input.value = String(value);
+      input.dataset.control = `${component.id}.temperatureC`;
+      input.id = `control-${component.id}-temperatureC`; label.htmlFor = input.id;
+      input.setAttribute('aria-label', `${component.label} idealized temperature, ${definition.control.minimum} to ${definition.control.maximum} degrees Celsius`);
+      input.addEventListener('input', () => {
+        const nextValue = Number(input.value);
+        const prepared = selectedCandidateContactControl(component.id, 'temperatureC', nextValue);
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'Analogue temperature IC control rejected.');
+          return;
+        }
+        const result = applyEditor(prepared.command, `${component.label} idealized temperature ${input.value} °C`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      const definition = RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type];
+      const key = definition.controlKeys[0]; const value = component.controls[key];
+      label.textContent = `${component.label} · ${definition.control.label} ${value} · ${resistiveDividerSensorVoltage(component.type, value).toFixed(2)} V`;
+      const input = document.createElement('input'); input.type = 'range';
+      input.min = String(definition.control.minimum); input.max = String(definition.control.maximum);
+      input.step = String(definition.control.step); input.value = String(value);
+      input.dataset.control = `${component.id}.${key}`; input.id = `control-${component.id}-${key}`;
+      label.htmlFor = input.id; input.setAttribute('aria-label', `${component.label} ${definition.control.label}`);
+      input.addEventListener('input', () => {
+        const prepared = selectedCandidateContactControl(component.id, key, Number(input.value));
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'Resistive divider sensor control rejected.'); return;
+        }
+        const result = applyEditor(prepared.command, `${component.label} ${definition.control.label} ${input.value}`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
+    }
     if (editor.kind === 'candidate-project-v3' && component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
       const controls = component.controls;
       const definitions = [
@@ -13489,7 +14037,7 @@ function renderRuntimeControls() {
         return row;
       });
     }
-    if (component.type === 'potentiometer.linear-v1') {
+    if (['potentiometer.linear-v1', 'potentiometer.trimmer-v1'].includes(component.type)) {
       const row = document.createElement('div');
       const label = document.createElement('label'); label.textContent = component.label;
       const input = document.createElement('input'); input.type = 'range'; input.min = '0'; input.max = '100'; input.value = String(component.controls.position * 100); input.dataset.control = `${component.id}.position`;
@@ -13515,7 +14063,7 @@ function renderProject() {
   elements.graphstate.textContent = `${project.circuit.components.length} components · ${project.circuit.nets.length} nets · ${endpointCount} endpoints`;
   if (validation.ok) {
     elements.circuitdiagnostics.textContent = editor.kind === 'candidate-project-v3'
-      ? 'Candidate accepted: validated contacts, bounded analogue/digital modules, current-limited light outputs, silent buzzer, seven-segment, and write-only 4-bit GPIO character LCD. Unsupported display commands and electrical topologies fail closed; no physical sensor, optical, acoustic or display accuracy is claimed.'
+      ? 'Candidate accepted: validated contacts, bounded analogue/digital modules, current-limited light outputs, silent buzzer, single- and four-digit seven-segment displays, and write-only 4-bit GPIO character LCD. Unsupported display commands and electrical topologies fail closed; no physical sensor, optical, acoustic or display accuracy is claimed.'
       : 'Circuit accepted for the tested runtime subset.';
   } else {
     if (editor.kind === 'candidate-project-v3') {
@@ -13675,6 +14223,36 @@ function renderRgbLedRuntime(message) {
   }
 }
 
+function renderTrafficLightRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
+    (item) => item.type === TRAFFIC_LIGHT_TYPE && item.runtimeProjection,
+  )) {
+    const artwork = elements.componentlayer.querySelector(
+      `[data-component-id="${support.componentId}"] [data-artwork-key="output-traffic-light-module"]`,
+    );
+    if (!artwork) continue;
+    const levels = Object.fromEntries(['RED', 'AMBER', 'GREEN'].map((channel) => {
+      const pin = pins.get(support.runtimeProjection.channels[channel].sourcePin);
+      const driven = pin?.mode === 'OUTPUT' || pin?.mode === 'DIGITAL_PWM';
+      const level = driven && (Number.isFinite(pin?.pwm?.duty) ? pin.pwm.duty > 0.001 : Boolean(pin?.level));
+      return [channel, level];
+    }));
+    Object.assign(levels, modelLibraryImplementationFor(AVR_PROFILE).observeTrafficLight(levels));
+    artwork.dataset.redOn = String(levels.RED);
+    artwork.dataset.amberOn = String(levels.AMBER);
+    artwork.dataset.greenOn = String(levels.GREEN);
+    for (const channel of ['RED', 'AMBER', 'GREEN']) {
+      artwork.querySelector(`[data-traffic-channel="${channel}"]`)?.classList.toggle('on', levels[channel]);
+    }
+    const active = ['RED', 'AMBER', 'GREEN'].filter((channel) => levels[channel]);
+    const label = `${support.componentId}, traffic light ${active.length ? active.join(' plus ').toLowerCase() : 'all lamps off'}; no physical light or road-signal compliance claimed`;
+    artwork.setAttribute('aria-label', label);
+    const title = artwork.querySelector('title'); if (title) title.textContent = label;
+  }
+}
+
 function renderActiveBuzzerRuntime(message) {
   if (editor.kind !== 'candidate-project-v3') return;
   const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
@@ -13732,16 +14310,69 @@ function renderSevenSegmentRuntime(message) {
   }
 }
 
+function renderFourDigitSevenSegmentRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
+    (item) => item.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE && item.runtimeProjection,
+  )) {
+    const artwork = elements.componentlayer.querySelector(
+      `[data-component-id="${support.componentId}"] [data-artwork-key="output-seven-segment-four-digit-common-cathode"]`,
+    );
+    if (!artwork) continue;
+    const activeSegments = Object.entries(support.runtimeProjection.segments)
+      .filter(([, segment]) => {
+        const pin = pins.get(segment.sourcePin);
+        return pin?.mode === 'OUTPUT' && Boolean(pin.level);
+      })
+      .map(([segment]) => segment);
+    const selectedDigits = Object.entries(support.runtimeProjection.digits)
+      .filter(([, digit]) => {
+        const pin = pins.get(digit.sourcePin);
+        return pin?.mode === 'OUTPUT' && !Boolean(pin.level);
+      })
+      .map(([digit]) => Number(digit.slice(3)));
+    for (const digit of selectedDigits) {
+      artwork.dataset[`digit${digit}Segments`] = activeSegments
+        .filter((segment) => segment !== 'dp').sort().join('');
+      artwork.dataset[`digit${digit}DecimalPoint`] = String(activeSegments.includes('dp'));
+    }
+    const digits = [1, 2, 3, 4].map((digit) => artwork.dataset[`digit${digit}Segments`] ?? '');
+    const decimalPoints = [1, 2, 3, 4].map(
+      (digit) => artwork.dataset[`digit${digit}DecimalPoint`] === 'true',
+    );
+    const observed = modelLibraryImplementationFor(AVR_PROFILE)
+      .observeFourDigitSevenSegment(digits, decimalPoints);
+    for (let digit = 1; digit <= 4; digit += 1) {
+      for (const segment of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp']) {
+        const on = segment === 'dp'
+          ? observed.decimalPoints[digit - 1]
+          : observed.digits[digit - 1].includes(segment);
+        artwork.querySelector(
+          `[data-four-digit-index="${digit}"][data-four-digit-segment="${segment}"]`,
+        )?.classList.toggle('on', on);
+      }
+    }
+    const visible = observed.digits.map((segments, index) =>
+      `${index + 1}:${segments || 'blank'}${observed.decimalPoints[index] ? '+dp' : ''}`).join(', ');
+    const label = `${support.componentId}, sampled multiplex digits ${visible}; idealized retained command state only, no physical brightness, package-current or refresh-rate accuracy claimed`;
+    artwork.setAttribute('aria-label', label);
+    const title = artwork.querySelector('title'); if (title) title.textContent = label;
+  }
+}
+
 function renderCharacterLcdRuntime(message) {
   if (editor.kind !== 'candidate-project-v3') return;
   const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
   const trace = Array.isArray(message.trace) ? message.trace : [];
   const published = [];
   for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
-    (item) => item.type === CHARACTER_LCD_TYPE && item.runtimeProjection,
+    (item) => [CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE].includes(item.type) && item.runtimeProjection,
   )) {
+    const is20x4 = support.type === CHARACTER_LCD_20X4_TYPE;
+    const renderer = is20x4 ? CHARACTER_LCD_20X4_RENDERER : 'output-character-lcd-16x2-4bit';
     const artwork = elements.componentlayer.querySelector(
-      `[data-component-id="${support.componentId}"] [data-artwork-key="output-character-lcd-16x2-4bit"]`,
+      `[data-component-id="${support.componentId}"] [data-artwork-key="${renderer}"]`,
     );
     if (!artwork) continue;
     const mapping = Object.fromEntries(Object.entries(support.runtimeProjection.signals).map(
@@ -13750,7 +14381,9 @@ function renderCharacterLcdRuntime(message) {
     let record = characterLcdRuntime.get(support.componentId);
     if (!record || message.cycle < record.cycle || trace.length < record.traceLength) {
       record = {
-        decoder: modelLibraryImplementationFor(AVR_PROFILE).createCharacterLcdDecoder(mapping),
+        decoder: is20x4
+          ? modelLibraryImplementationFor(AVR_PROFILE).createCharacterLcd20x4Decoder(mapping)
+          : modelLibraryImplementationFor(AVR_PROFILE).createCharacterLcdDecoder(mapping),
         cycle: 0,
         traceLength: 0,
       };
@@ -13765,26 +14398,90 @@ function renderCharacterLcdRuntime(message) {
     record.traceLength = trace.length;
     record.cycle = message.cycle;
     const state = driven ? snapshot.status : 'not-driven';
-    const decodedLines = driven && snapshot.displayOn ? snapshot.lines : ['', ''];
+    const decodedLines = driven && snapshot.displayOn ? snapshot.lines : (is20x4 ? ['', '', '', ''] : ['', '']);
     const observed = modelLibraryImplementationFor(AVR_PROFILE)
-      .evaluateProduction(CHARACTER_LCD_TYPE, { lines: decodedLines });
+      .evaluateProduction(support.type, { lines: decodedLines });
     if (!observed.ok) throw Object.assign(new Error(observed.code), observed);
     const lines = observed.result.lines;
     artwork.dataset.protocolState = state;
-    artwork.dataset.line1 = lines[0]; artwork.dataset.line2 = lines[1];
-    const line1 = artwork.querySelector('[data-lcd-line="1"]');
-    const line2 = artwork.querySelector('[data-lcd-line="2"]');
-    if (line1) line1.textContent = lines[0];
-    if (line2) line2.textContent = lines[1];
+    artwork.dataset.cursor = snapshot.cursorOn ? 'on' : 'off';
+    artwork.dataset.blink = snapshot.blinkOn ? 'on' : 'off';
+    lines.forEach((line, index) => { artwork.dataset[`line${index + 1}`] = line; });
+    if (is20x4) {
+      const codes = snapshot.displayOn ? snapshot.cellCodes : Array.from({ length: 4 }, () => Array(20).fill(32));
+      for (const cell of artwork.querySelectorAll('[data-lcd-cell]')) {
+        const [row, column] = cell.dataset.lcdCell.split(':').map(Number);
+        const code = codes[row]?.[column] ?? 32;
+        cell.textContent = code < 8 ? '' : String.fromCharCode(code);
+        artwork.querySelector(`[data-lcd-runtime-glyph="${row}:${column}"]`)?.remove();
+        if (code < 8) {
+          const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          group.dataset.lcdRuntimeGlyph = `${row}:${column}`;
+          const x = Number(cell.getAttribute('x')) - 3.75;
+          const y = Number(cell.getAttribute('y')) - 9;
+          snapshot.customGlyphs[code].forEach((bits, pixelRow) => {
+            for (let pixelColumn = 0; pixelColumn < 5; pixelColumn += 1) if (bits & (1 << (4 - pixelColumn))) {
+              const pixel = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+              pixel.setAttribute('x', String(x + pixelColumn * 1.5)); pixel.setAttribute('y', String(y + pixelRow * 1.5));
+              pixel.setAttribute('width', '1.2'); pixel.setAttribute('height', '1.2'); pixel.setAttribute('fill', '#17220d');
+              group.append(pixel);
+            }
+          });
+          artwork.append(group);
+        }
+      }
+    } else {
+      artwork.querySelector('[data-lcd-line="1"]')?.replaceChildren(lines[0]);
+      artwork.querySelector('[data-lcd-line="2"]')?.replaceChildren(lines[1]);
+    }
     const detail = snapshot.error
       ? `${snapshot.error.code}: ${snapshot.error.details.join(', ')}`
-      : `${state}; write-only 4-bit GPIO, ${snapshot.latchedBytes} bytes`;
-    const label = `${support.componentId}, line 1 ${JSON.stringify(lines[0])}, line 2 ${JSON.stringify(lines[1])}; ${detail}; no I2C or physical display accuracy claimed`;
+      : `${state}; write-only 4-bit GPIO, ${snapshot.latchedBytes} bytes, cursor ${snapshot.cursorOn ? 'on' : 'off'}, blink ${snapshot.blinkOn ? 'on' : 'off'}`;
+    const label = `${support.componentId}, ${lines.map((line, index) => `line ${index + 1} ${JSON.stringify(line)}`).join(', ')}; ${detail}; no I2C or physical display accuracy claimed`;
     artwork.setAttribute('aria-label', label);
     const title = artwork.querySelector('title'); if (title) title.textContent = label;
     published.push({ componentId: support.componentId, ...snapshot, status: state, lines });
   }
   publish({ characterLcd: published });
+}
+
+function renderPcf8574LcdRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const records = Array.isArray(message.i2c) ? message.i2c : [];
+  const published = [];
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
+    (item) => item.type === PCF8574_LCD_TYPE && item.runtimeProjection,
+  )) {
+    const artwork = elements.componentlayer.querySelector(
+      `[data-component-id="${support.componentId}"] [data-artwork-key="output-character-lcd-16x2-pcf8574"]`,
+    );
+    if (!artwork) continue;
+    let record = characterLcdRuntime.get(support.componentId);
+    if (!record || message.cycle < record.cycle || records.length < record.traceLength) {
+      record = { decoder: modelLibraryImplementationFor(AVR_PROFILE)
+        .createPcf8574LcdDecoder(support.runtimeProjection.address), cycle: 0, traceLength: 0 };
+      characterLcdRuntime.set(support.componentId, record);
+    }
+    const snapshot = record.decoder.consume(records, { i2cDrops: message.retentionDrops?.i2c ?? 0 });
+    record.traceLength = records.length; record.cycle = message.cycle;
+    const decodedLines = snapshot.displayOn ? snapshot.lines : ['', ''];
+    const observed = modelLibraryImplementationFor(AVR_PROFILE)
+      .evaluateProduction(PCF8574_LCD_TYPE, { lines: decodedLines });
+    if (!observed.ok) throw Object.assign(new Error(observed.code), observed);
+    const lines = observed.result.lines;
+    artwork.dataset.protocolState = snapshot.status;
+    artwork.dataset.cursor = snapshot.cursorOn ? 'on' : 'off';
+    artwork.dataset.blink = snapshot.blinkOn ? 'on' : 'off';
+    artwork.dataset.line1 = lines[0]; artwork.dataset.line2 = lines[1];
+    artwork.querySelector('[data-lcd-line="1"]')?.replaceChildren(lines[0]);
+    artwork.querySelector('[data-lcd-line="2"]')?.replaceChildren(lines[1]);
+    const detail = snapshot.error ? snapshot.error.code : `${snapshot.transactions} acknowledged bytes`;
+    const label = `${support.componentId}, line 1 ${JSON.stringify(lines[0])}, line 2 ${JSON.stringify(lines[1])}; fixed AVR I2C address 0x27; ${detail}`;
+    artwork.setAttribute('aria-label', label);
+    const title = artwork.querySelector('title'); if (title) title.textContent = label;
+    published.push({ componentId: support.componentId, ...snapshot, lines });
+  }
+  publish({ pcf8574Lcd: published });
 }
 
 function renderRuntime(message, { publishState = true } = {}) {
@@ -13813,9 +14510,12 @@ function renderRuntime(message, { publishState = true } = {}) {
     visual.setAttribute('aria-label', `${led.componentId} is ${led.on ? 'on' : 'off'} at ${(led.currentAmps * 1_000).toFixed(2)} mA, ${(brightness * 100).toFixed(1)} percent ideal relative brightness`);
   }
   renderRgbLedRuntime(message);
+  renderTrafficLightRuntime(message);
   renderActiveBuzzerRuntime(message);
   renderSevenSegmentRuntime(message);
+  renderFourDigitSevenSegmentRuntime(message);
   renderCharacterLcdRuntime(message);
+  renderPcf8574LcdRuntime(message);
   const trace = Array.isArray(message.trace) ? message.trace : [];
   const transitions = trace.filter((entry) => entry.pin === 13).slice(-8).reverse();
   elements.trace.replaceChildren(...(transitions.length ? transitions : [null]).map((entry) => {
@@ -13935,6 +14635,10 @@ async function loadArtifact(hex, artifactIdentity, {
     modelImplementationSha256,
     modelExecutionContextSha256,
     digitalInputs: structuredClone(currentCandidateInputs()),
+    i2cDevices: editor.kind === 'candidate-project-v3'
+      ? editor.runtimeSupport.filter((item) => item.type === PCF8574_LCD_TYPE).map((item) => ({
+        type: 'pcf8574-lcd', address: item.runtimeProjection.address,
+      })) : [],
     instruments: {
       logicChannels: [...project.instruments.logicChannels],
       selectedPin: project.instruments.selectedPin,
@@ -14209,6 +14913,7 @@ async function loadArtifact(hex, artifactIdentity, {
     ...(authority ? { x47RuntimeAuthority: structuredClone(authority) } : {}),
     ...(frozen.x34Probe ? { x34Probe: frozen.x34Probe } : {}),
     digitalInputs: frozen.digitalInputs,
+    i2cDevices: frozen.i2cDevices,
     instruments: {
       logicChannels: frozen.instruments.logicChannels,
       selectedPin: frozen.instruments.selectedPin,
@@ -15159,8 +15864,11 @@ elements.removejunction.addEventListener('click', () => {
   const net = currentProject().circuit.nets.find((item) => item.id === selectedNetId);
   const junction = currentProject().circuit.junctions.find((item) => item.net === selectedNetId);
   if (!net || !junction) return;
-  const detachEndpoint = net.endpoints.length > 2 ? net.endpoints.at(-1) : null;
-  applyEditor({ type: 'junction.remove', junctionId: junction.id, detachEndpoint }, `Removed ${junction.id}`);
+  if (net.endpoints.length > 2) {
+    elements.wirestate.textContent = 'This junction is required by the multi-pin net. Select a named branch to disconnect it safely.';
+    return;
+  }
+  applyEditor({ type: 'junction.remove', junctionId: junction.id, detachEndpoint: null }, `Removed ${junction.id}`);
 });
 
 function clamp(value, minimum, maximum) { return Math.max(minimum, Math.min(maximum, value)); }
@@ -15319,6 +16027,30 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
     elements.projectmessage.textContent = `${example.name} loaded as authored data only. Build fresh, then ${example.try.toLowerCase()}`;
     return { ok: true, code: parsed.code, example };
   }
+  if (exampleId === PCF8574_LCD_HELLO_EXAMPLE_ID) {
+    const before = currentProjectText(); let example;
+    try { example = createPcf8574LcdHelloExample(); }
+    catch (error) {
+      showActionableError(elements.projectmessage, error?.message ?? 'EXAMPLE_INVALID', 'I2C LCD example could not be constructed.');
+      return { ok: false, code: error?.message ?? 'EXAMPLE_INVALID' };
+    }
+    const parsed = modelLibraryImplementationFor(AVR_PROFILE).openCandidateUiSession(example.text, {
+      modelLibraryLock: modelLibraryLockFor(AVR_PROFILE),
+    });
+    if (!parsed.ok) {
+      showActionableError(elements.projectmessage, parsed.code, 'I2C LCD example was rejected atomically; project unchanged.');
+      if (currentProjectText() !== before) throw new Error('Atomic I2C LCD starter boundary violated');
+      return parsed;
+    }
+    editor = parsed.session; scenarioTimelineEditor = null; authoredScenarioResults = [];
+    clearExpectationReference(); resetProjectModelLibrary(AVR_PROFILE);
+    installProjectGeneration({ empty: false, reason, runtimeMessage: `${example.name} loaded — build required` });
+    selectedSourceFile = 'main.ino'; elements.exampleselect.value = exampleId;
+    persistProject(); publish({ lastAction: 'PCF8574_LCD_HELLO_LOADED', importReport: parsed.report ?? parsed.code });
+    renderCatalog(); renderProject();
+    elements.projectmessage.textContent = `${example.name} loaded with fixed 0x27, A4/SDA and A5/SCL wiring.`;
+    return { ok: true, code: parsed.code, example };
+  }
   if (exampleId === THERMOSTAT_EXPERIMENT_ID) {
     const before = currentProjectText();
     let example;
@@ -15401,7 +16133,7 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
 }
 
 function renderStarterExamples() {
-  const cards = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, THERMOSTAT_EXPERIMENT_CARD, ...avrReferenceStarterCatalog()].map((example) => {
+  const cards = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, PCF8574_LCD_HELLO_CARD, THERMOSTAT_EXPERIMENT_CARD, ...avrReferenceStarterCatalog()].map((example) => {
     const card = document.createElement('article'); card.className = 'starter-card'; card.dataset.example = example.id;
     const visual = document.createElement('span'); visual.className = 'starter-visual'; visual.setAttribute('aria-hidden', 'true');
     const meta = document.createElement('span'); meta.className = 'starter-meta';
@@ -15453,8 +16185,8 @@ function filterStarterExamples() {
     if (!card.hidden) visible += 1;
   }
   elements.examplepickerstatus.textContent = query
-    ? `${visible} of 15 examples match “${elements.examplepickersearch.value.trim()}”`
-    : '15 examples available';
+    ? `${visible} of 20 examples match “${elements.examplepickersearch.value.trim()}”`
+    : '20 examples available';
 }
 function closeExamplePicker({ restoreFocus = true } = {}) {
   const returnFocus = examplePickerReturnFocus;
@@ -15778,6 +16510,7 @@ function installPreservedDraftCopy(draft) {
 }
 elements.projectdraftrecovery.addEventListener('change', () => {
   elements.projectdraftrecover.disabled = !elements.projectdraftrecovery.value;
+  elements.projectdraftdownload.disabled = !elements.projectdraftrecovery.value;
 });
 function presentDraftRecoveryStatus(message) {
   elements.projectdraftrecoverystatus.textContent = message;
@@ -15830,6 +16563,20 @@ elements.projectdraftrecover.addEventListener('click', () => {
     actionLabel: `opening a preserved ${RECOVERY_PROFILE_LABELS[profile] ?? profile} copy in a separate draft`,
     continueAction: recover })) return;
   recover();
+});
+elements.projectdraftdownload.addEventListener('click', async () => {
+  const draft = preservedDrafts().find((candidate) => candidate.key === elements.projectdraftrecovery.value);
+  if (!draft || typeof draft.raw !== 'string') {
+    presentDraftRecoveryStatus('No preserved browser entry is selected. Nothing was downloaded or changed.');
+    return;
+  }
+  const originalRaw = draft.raw;
+  const safeIdentity = `${draft.profile}-${draft.draftId}`.replaceAll(/[^a-z0-9.-]+/giu, '-').slice(0, 120);
+  const digest = await sha256Text(originalRaw);
+  downloadText(`preserved-${safeIdentity}.txt`, originalRaw, 'text/plain;charset=utf-8');
+  if (localStorage.getItem(draft.key) !== originalRaw) throw new Error('RECOVERY_ORIGINAL_MUTATED');
+  const validity = draft.valid ? 'validated entry' : `untrusted entry (${draft.code})`;
+  presentDraftRecoveryStatus(`Downloaded exact raw bytes for ${validity} · SHA-256 ${digest}. Original key unchanged; the download did not activate, migrate, or delete this entry.`);
 });
 elements.projectexport.addEventListener('click', () => saveLegacyProject(AVR_PROFILE));
 
@@ -16081,13 +16828,21 @@ window.__M6_PROJECT__ = () => JSON.parse(currentProjectText());
 window.__BROWSER_SESSION_CANONICAL_OWNER__ = Object.freeze({
   snapshot: () => {
     if (selectedCompilerProfile !== AVR_PROFILE) return { ok: false, code: 'API_PROFILE_READ_ONLY' };
+    const candidateValidation = editor.kind === 'candidate-project-v3' ? {
+      authoring: { ok: true, code: 'CANDIDATE_PROJECT_ACCEPTED', details: [] },
+      runtime: editor.runnable,
+      executable: editor.runnable.ok === true,
+    } : null;
     return { ok: true, profile: AVR_PROFILE,
       projectId: `project-avr-${Math.max(1, lifecycle.projectGeneration)}`,
       revision: editor.revision, project: structuredClone(currentProject()),
-      supportsEdit: editor instanceof ProjectEditorReducer && boundedSubcircuits.instances.length === 0 };
+      candidateValidation: structuredClone(candidateValidation),
+      supportsEdit: (editor instanceof ProjectEditorReducer || editor.kind === 'candidate-project-v3')
+        && boundedSubcircuits.instances.length === 0 };
   },
   batch: ({ expectedProjectId, expectedRevision, transactionId, commands }) => {
-    if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)
+    if (selectedCompilerProfile !== AVR_PROFILE
+        || (!(editor instanceof ProjectEditorReducer) && editor.kind !== 'candidate-project-v3')
         || boundedSubcircuits.instances.length) return { ok: false, code: 'API_PROFILE_READ_ONLY' };
     if (expectedProjectId !== `project-avr-${Math.max(1, lifecycle.projectGeneration)}`) {
       return { ok: false, code: 'API_PROJECT_CHANGED' };
@@ -16096,7 +16851,8 @@ window.__BROWSER_SESSION_CANONICAL_OWNER__ = Object.freeze({
     return applyEditor({ type: 'edit.batch', transactionId, commands }, 'API batch');
   },
   undo: ({ expectedProjectId, expectedRevision, transactionId }) => {
-    if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)) {
+    if (selectedCompilerProfile !== AVR_PROFILE
+        || (!(editor instanceof ProjectEditorReducer) && editor.kind !== 'candidate-project-v3')) {
       return { ok: false, code: 'API_PROFILE_READ_ONLY' };
     }
     if (expectedProjectId !== `project-avr-${Math.max(1, lifecycle.projectGeneration)}`) {
@@ -16106,7 +16862,8 @@ window.__BROWSER_SESSION_CANONICAL_OWNER__ = Object.freeze({
     return applyEditor({ type: 'edit.undo', transactionId }, 'API undo');
   },
   redo: ({ expectedProjectId, expectedRevision, transactionId }) => {
-    if (selectedCompilerProfile !== AVR_PROFILE || !(editor instanceof ProjectEditorReducer)) {
+    if (selectedCompilerProfile !== AVR_PROFILE
+        || (!(editor instanceof ProjectEditorReducer) && editor.kind !== 'candidate-project-v3')) {
       return { ok: false, code: 'API_PROFILE_READ_ONLY' };
     }
     if (expectedProjectId !== `project-avr-${Math.max(1, lifecycle.projectGeneration)}`) {
