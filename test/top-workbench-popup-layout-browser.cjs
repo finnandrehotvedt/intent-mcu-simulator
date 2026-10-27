@@ -42,7 +42,8 @@ async function geometry(page, viewport, profile) {
     });
     const primaryControls = [
       '#family-select', '#board-select', '#beginner-run', '#beginner-examples',
-      '#beginner-scratch', '#toggle-catalog',
+      '#beginner-scratch', '#toggle-catalog', '#quick-build', '#quick-run',
+      '#quick-pause', '#quick-reset', '#quick-stop', '#runtime-shortcuts',
     ].map((selector) => {
       const rect = document.querySelector(selector).getBoundingClientRect();
       return { selector, ...intersection(rect), top: rect.top, bottom: rect.bottom };
@@ -63,12 +64,12 @@ async function geometry(page, viewport, profile) {
     };
   }, { profileId: profile.id, canvasSelector: profile.canvas, visualSelector: profile.visual });
   assert.equal(value.scrollY, 0);
-  assert(value.stageTop <= 230, `${profile.slug}: stage starts at ${value.stageTop}`);
+  assert(value.stageTop <= (viewport.width <= 1024 ? 310 : 230), `${profile.slug}: stage starts at ${value.stageTop}`);
   assert(value.stageWidth >= 700, `${profile.slug}: stage width ${value.stageWidth}`);
   assert(value.stageVisibleHeight >= (viewport.height <= 768 ? 430 : 540), `${profile.slug}: visible height ${value.stageVisibleHeight}`);
   assert(value.canvasHeight >= 560, `${profile.slug}: canvas height ${value.canvasHeight}`);
   assert(value.visualIntersection.width >= 700, `${profile.slug}: actual canvas visible width ${value.visualIntersection.width}`);
-  assert(value.visualIntersection.height >= (viewport.height <= 768 ? 420 : 540), `${profile.slug}: actual canvas visible height ${value.visualIntersection.height}`);
+  assert(value.visualIntersection.height >= (viewport.width <= 1024 ? 340 : viewport.height <= 768 ? 420 : 540), `${profile.slug}: actual canvas visible height ${value.visualIntersection.height}`);
   assert(value.controlsTop < value.stageTop);
   assert(value.overflow <= 1, `${profile.slug}: horizontal overflow ${value.overflow}`);
   assert.equal(value.directCanvasCount, 1);
@@ -142,7 +143,9 @@ async function verifyPartsDrawer(page, profile) {
   const browser = await chromium.launch({ headless: true });
   const report = { base, producerRequests: [], mutatingRequests: [], workerCreations: [], viewports: [] };
   try {
-    for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }]) {
+    for (const viewport of [
+      { width: 1024, height: 768 }, { width: 1366, height: 768 }, { width: 1440, height: 900 },
+    ]) {
       const context = await browser.newContext({ viewport, acceptDownloads: true, serviceWorkers: 'block' });
       const page = await context.newPage();
       page.on('request', (request) => {
@@ -171,7 +174,7 @@ async function verifyPartsDrawer(page, profile) {
     }
     if (process.env.TOP_LAYOUT_GEOMETRY_ONLY === '1') {
       fs.writeFileSync(path.join(outputDir, 'geometry.json'), `${JSON.stringify(report.viewports, null, 2)}\n`);
-      process.stdout.write(`${JSON.stringify({ geometryOnly: true, cases: 8 })}\n`);
+      process.stdout.write(`${JSON.stringify({ geometryOnly: true, cases: 12 })}\n`);
       return;
     }
 
