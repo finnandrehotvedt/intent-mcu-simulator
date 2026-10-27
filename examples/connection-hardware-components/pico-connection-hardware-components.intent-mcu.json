@@ -1,0 +1,142 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.rp2040-pico-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "0777557ad9327be568169fa8daf24c879ca1793f93f9ec174297d28a9bd1f1f5",
+    "implementationSha256": "f0d6827049cc490e7841e1a535df41d041e1510b525c9d2f1dc7a2c8b219d5c9"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-rp2040-public-project@1",
+    "name": "pico connection-hardware authoring",
+    "profile": "board.rp2040-pico-v1",
+    "source": "/* Intent MCU Simulator public RP2040 source v1 */\nint main(void)\n{\n  intent_gpio0_output(1u);\n  intent_uart0_text(\"PICO PUBLIC\");\n  intent_halt();\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-rp2040-pico-circuit@1",
+      "boardProfile": "board.rp2040-pico-v1",
+      "components": [
+        {
+          "id": "breadboard-1",
+          "type": "wiring.breadboard-mini-4-row-v1",
+          "label": "Mini breadboard (4 rows)",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "pico-1",
+          "type": "board.rp2040-pico-v1",
+          "label": "RP2040 Pico profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "terminal-block-1",
+          "type": "connector.terminal-block-2-position-v1",
+          "label": "Terminal block (2 position)",
+          "properties": {},
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-breadboard-1-l1-pico-1-gp1",
+          "endpoints": [
+            {
+              "component": "breadboard-1",
+              "pin": "L1"
+            },
+            {
+              "component": "pico-1",
+              "pin": "GP1"
+            },
+            {
+              "component": "terminal-block-1",
+              "pin": "P1"
+            }
+          ]
+        },
+        {
+          "id": "net-breadboard-1-r1-pico-1-gnd8",
+          "endpoints": [
+            {
+              "component": "breadboard-1",
+              "pin": "R1"
+            },
+            {
+              "component": "pico-1",
+              "pin": "GND8"
+            },
+            {
+              "component": "terminal-block-1",
+              "pin": "P2"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "breadboard-1": {
+            "x": 0.25,
+            "y": 0.58,
+            "rotation": 0
+          },
+          "pico-1": {
+            "x": 0.78,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "terminal-block-1": {
+            "x": 0.55,
+            "y": 0.58,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-breadboard-1-l1-pico-1-gp1": "#39dff2",
+          "net-breadboard-1-r1-pico-1-gnd8": "#39dff2"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        },
+        "idCounters": {
+          "breadboard": 1,
+          "button": 0,
+          "capacitor": 0,
+          "diode": 0,
+          "electrolytic": 0,
+          "fuse": 0,
+          "ground": 0,
+          "inductor": 0,
+          "led": 1,
+          "nmos": 0,
+          "npn": 0,
+          "optocoupler": 0,
+          "pmos": 0,
+          "pnp": 0,
+          "potentiometer": 0,
+          "ptc": 0,
+          "resistor": 1,
+          "schottky": 0,
+          "switch": 0,
+          "terminal-block": 1,
+          "zener": 0
+        }
+      }
+    }
+  }
+}

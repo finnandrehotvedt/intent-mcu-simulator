@@ -78,6 +78,7 @@ import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from '../expansion-drafts/passive-
 import { DIODE_COMPONENT_DEFINITIONS } from '../expansion-drafts/diode-components-v1.mjs';
 import { TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
 import { CIRCUIT_PROTECTION_DEFINITIONS } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS } from '../expansion-drafts/connection-hardware-components-v1.mjs';
 import { SEMICONDUCTOR_ACTIVE_DEFINITIONS } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 import { CONTACT_SENSOR_DEFINITIONS } from '../expansion-drafts/contact-sensors-v1.mjs';
 
@@ -115,6 +116,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
   ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
   ...Object.keys(CIRCUIT_PROTECTION_DEFINITIONS),
+  ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
   ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
   ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
 ]);
@@ -259,6 +261,8 @@ function contactSupport(result) {
             ? 'authoring-only-no-transistor-switching-runtime-adapter'
           : CIRCUIT_PROTECTION_DEFINITIONS[contact.type]
             ? 'authoring-only-no-circuit-protection-runtime-adapter'
+          : CONNECTION_HARDWARE_DEFINITIONS[contact.type]
+            ? 'authoring-only-no-connection-hardware-runtime-adapter'
           : SEMICONDUCTOR_ACTIVE_DEFINITIONS[contact.type]
             ? 'authoring-only-no-active-semiconductor-runtime-adapter'
           : contact.type === DIGITAL_LIGHT_THRESHOLD_TYPE
@@ -340,6 +344,8 @@ function contactSupport(result) {
         ? 'Raw three-terminal semiconductor authoring data only; no bias/switching/current model, Build/Run authority or physical equivalence is available.'
         : CIRCUIT_PROTECTION_DEFINITIONS[contact.type]
         ? 'Raw circuit-protection authoring data only; no trip, interruption, reset, thermal behavior, safety protection, Build/Run authority or physical equivalence is available.'
+        : CONNECTION_HARDWARE_DEFINITIONS[contact.type]
+        ? 'Explicit contact-group authoring data only; no continuity solver, contact resistance, current/thermal/parasitic behavior, Build/Run authority or physical equivalence is available.'
         : SEMICONDUCTOR_ACTIVE_DEFINITIONS[contact.type]
         ? 'Raw active-semiconductor authoring data only; no switching, optical-transfer, isolation, Build/Run authority or physical equivalence is available.'
         : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
@@ -1142,6 +1148,9 @@ export class CandidateEditorSession {
             component.properties[command.key] = command.value;
             runtimeDirty = true;
             break;
+          }
+          if (CONNECTION_HARDWARE_DEFINITIONS[component.type]) {
+            return failure('PROJECT_CONTACT_CONNECTION_HARDWARE_IMMUTABLE', this.revision);
           }
           if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]) {
             const definition = SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type];

@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "13ab67ce142246f1d7d890882501e8216d5673ab4f396437ca8697b31fc489cd",
-    "implementationSha256": "ab472c11c96d7b27985ac1c91d34371b8fb3c27a2daed2bf0929e969926e3b9a"
+    "manifestSha256": "0777557ad9327be568169fa8daf24c879ca1793f93f9ec174297d28a9bd1f1f5",
+    "implementationSha256": "f0d6827049cc490e7841e1a535df41d041e1510b525c9d2f1dc7a2c8b219d5c9"
   },
   "entries": [
     {
@@ -17,7 +17,7 @@
         "CMP-110"
       ],
       "file": "avr-analogue-detection-sensors.intent-mcu.json",
-      "projectSha256": "6d5ff9f7b68e27eab3d0359b2daf5fefc0753b59982247f3957e68ce22145c15",
+      "projectSha256": "0ea9021e77e0b0d6da6aa1d9083a08aaab69dff7d629e46a707e7514907edda1",
       "sourceSha256": "1941be5bfa125daa7504fd5cee08444a758e002d3bf2025fd855500391af254f",
       "expectedBehavior": "A0, A1 and A5 report independent idealized 0–5 V wetness, sound-level and flame-response signals.",
       "namedPins": {

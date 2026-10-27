@@ -14,6 +14,8 @@ import { NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
   validateTransistorAuthoringGraph } from '../expansion-drafts/transistor-components-v1.mjs';
 import { FUSE_TYPE, RESETTABLE_FUSE_PTC_TYPE, CIRCUIT_PROTECTION_DEFINITIONS,
   validateCircuitProtectionAuthoringGraph } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS,
+  validateConnectionHardwareAuthoringGraph } from '../expansion-drafts/connection-hardware-components-v1.mjs';
 import { OPTOCOUPLER_TYPE, P_CHANNEL_MOSFET_TYPE,
   SEMICONDUCTOR_ACTIVE_DEFINITIONS,
   validateSemiconductorActiveAuthoringGraph } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
@@ -7831,8 +7833,10 @@ const commonProjectAdapters = Object.freeze({
       const transistor = validateTransistorAuthoringGraph(graph);
       if (transistor.ok) return transistor;
       const circuitProtection = validateCircuitProtectionAuthoringGraph(graph);
-      return circuitProtection.ok
-        ? circuitProtection : validateSemiconductorActiveAuthoringGraph(graph);
+      if (circuitProtection.ok) return circuitProtection;
+      const connectionHardware = validateConnectionHardwareAuthoringGraph(graph);
+      return connectionHardware.ok
+        ? connectionHardware : validateSemiconductorActiveAuthoringGraph(graph);
     },
   }),
   [RP2040_PROFILE]: Object.freeze({

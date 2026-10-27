@@ -1,0 +1,554 @@
+{
+  "schema": "intent-mcu-connection-hardware-example-manifest@1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "0777557ad9327be568169fa8daf24c879ca1793f93f9ec174297d28a9bd1f1f5",
+    "implementationSha256": "f0d6827049cc490e7841e1a535df41d041e1510b525c9d2f1dc7a2c8b219d5c9"
+  },
+  "requirementIds": [
+    "CMP-017",
+    "CMP-018"
+  ],
+  "profileBehavior": {
+    "board.atmega328p-16mhz-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+    "board.rp2040-pico-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+    "board.esp32-c3-devmodule-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+    "board.stm32f429zi-nucleo144-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence"
+  },
+  "entries": [
+    {
+      "id": "avr-connection-hardware-components",
+      "profile": "board.atmega328p-16mhz-v1",
+      "file": "avr-connection-hardware-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-017",
+        "CMP-018"
+      ],
+      "componentTypes": [
+        "wiring.breadboard-mini-4-row-v1",
+        "connector.terminal-block-2-position-v1"
+      ],
+      "componentIds": [
+        "breadboard-1",
+        "terminal-block-1"
+      ],
+      "terminalGroups": {
+        "wiring.breadboard-mini-4-row-v1": [
+          {
+            "pin": "L1",
+            "terminals": [
+              "A1",
+              "B1",
+              "C1",
+              "D1",
+              "E1"
+            ]
+          },
+          {
+            "pin": "R1",
+            "terminals": [
+              "F1",
+              "G1",
+              "H1",
+              "I1",
+              "J1"
+            ]
+          },
+          {
+            "pin": "L2",
+            "terminals": [
+              "A2",
+              "B2",
+              "C2",
+              "D2",
+              "E2"
+            ]
+          },
+          {
+            "pin": "R2",
+            "terminals": [
+              "F2",
+              "G2",
+              "H2",
+              "I2",
+              "J2"
+            ]
+          },
+          {
+            "pin": "L3",
+            "terminals": [
+              "A3",
+              "B3",
+              "C3",
+              "D3",
+              "E3"
+            ]
+          },
+          {
+            "pin": "R3",
+            "terminals": [
+              "F3",
+              "G3",
+              "H3",
+              "I3",
+              "J3"
+            ]
+          },
+          {
+            "pin": "L4",
+            "terminals": [
+              "A4",
+              "B4",
+              "C4",
+              "D4",
+              "E4"
+            ]
+          },
+          {
+            "pin": "R4",
+            "terminals": [
+              "F4",
+              "G4",
+              "H4",
+              "I4",
+              "J4"
+            ]
+          }
+        ],
+        "connector.terminal-block-2-position-v1": [
+          {
+            "pin": "P1",
+            "terminals": [
+              "P1-WIRE",
+              "P1-PCB"
+            ]
+          },
+          {
+            "pin": "P2",
+            "terminals": [
+              "P2-WIRE",
+              "P2-PCB"
+            ]
+          }
+        ]
+      },
+      "namedWiring": [
+        "board-1.D2 ↔ breadboard-1.L1 ↔ terminal-block-1.P1",
+        "board-1.GND1 ↔ breadboard-1.R1 ↔ terminal-block-1.P2"
+      ],
+      "expectedVisibleBehavior": "Opening restores two original connection-hardware SVGs, eight isolated breadboard groups, two isolated terminal-block poles and two explicit three-endpoint nets.",
+      "runtimeUnavailableCode": "CONNECTION_HARDWARE_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence"
+      },
+      "limitations": "Explicit contact-group authoring only. No breadboard rails, continuity solver, contact resistance, current/voltage rating, heating, parasitics, insertion mechanics, wear, creepage, clearance, certification, Build/Run authority, safety protection or physical equivalence.",
+      "sourceSha256": "5de09c385f62242bdd71e2130e92e0101f9e1d6b24d05eeb9dd615df16c69d7e",
+      "projectSha256": "0886c8d16c80a9518089409ac864d322dab1465e9757c91c7bebe00db1cdc6e5",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "pico-connection-hardware-components",
+      "profile": "board.rp2040-pico-v1",
+      "file": "pico-connection-hardware-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-017",
+        "CMP-018"
+      ],
+      "componentTypes": [
+        "wiring.breadboard-mini-4-row-v1",
+        "connector.terminal-block-2-position-v1"
+      ],
+      "componentIds": [
+        "breadboard-1",
+        "terminal-block-1"
+      ],
+      "terminalGroups": {
+        "wiring.breadboard-mini-4-row-v1": [
+          {
+            "pin": "L1",
+            "terminals": [
+              "A1",
+              "B1",
+              "C1",
+              "D1",
+              "E1"
+            ]
+          },
+          {
+            "pin": "R1",
+            "terminals": [
+              "F1",
+              "G1",
+              "H1",
+              "I1",
+              "J1"
+            ]
+          },
+          {
+            "pin": "L2",
+            "terminals": [
+              "A2",
+              "B2",
+              "C2",
+              "D2",
+              "E2"
+            ]
+          },
+          {
+            "pin": "R2",
+            "terminals": [
+              "F2",
+              "G2",
+              "H2",
+              "I2",
+              "J2"
+            ]
+          },
+          {
+            "pin": "L3",
+            "terminals": [
+              "A3",
+              "B3",
+              "C3",
+              "D3",
+              "E3"
+            ]
+          },
+          {
+            "pin": "R3",
+            "terminals": [
+              "F3",
+              "G3",
+              "H3",
+              "I3",
+              "J3"
+            ]
+          },
+          {
+            "pin": "L4",
+            "terminals": [
+              "A4",
+              "B4",
+              "C4",
+              "D4",
+              "E4"
+            ]
+          },
+          {
+            "pin": "R4",
+            "terminals": [
+              "F4",
+              "G4",
+              "H4",
+              "I4",
+              "J4"
+            ]
+          }
+        ],
+        "connector.terminal-block-2-position-v1": [
+          {
+            "pin": "P1",
+            "terminals": [
+              "P1-WIRE",
+              "P1-PCB"
+            ]
+          },
+          {
+            "pin": "P2",
+            "terminals": [
+              "P2-WIRE",
+              "P2-PCB"
+            ]
+          }
+        ]
+      },
+      "namedWiring": [
+        "pico-1.GP1 ↔ breadboard-1.L1 ↔ terminal-block-1.P1",
+        "pico-1.GND8 ↔ breadboard-1.R1 ↔ terminal-block-1.P2"
+      ],
+      "expectedVisibleBehavior": "Opening restores two original connection-hardware SVGs, eight isolated breadboard groups, two isolated terminal-block poles and two explicit three-endpoint nets.",
+      "runtimeUnavailableCode": "CONNECTION_HARDWARE_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence"
+      },
+      "limitations": "Explicit contact-group authoring only. No breadboard rails, continuity solver, contact resistance, current/voltage rating, heating, parasitics, insertion mechanics, wear, creepage, clearance, certification, Build/Run authority, safety protection or physical equivalence.",
+      "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
+      "projectSha256": "2ed965d2b5ca92b0b9f8d41c3ad7032a7ccf68bf8dd9fdb1cefcfce79ce7c0b7",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "esp32-c3-connection-hardware-components",
+      "profile": "board.esp32-c3-devmodule-v1",
+      "file": "esp32-c3-connection-hardware-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-017",
+        "CMP-018"
+      ],
+      "componentTypes": [
+        "wiring.breadboard-mini-4-row-v1",
+        "connector.terminal-block-2-position-v1"
+      ],
+      "componentIds": [
+        "breadboard-1",
+        "terminal-block-1"
+      ],
+      "terminalGroups": {
+        "wiring.breadboard-mini-4-row-v1": [
+          {
+            "pin": "L1",
+            "terminals": [
+              "A1",
+              "B1",
+              "C1",
+              "D1",
+              "E1"
+            ]
+          },
+          {
+            "pin": "R1",
+            "terminals": [
+              "F1",
+              "G1",
+              "H1",
+              "I1",
+              "J1"
+            ]
+          },
+          {
+            "pin": "L2",
+            "terminals": [
+              "A2",
+              "B2",
+              "C2",
+              "D2",
+              "E2"
+            ]
+          },
+          {
+            "pin": "R2",
+            "terminals": [
+              "F2",
+              "G2",
+              "H2",
+              "I2",
+              "J2"
+            ]
+          },
+          {
+            "pin": "L3",
+            "terminals": [
+              "A3",
+              "B3",
+              "C3",
+              "D3",
+              "E3"
+            ]
+          },
+          {
+            "pin": "R3",
+            "terminals": [
+              "F3",
+              "G3",
+              "H3",
+              "I3",
+              "J3"
+            ]
+          },
+          {
+            "pin": "L4",
+            "terminals": [
+              "A4",
+              "B4",
+              "C4",
+              "D4",
+              "E4"
+            ]
+          },
+          {
+            "pin": "R4",
+            "terminals": [
+              "F4",
+              "G4",
+              "H4",
+              "I4",
+              "J4"
+            ]
+          }
+        ],
+        "connector.terminal-block-2-position-v1": [
+          {
+            "pin": "P1",
+            "terminals": [
+              "P1-WIRE",
+              "P1-PCB"
+            ]
+          },
+          {
+            "pin": "P2",
+            "terminals": [
+              "P2-WIRE",
+              "P2-PCB"
+            ]
+          }
+        ]
+      },
+      "namedWiring": [
+        "c3-1.GPIO3 ↔ breadboard-1.L1 ↔ terminal-block-1.P1",
+        "c3-1.GND8 ↔ breadboard-1.R1 ↔ terminal-block-1.P2"
+      ],
+      "expectedVisibleBehavior": "Opening restores two original connection-hardware SVGs, eight isolated breadboard groups, two isolated terminal-block poles and two explicit three-endpoint nets.",
+      "runtimeUnavailableCode": "CONNECTION_HARDWARE_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence"
+      },
+      "limitations": "Explicit contact-group authoring only. No breadboard rails, continuity solver, contact resistance, current/voltage rating, heating, parasitics, insertion mechanics, wear, creepage, clearance, certification, Build/Run authority, safety protection or physical equivalence.",
+      "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
+      "projectSha256": "2f8ae9d0668d6fcad8d05bcce96e7ca1af84781859e02b408d8f3cb2598b71e7",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "stm32-connection-hardware-components",
+      "profile": "board.stm32f429zi-nucleo144-v1",
+      "file": "stm32-connection-hardware-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-017",
+        "CMP-018"
+      ],
+      "componentTypes": [
+        "wiring.breadboard-mini-4-row-v1",
+        "connector.terminal-block-2-position-v1"
+      ],
+      "componentIds": [
+        "breadboard-1",
+        "terminal-block-1"
+      ],
+      "terminalGroups": {
+        "wiring.breadboard-mini-4-row-v1": [
+          {
+            "pin": "L1",
+            "terminals": [
+              "A1",
+              "B1",
+              "C1",
+              "D1",
+              "E1"
+            ]
+          },
+          {
+            "pin": "R1",
+            "terminals": [
+              "F1",
+              "G1",
+              "H1",
+              "I1",
+              "J1"
+            ]
+          },
+          {
+            "pin": "L2",
+            "terminals": [
+              "A2",
+              "B2",
+              "C2",
+              "D2",
+              "E2"
+            ]
+          },
+          {
+            "pin": "R2",
+            "terminals": [
+              "F2",
+              "G2",
+              "H2",
+              "I2",
+              "J2"
+            ]
+          },
+          {
+            "pin": "L3",
+            "terminals": [
+              "A3",
+              "B3",
+              "C3",
+              "D3",
+              "E3"
+            ]
+          },
+          {
+            "pin": "R3",
+            "terminals": [
+              "F3",
+              "G3",
+              "H3",
+              "I3",
+              "J3"
+            ]
+          },
+          {
+            "pin": "L4",
+            "terminals": [
+              "A4",
+              "B4",
+              "C4",
+              "D4",
+              "E4"
+            ]
+          },
+          {
+            "pin": "R4",
+            "terminals": [
+              "F4",
+              "G4",
+              "H4",
+              "I4",
+              "J4"
+            ]
+          }
+        ],
+        "connector.terminal-block-2-position-v1": [
+          {
+            "pin": "P1",
+            "terminals": [
+              "P1-WIRE",
+              "P1-PCB"
+            ]
+          },
+          {
+            "pin": "P2",
+            "terminals": [
+              "P2-WIRE",
+              "P2-PCB"
+            ]
+          }
+        ]
+      },
+      "namedWiring": [
+        "stm32-1.PB1 ↔ breadboard-1.L1 ↔ terminal-block-1.P1",
+        "stm32-1.GND20 ↔ breadboard-1.R1 ↔ terminal-block-1.P2"
+      ],
+      "expectedVisibleBehavior": "Opening restores two original connection-hardware SVGs, eight isolated breadboard groups, two isolated terminal-block poles and two explicit three-endpoint nets.",
+      "runtimeUnavailableCode": "CONNECTION_HARDWARE_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only explicit contact-group data; no continuity solver, electrical rating, parasitic model, Build/Run authority, safety guarantee or physical-hardware equivalence"
+      },
+      "limitations": "Explicit contact-group authoring only. No breadboard rails, continuity solver, contact resistance, current/voltage rating, heating, parasitics, insertion mechanics, wear, creepage, clearance, certification, Build/Run authority, safety protection or physical equivalence.",
+      "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
+      "projectSha256": "1be431b9d1fc2f7678a0438da35eaaa7fa14474f11c5939d0f8a5b2bf59d3559",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    }
+  ]
+}

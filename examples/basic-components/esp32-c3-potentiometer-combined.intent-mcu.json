@@ -160,6 +160,7 @@
         "components": {}
       },
       "idCounters": {
+        "breadboard": 0,
         "button": 0,
         "capacitor": 0,
         "diode": 0,
@@ -178,6 +179,7 @@
         "resistor": 1,
         "schottky": 0,
         "switch": 0,
+        "terminal-block": 0,
         "zener": 0
       }
     }

@@ -46,6 +46,8 @@ import { TRANSISTOR_COMPONENT_DEFINITIONS,
   createTransistorComponent } from '../expansion-drafts/transistor-components-v1.mjs';
 import { CIRCUIT_PROTECTION_DEFINITIONS,
   createCircuitProtectionComponent } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS,
+  createConnectionHardwareComponent } from '../expansion-drafts/connection-hardware-components-v1.mjs';
 import { SEMICONDUCTOR_ACTIVE_DEFINITIONS,
   createSemiconductorActiveComponent } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 import { CONTACT_SENSOR_DEFINITIONS, createContactSensor } from '../expansion-drafts/contact-sensors-v1.mjs';
@@ -73,6 +75,7 @@ const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.ba
   ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
   ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
   ...Object.keys(CIRCUIT_PROTECTION_DEFINITIONS),
+  ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
   ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
   ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
   GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
@@ -164,6 +167,8 @@ export function prepareApiBatch(project, operations) {
           ? createTransistorComponent(operation.type, operation.id)
         : avr && CIRCUIT_PROTECTION_DEFINITIONS[operation.type]
           ? createCircuitProtectionComponent(operation.type, operation.id)
+        : avr && CONNECTION_HARDWARE_DEFINITIONS[operation.type]
+          ? createConnectionHardwareComponent(operation.type, operation.id)
         : avr && SEMICONDUCTOR_ACTIVE_DEFINITIONS[operation.type]
           ? createSemiconductorActiveComponent(operation.type, operation.id)
         : avr && CONTACT_SENSOR_DEFINITIONS[operation.type]

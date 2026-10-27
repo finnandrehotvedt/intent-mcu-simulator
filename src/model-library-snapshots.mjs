@@ -154339,7 +154339,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/component-artwork.mjs",
-      "sha256": "4043d247c92e7d86b3eff2fc499ba029151d35b52b0490f440b8568dfc634fca"
+      "sha256": "801cb3b0e9f845d2ecdf6b2d355010b172e024bdc5dce92540956530f4041d87"
     },
     {
       "path": "src/model-library.mjs",
@@ -154363,7 +154363,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "2e349ea95132363b6d63dc33a0e065aaa2ce96edd0d104b35d0695eefac7218c"
+      "sha256": "815e002e1246f1d7082a0601b253911014ae016c2d6d8b7aa914b1cd717c7f16"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -154395,7 +154395,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "d5ee67f11fb797ca11fe4c31ba44ac5078868629b8e8e80a486c6d38a10bd475"
+      "sha256": "b33afcb559220ae460edc349813b97240c9cd7c32a70308d5bc88e247d9dc63c"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -154403,27 +154403,27 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "ca89004a7f9c40b2940d635c4fbe31de7fa5f85a001f367b768c27c1dee8ee0c"
+      "sha256": "863c120f5435968ade7c4d348c07a6b94be82d2a15b24ac9ec2c818d118afb29"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
-      "sha256": "91e95dfa1b648eaf07010e112a50f36a3784c8135f0c65fc8ee5ebb817596c44"
+      "sha256": "c8c262736bf22419e4d41a9768e3176126758bb81acc4151a3b5cbe28de49693"
     },
     {
       "path": "src/bounded-3v3-authoring-contracts.mjs",
-      "sha256": "d8fac081ee6488e24764a0927c3d1bed13d99ef514d08d9614f710306fe2a4ae"
+      "sha256": "1045f3966dbd3b8bc4de01774c515e82746e11c17e30b39529860719213c2ff5"
     },
     {
       "path": "src/named-series-led-circuit-editor.mjs",
-      "sha256": "9daa809828eaef32c82e2e241267440954bd35a2d0f5076964e3acb5c5226ad9"
+      "sha256": "73a43cb9aed44c588f26f8acaec9a53d78d55d5c07f302adaa14402197fe4ae9"
     },
     {
       "path": "src/esp32c3-public-circuit.mjs",
-      "sha256": "6e4d038dbf7344e57d5a56a4ee8666e9888d21dd63cc8399cc87858f68f0b9a4"
+      "sha256": "5b198cf6df51b22e6851c724882e533c9a90daa22522ca6fdec490a1d41ffb08"
     },
     {
       "path": "src/stm32-public-circuit.mjs",
-      "sha256": "f082116e1ce0d8ae91c28d6ee17c25e874db17cf2a4755b640c83778711b6407"
+      "sha256": "b5cd552a7235287fa5573ea9c59bbe9b9dec0518d84168e25a273d480003f545"
     },
     {
       "path": "src/rp2040-public-workbench.mjs",
@@ -154459,7 +154459,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "409321ae4df8ddb154d3e12d98b95aef334bcb593ae1efd6a3007f8cde17ea5e"
+      "sha256": "bb9c091e0916185e7c35370f2ab33aca8699acb76005c190d41ea0b354e2c9be"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -154654,7 +154654,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "3f119c9e65934ae57ed8044e5a3a9a975c5bfa560717802d47e2db23b595d102"
     }
   ],
-  "implementationSha256": "ab472c11c96d7b27985ac1c91d34371b8fb3c27a2daed2bf0929e969926e3b9a",
+  "implementationSha256": "f0d6827049cc490e7841e1a535df41d041e1510b525c9d2f1dc7a2c8b219d5c9",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -154664,7 +154664,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "13ab67ce142246f1d7d890882501e8216d5673ab4f396437ca8697b31fc489cd",
+  "manifestSha256": "0777557ad9327be568169fa8daf24c879ca1793f93f9ec174297d28a9bd1f1f5",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

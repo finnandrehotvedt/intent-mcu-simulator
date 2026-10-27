@@ -9,6 +9,8 @@ import { TRANSISTOR_COMPONENT_DEFINITIONS,
   validateTransistorComponent } from '../expansion-drafts/transistor-components-v1.mjs';
 import { CIRCUIT_PROTECTION_DEFINITIONS,
   validateCircuitProtectionComponent } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS,
+  validateConnectionHardwareComponent } from '../expansion-drafts/connection-hardware-components-v1.mjs';
 import { SEMICONDUCTOR_ACTIVE_DEFINITIONS,
   validateSemiconductorActiveComponent } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 
@@ -80,6 +82,12 @@ export const BOUNDED_3V3_AUTHORING_CONTRACTS = Object.freeze({
         properties: Object.fromEntries(definition.propertyKeys.map((key) =>
           [key, definition.propertySchema[key].default])),
       })])),
+    ...Object.fromEntries(Object.values(CONNECTION_HARDWARE_DEFINITIONS).map((definition) =>
+      [definition.type, contract({ type: definition.type, version: definition.version,
+        displayName: definition.displayName,
+        pins: definition.pins.map(({ id }) => ({ id, role: 'passive', voltageMin: 0, voltageMax: 3.3 })),
+        properties: {},
+      })])),
     ...Object.fromEntries(Object.values(SEMICONDUCTOR_ACTIVE_DEFINITIONS).map((definition) =>
       [definition.type, contract({ type: definition.type, version: definition.version,
         displayName: definition.displayName,
@@ -132,6 +140,7 @@ export const BOUNDED_3V3_UI_COMPONENTS = Object.freeze({
   ...DIODE_COMPONENT_DEFINITIONS,
   ...TRANSISTOR_COMPONENT_DEFINITIONS,
   ...CIRCUIT_PROTECTION_DEFINITIONS,
+  ...CONNECTION_HARDWARE_DEFINITIONS,
   ...SEMICONDUCTOR_ACTIVE_DEFINITIONS,
 });
 
@@ -176,6 +185,11 @@ export function validateBounded3v3AuthoringGraph({ board, components, nets }) {
     if (CIRCUIT_PROTECTION_DEFINITIONS[component.type]
         && !validateCircuitProtectionComponent(component)) {
       return failure('AUTHORING_CIRCUIT_PROTECTION_PROPERTIES_UNSUPPORTED',
+        { componentId: component.id });
+    }
+    if (CONNECTION_HARDWARE_DEFINITIONS[component.type]
+        && !validateConnectionHardwareComponent(component)) {
+      return failure('AUTHORING_CONNECTION_HARDWARE_STATE_UNSUPPORTED',
         { componentId: component.id });
     }
     if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[component.type]

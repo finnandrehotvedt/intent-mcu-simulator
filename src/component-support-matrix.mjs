@@ -11,6 +11,7 @@ import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from '../expansion-drafts/passive-
 import { DIODE_COMPONENT_DEFINITIONS } from '../expansion-drafts/diode-components-v1.mjs';
 import { TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
 import { CIRCUIT_PROTECTION_DEFINITIONS } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS } from '../expansion-drafts/connection-hardware-components-v1.mjs';
 import { SEMICONDUCTOR_ACTIVE_DEFINITIONS } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 
 export const COMPONENT_SUPPORT_MATRIX_SCHEMA = 'intent-mcu-component-support-matrix@1';
@@ -68,6 +69,7 @@ const ALL_PROFILE_AUTHORING_TYPES = new Set([
   ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS), ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
   ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
   ...Object.keys(CIRCUIT_PROTECTION_DEFINITIONS),
+  ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
   ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
 ]);
 const NARROW_BOARDS = new Map([[PICO, PICO], [C3, C3], [STM32, STM32]]);
@@ -175,6 +177,9 @@ function unavailableReason(profile, type) {
     }
     if (CIRCUIT_PROTECTION_DEFINITIONS[type]) {
       return 'Authoring-only raw circuit-protection symbol; no trip/interruption/reset/thermal model or runtime adapter is available.';
+    }
+    if (CONNECTION_HARDWARE_DEFINITIONS[type]) {
+      return 'Authoring-only connection hardware; explicit contact groups only, with no continuity solver, electrical rating, parasitic model or runtime adapter.';
     }
     if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[type]) {
       return 'Authoring-only raw active semiconductor; no switching/optical-transfer/isolation model or runtime adapter is available.';

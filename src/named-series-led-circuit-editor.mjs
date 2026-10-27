@@ -14,6 +14,8 @@ import { NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
   TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
 import { FUSE_TYPE, RESETTABLE_FUSE_PTC_TYPE,
   CIRCUIT_PROTECTION_DEFINITIONS } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { MINI_BREADBOARD_TYPE, TERMINAL_BLOCK_2_POSITION_TYPE,
+  CONNECTION_HARDWARE_DEFINITIONS } from '../expansion-drafts/connection-hardware-components-v1.mjs';
 import { OPTOCOUPLER_TYPE, P_CHANNEL_MOSFET_TYPE,
   SEMICONDUCTOR_ACTIVE_DEFINITIONS } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 
@@ -33,7 +35,8 @@ const COMPONENT_ID_STEMS = Object.freeze({ [BOUNDED_RESISTOR_TYPE]: 'resistor', 
   [SCHOTTKY_DIODE_TYPE]: 'schottky', [ZENER_DIODE_TYPE]: 'zener',
   [NPN_BJT_TYPE]: 'npn', [PNP_BJT_TYPE]: 'pnp', [N_CHANNEL_MOSFET_TYPE]: 'nmos',
   [P_CHANNEL_MOSFET_TYPE]: 'pmos', [OPTOCOUPLER_TYPE]: 'optocoupler',
-  [FUSE_TYPE]: 'fuse', [RESETTABLE_FUSE_PTC_TYPE]: 'ptc' });
+  [FUSE_TYPE]: 'fuse', [RESETTABLE_FUSE_PTC_TYPE]: 'ptc',
+  [MINI_BREADBOARD_TYPE]: 'breadboard', [TERMINAL_BLOCK_2_POSITION_TYPE]: 'terminal-block' });
 
 const COMPONENT_ID_COUNTER_KEYS = Object.freeze([...new Set(Object.values(COMPONENT_ID_STEMS))].sort());
 
@@ -184,6 +187,15 @@ export function createSeriesLedComponentPolicy({
         pins: definition.pins.map(({ id }) => id),
         limitation: definition.support.limitations.join(' '),
       })),
+      ...Object.values(CONNECTION_HARDWARE_DEFINITIONS).map((definition, index) => part({
+        id: COMPONENT_ID_STEMS[definition.type] + '-1', type: definition.type,
+        displayName: definition.displayName, label: definition.displayName,
+        properties: {},
+        position: { x: 0.25 + index * 0.3, y: 0.58, rotation: 0 },
+        supportedProperties: {},
+        pins: definition.pins.map(({ id }) => id),
+        limitation: definition.support.limitations.join(' '),
+      })),
       ...Object.values(SEMICONDUCTOR_ACTIVE_DEFINITIONS).map((definition, index) => part({
         id: `${COMPONENT_ID_STEMS[definition.type]}-1`, type: definition.type,
         displayName: definition.displayName, label: definition.displayName,
@@ -241,7 +253,8 @@ export function createSeriesLedConnectionPolicy({
     const authoringOnly = new Set([GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE,
       TOGGLE_SWITCH_3V3_TYPE, POTENTIOMETER_3V3_TYPE,
       ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS), ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
-      ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS), ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS)]);
+      ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS), ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
+      ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS)]);
     for (const type of Object.keys(CIRCUIT_PROTECTION_DEFINITIONS)) authoringOnly.add(type);
     if (authoringOnly.has(endpointType(draft, left)) || authoringOnly.has(endpointType(draft, right))) {
       return `net-${[endpointKey(left), endpointKey(right)].sort().join('-').replaceAll('.', '-')}`.toLowerCase().slice(0, 48);
@@ -689,6 +702,9 @@ export class NamedSeriesLedCircuitEditor {
     }
     if (CIRCUIT_PROTECTION_DEFINITIONS[target.type]) {
       target.label = CIRCUIT_PROTECTION_DEFINITIONS[target.type].displayName;
+    }
+    if (CONNECTION_HARDWARE_DEFINITIONS[target.type]) {
+      target.label = CONNECTION_HARDWARE_DEFINITIONS[target.type].displayName;
     }
     if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[target.type]) {
       target.label = SEMICONDUCTOR_ACTIVE_DEFINITIONS[target.type].displayName;

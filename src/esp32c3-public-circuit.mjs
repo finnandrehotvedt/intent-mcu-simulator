@@ -19,6 +19,8 @@ import { TRANSISTOR_COMPONENT_DEFINITIONS,
   validateTransistorComponent } from '../expansion-drafts/transistor-components-v1.mjs';
 import { CIRCUIT_PROTECTION_DEFINITIONS,
   validateCircuitProtectionComponent } from '../expansion-drafts/circuit-protection-components-v1.mjs';
+import { CONNECTION_HARDWARE_DEFINITIONS,
+  validateConnectionHardwareComponent } from '../expansion-drafts/connection-hardware-components-v1.mjs';
 import { SEMICONDUCTOR_ACTIVE_DEFINITIONS,
   validateSemiconductorActiveComponent } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
 
@@ -111,6 +113,8 @@ const TYPE_PINS = Object.freeze({
     .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
   ...Object.fromEntries(Object.values(CIRCUIT_PROTECTION_DEFINITIONS)
     .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
+  ...Object.fromEntries(Object.values(CONNECTION_HARDWARE_DEFINITIONS)
+    .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
   ...Object.fromEntries(Object.values(SEMICONDUCTOR_ACTIVE_DEFINITIONS)
     .map((definition) => [definition.type, new Set(definition.pins.map(({ id }) => id))])),
 });
@@ -191,6 +195,9 @@ function normalizeComponent(value) {
     throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
   }
   if (CIRCUIT_PROTECTION_DEFINITIONS[value.type] && !validateCircuitProtectionComponent(value)) {
+    throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
+  }
+  if (CONNECTION_HARDWARE_DEFINITIONS[value.type] && !validateConnectionHardwareComponent(value)) {
     throw Object.assign(new Error('C3_CIRCUIT_COMPONENT_INVALID'), { code: 'C3_CIRCUIT_COMPONENT_INVALID' });
   }
   if (SEMICONDUCTOR_ACTIVE_DEFINITIONS[value.type]
