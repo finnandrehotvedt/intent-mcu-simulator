@@ -71,6 +71,21 @@ function preparedWorkbench(pauseProof = {}, options = {}) {
   return workbench;
 }
 
+test('Pico runtime phases reject source and circuit authoring until Stop', () => {
+  const workbench = preparedWorkbench();
+  const before = structuredClone(workbench.project.circuit);
+  for (const phase of ['starting', 'running', 'pausing', 'paused', 'resetting']) {
+    workbench.phase = phase;
+    const result = workbench.editCircuit('moveComponent', 'resistor-1', 0.2, 0.2);
+    assert.equal(result.code, 'RP2040_RUNTIME_AUTHORING_LOCKED');
+    assert.deepEqual(workbench.project.circuit, before);
+    assert.equal(workbench.elements.source.disabled, true);
+  }
+  workbench.stop('Test stop.');
+  assert.equal(workbench.phase, 'editing');
+  assert.equal(workbench.elements.source.disabled, false);
+});
+
 function manualClock() {
   let value = 0; let sequence = 0; const timers = new Map();
   const runDue = () => {

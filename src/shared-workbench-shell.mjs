@@ -2107,8 +2107,7 @@ export function mountSharedWorkbenchShell(document) {
     if (closedBrief) closePopup({ restoreFocus: false });
     viewMode = nextMode;
     more.open = nextMode === 'advanced';
-    if (nextMode === 'simple') popupControls.prepend(quickControls);
-    else primaryMount.append(quickControls);
+    primaryMount.append(quickControls);
     document.body.dataset.workbenchView = viewMode;
     mountSimpleParts();
     for (const [mode, button] of Object.entries(viewButtons)) {

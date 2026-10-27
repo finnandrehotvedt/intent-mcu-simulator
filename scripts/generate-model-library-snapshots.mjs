@@ -44,6 +44,9 @@ const PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -381,16 +384,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-bme280-environment.1-current',
-  'intent-mcu-model-bundle-current-bme280-environment-1@62',
+  '2.0.0-visible-runtime-controls.1-current',
+  'intent-mcu-model-bundle-current-visible-runtime-controls-1@63',
   currentImplementation,
   {
-    priorVersion: PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'adds the AVR-only fixed-address BME280 I2C temperature, humidity and pressure register model while retaining every prior component contract',
-    presentationDisposition: 'CMP-094 uses original BME280 breakout artwork, three independent 0.1-unit controls, canonical persistence and visible calibration-compensated Serial evidence',
-    baselineClosureDisposition: 'terminal CMP-093 DHT22 candidate 9f0d5d3 and every earlier identity remain immutable migration-only anchors; this rc147 candidate is source and isolated-test only',
+    semanticDisposition: 'retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change',
+    presentationDisposition: 'keeps runtime controls visible, enters locked Interact automatically, exposes bounded selected-control input and returns to Edit through Stop',
+    baselineClosureDisposition: 'public rc147 head e2b263e and every earlier identity remain immutable migration-only anchors; this rc148 candidate is source and isolated-test only',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -463,6 +466,7 @@ export const PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_MANIFEST = Object
 export const PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

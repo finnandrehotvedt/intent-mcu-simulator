@@ -378,6 +378,24 @@ function workbenchElements() {
     diagram: element(), led: element(), circuitState: element(),
   };
 }
+
+test('C3 running phase rejects source and circuit authoring until Stop', async () => {
+  const expected = { sessionId: 'S'.repeat(16), generation: 3,
+    sourceSha256: 'a'.repeat(64), artifactSha256: 'b'.repeat(64) };
+  const workbench = ownedWorkbench(async () => retirementResponse(retirementAck(expected)));
+  const { elements } = workbench;
+  workbench.phase = 'running';
+  workbench.render();
+  const before = structuredClone(workbench.project.circuit);
+  const result = workbench.editCircuit('moveComponent', 'resistor-1', 0.2, 0.2);
+  assert.equal(result.code, 'C3_RUNTIME_AUTHORING_LOCKED');
+  assert.deepEqual(workbench.project.circuit, before);
+  assert.equal(elements.source.disabled, true);
+  await workbench.dispose('Test stop.');
+  assert.equal(workbench.phase, 'editing');
+  assert.equal(elements.source.disabled, false);
+});
+
 function retirementResponse(value) {
   return { ok: true, headers: { get: () => null }, json: async () => value };
 }

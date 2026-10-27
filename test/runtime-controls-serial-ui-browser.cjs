@@ -66,14 +66,17 @@ async function layout(page) {
         };
       });
       page.on('request', (request) => {
-        if (new URL(request.url()).pathname.startsWith('/api/')) {
+        const pathname = new URL(request.url()).pathname;
+        if (pathname.startsWith('/api/') && pathname !== '/api/page-views') {
           report.apiRequests.push(`${request.method()} ${request.url()}`);
         }
       });
       await page.goto(`http://127.0.0.1:${app.address().port}`, { waitUntil: 'networkidle' });
       await page.waitForFunction(() => window.__M11_READY__ === true);
       await page.evaluate(() => document.querySelector('#project-demo').click());
-      await page.evaluate(() => document.querySelector('[data-example="pwm"]').click());
+      await page.click('[data-example="pwm"] .starter-action');
+      if (await page.locator('#unsaved-change-dialog').isVisible()) await page.click('#unsaved-discard');
+      await page.click('#workbench-view-advanced');
       const pwmLifecycle = await page.evaluate(() => {
         const visual = document.querySelector('#component-layer [data-led-id]');
         const componentId = visual.dataset.ledId;
@@ -119,8 +122,8 @@ async function layout(page) {
       assert.equal(await page.locator('#regression-matrix').getAttribute('open'), null);
       for (const [profile, pauseLabel, resetLabel] of [
         ['board.rp2040-pico-v1', 'Pause', 'Reset'],
-        ['board.esp32-c3-devmodule-v1', 'Pause unavailable', 'Reset replay is part of Run'],
-        ['board.stm32f429zi-nucleo144-v1', 'Pause unavailable', 'Reset in fresh Renode'],
+        ['board.esp32-c3-devmodule-v1', 'Pause', 'Reset'],
+        ['board.stm32f429zi-nucleo144-v1', 'Pause', 'Reset'],
         ['board.atmega328p-16mhz-v1', 'Pause', 'Reset'],
       ]) {
         await page.selectOption('#board-select', profile);

@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.147
+# Intent MCU Simulator 1.1.0-rc.148
+
+## Visible runtime controls and locked interaction
+
+Rc.148 keeps Build, Run, Pause/Resume, Reset and Stop visible in both Simple
+and Advanced views on all four controller profiles. The compact Tools area can
+still hold secondary controls, while Parts and Serial remain edge drawers.
+
+AVR Run now enters Interact automatically. While runtime is starting, running
+or paused, source, components, wiring and authoring history are locked. Stop
+ends the runtime session, clears its presentation and returns explicitly to
+editable Edit mode.
+
+The workbench shows fixed shortcuts for Build, Run, Stop, Pause/Resume, value
+adjustment and switches. A selected potentiometer exposes its current value,
+minimum, maximum and step, accepts direct numeric entry and supports Up/Down.
+Space presses and releases a selected momentary switch; text and number fields
+remain protected from global shortcuts.
+
+This is a source-only candidate. No merge, deployment or public sensor
+publication is included.
+
+---
+
+## 1.1.0-rc.147
 
 ## Three-value I2C environment sensor
 

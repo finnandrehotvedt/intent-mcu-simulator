@@ -38,6 +38,7 @@ import { componentSupportCell } from '../src/component-support-matrix.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK,
   PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_LOCK,
   modelLibraryExecutionIdentity,
   modelLibraryMigrationPreview,
   resolveModelLibrary,
@@ -174,4 +175,18 @@ test('terminal DHT22 model lock remains data-only and migrates by adding only BM
   })), [{ profile: 'board.atmega328p-16mhz-v1', componentType: BME280_TYPE, kind: 'added' }]);
   assert.deepEqual(preview.rendererChanges, []);
   assert.equal(preview.unchanged.length, 74);
+});
+
+test('rc147 BME280 lock migrates data-only into visible runtime controls without model drift', () => {
+  assert.equal(resolveModelLibrary(PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_LOCK).role,
+    'pre-visible-runtime-controls-current-migration');
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_LOCK).code,
+  'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(
+    PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(preview.ok, true);
+  assert.deepEqual(preview.semanticChanges, []);
+  assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 75);
 });

@@ -103,7 +103,7 @@ async function assertZeroProducerFailureSurface(page) {
     { id: 'board.atmega328p-16mhz-v1', status: 'ATmega328P · compile and tested virtual runtime.',
       build: 'Build', run: 'Run' },
     { id: 'board.rp2040-pico-v1', status: 'RP2040 Pico · bounded public C11 build + browser-worker GPIO0/UART0 runtime.',
-      build: 'Build Pico', run: 'Run Pico' },
+      build: 'Build', run: 'Run' },
   ]) {
     await page.selectOption('#board-select', profile.id);
     await page.waitForFunction((id) => window.__SHARED_INSTRUMENT_SUMMARY__?.profile === id, profile.id);

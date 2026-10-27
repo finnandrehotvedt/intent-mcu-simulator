@@ -3,9 +3,9 @@
   "modelLibrary": {
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
-    "version": "2.0.0-bme280-environment.1-current",
-    "manifestSha256": "994afa47cdd63257307aa765e194dc43fb0e61510711aa697f912a9ce1ef3761",
-    "implementationSha256": "6da5ca169f60cd6b8a7df1d9ceaabe31e962f6a5420fe568e38ceb7e7073bb30"
+    "version": "2.0.0-visible-runtime-controls.1-current",
+    "manifestSha256": "143881d384ba230c1ad227eb27468c24e0129c2240ea5f80f1844793ce408ec6",
+    "implementationSha256": "9c1cec8eb94665e75f945a3b2c08467576102b67eb1d100344acb1a1031a3313"
   },
   "requirementIds": [
     "CMP-013",
@@ -63,7 +63,7 @@
       },
       "limitations": "Raw active-semiconductor authoring only. No bias/current network, nonlinear transfer, switching threshold, body diode, optical coupling, isolation proof, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority, safety certification or physical equivalence.",
       "sourceSha256": "d0171b41a357486e64c6673efc9d852c5c8adaf888026933b17da13d625fd571",
-      "projectSha256": "3818ecb6e330b7aeb1d36b62c23023e73676c7ea035521a931ff7754c80c852b",
+      "projectSha256": "414f0a56bb1ac6a8d3e7ea5810d28f8eec5a0a99eda3509c32dfd917eaf13626",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -111,7 +111,7 @@
       },
       "limitations": "Raw active-semiconductor authoring only. No bias/current network, nonlinear transfer, switching threshold, body diode, optical coupling, isolation proof, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority, safety certification or physical equivalence.",
       "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
-      "projectSha256": "1c2675191c0f05eee6b0bee40d295e1192d7ee45304a0eb5f37543d8d3bb1aaa",
+      "projectSha256": "b100eddd8c0aeadaa09cbf80f7d86fde4326be7e5546002b0bd4e6670af9bed7",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -159,7 +159,7 @@
       },
       "limitations": "Raw active-semiconductor authoring only. No bias/current network, nonlinear transfer, switching threshold, body diode, optical coupling, isolation proof, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority, safety certification or physical equivalence.",
       "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
-      "projectSha256": "11ae57cfc0edd496687c5515461b3da34b66fb48270238e8ca0f6291f757d209",
+      "projectSha256": "e257750f9516c024a7143c3da53f48abdbe692ebfbe2d197e1a7a52d0d6b0e3d",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -207,7 +207,7 @@
       },
       "limitations": "Raw active-semiconductor authoring only. No bias/current network, nonlinear transfer, switching threshold, body diode, optical coupling, isolation proof, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority, safety certification or physical equivalence.",
       "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
-      "projectSha256": "5caded41bebe6a28b0a1a39a5a6039de038d544dc13fc2220bfeb6c3a0cc2e3e",
+      "projectSha256": "eb3c6a23cbf96b069604b77df10fda73d0acc61802c929632e147fcf4ef2d956",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     }
   ]

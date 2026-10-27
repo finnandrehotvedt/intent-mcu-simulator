@@ -32,3 +32,13 @@
   the clean-browser public-URL checks above pass.
 - Any intentional exception to these invariants must be documented beside the
   release evidence and covered by a regression test before publication.
+- Build, Run and Stop are primary actions. They must remain visible in both
+  Simple and Advanced views and must never be moved behind More/Tools, View or
+  another disclosure. Parts and Serial may remain persistent edge drawers.
+- Run must enter a locked interaction mode automatically. While that runtime
+  session is active or paused, component placement, wiring, deletion and other
+  authoring controls must not mutate the project. Stop returns to authoring.
+- The primary runtime flow must expose visible keyboard shortcuts. At minimum,
+  Build, Run, Stop, Pause/resume, selected potentiometer adjustment and selected
+  momentary-switch operation need tested keyboard paths that do not fire while
+  the user is typing in an editor or value field.

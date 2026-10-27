@@ -2,6 +2,21 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.148 — 2026-10-27
+
+- Keeps Build, Run, Pause/Resume, Reset and Stop visible in both Simple and
+  Advanced views for all four controller profiles.
+- Makes AVR Run enter Interact automatically and locks component, wiring,
+  source and history authoring until Stop returns to Edit.
+- Adds fixed visible keyboard controls for Build, Run, Stop, Pause/Resume,
+  selected values and selected switches without firing inside text fields.
+- Shows the selected AVR runtime control with its current value, minimum,
+  maximum and step; potentiometers accept direct entry and arrow adjustment.
+- Retains Parts and Serial as edge drawers and preserves the compact canvas
+  layout at desktop viewports.
+- This is a source-only candidate; it does not merge, deploy or publish DHT or
+  any other unreleased sensor work.
+
 ## 1.1.0-rc.147 — 2026-10-27
 
 - Adds an AVR-only BME280 environment component with original VCC/GND/SDA/SCL

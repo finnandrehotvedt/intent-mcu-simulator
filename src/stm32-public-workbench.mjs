@@ -448,6 +448,11 @@ export class Stm32PublicWorkbench {
     return result;
   }
   editCircuit(operation, ...args) {
+    if (this.phase === 'running') {
+      this.message = 'Runtime interaction is active. Stop before moving parts or changing wiring.';
+      this.render();
+      return { ok: false, code: 'STM32_RUNTIME_AUTHORING_LOCKED' };
+    }
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
       'activateEndpoint', 'beginReconnect', 'beginBranch', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint', 'branchEndpoint', 'deleteBranch',
       'newProject', 'addComponent', 'duplicateComponent', 'addMissingComponent', 'setComponentProperty', 'setComponentAppearance', 'setComponentAppearanceEdit',
@@ -545,6 +550,7 @@ export class Stm32PublicWorkbench {
     const runnable = Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady);
     this.elements.name.value = this.project.name;
     if (this.elements.source.value !== this.project.source) this.elements.source.value = this.project.source;
+    this.elements.source.disabled = this.phase === 'running';
     this.elements.state.textContent = this.phase;
     this.elements.message.textContent = this.message;
     this.elements.sourceHash.textContent = this.artifact?.sourceSha256 ?? 'not built';

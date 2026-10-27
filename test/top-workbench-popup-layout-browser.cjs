@@ -63,12 +63,12 @@ async function geometry(page, viewport, profile) {
     };
   }, { profileId: profile.id, canvasSelector: profile.canvas, visualSelector: profile.visual });
   assert.equal(value.scrollY, 0);
-  assert(value.stageTop <= 210, `${profile.slug}: stage starts at ${value.stageTop}`);
+  assert(value.stageTop <= 230, `${profile.slug}: stage starts at ${value.stageTop}`);
   assert(value.stageWidth >= 700, `${profile.slug}: stage width ${value.stageWidth}`);
   assert(value.stageVisibleHeight >= (viewport.height <= 768 ? 430 : 540), `${profile.slug}: visible height ${value.stageVisibleHeight}`);
   assert(value.canvasHeight >= 560, `${profile.slug}: canvas height ${value.canvasHeight}`);
   assert(value.visualIntersection.width >= 700, `${profile.slug}: actual canvas visible width ${value.visualIntersection.width}`);
-  assert(value.visualIntersection.height >= (viewport.height <= 768 ? 430 : 540), `${profile.slug}: actual canvas visible height ${value.visualIntersection.height}`);
+  assert(value.visualIntersection.height >= (viewport.height <= 768 ? 420 : 540), `${profile.slug}: actual canvas visible height ${value.visualIntersection.height}`);
   assert(value.controlsTop < value.stageTop);
   assert(value.overflow <= 1, `${profile.slug}: horizontal overflow ${value.overflow}`);
   assert.equal(value.directCanvasCount, 1);

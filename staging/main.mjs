@@ -619,6 +619,8 @@ const elements = Object.fromEntries([
   'control-runtime-evidence-body',
   'serial-tab', 'serial-dock', 'serial-close', 'serial-resizer', 'serial-resume', 'serial-new-output',
   'canvas-select-mode', 'canvas-interact-mode',
+  'selected-runtime-control', 'selected-runtime-control-name', 'selected-runtime-value',
+  'selected-runtime-action', 'selected-runtime-range', 'runtime-shortcuts',
   'thermostat-experiment', 'thermostat-experiment-state', 'thermostat-run-tests',
   'thermostat-load-bad', 'thermostat-restore', 'thermostat-results', 'thermostat-experiment-message',
   'x39-failure-location', 'x39-failure-location-summary', 'x39-failure-source',
@@ -1032,6 +1034,8 @@ let serialUnreadRecords = 0;
 let serialResumeGuardUntil = 0;
 let serialScrollFrame = null;
 let canvasInteractionMode = 'select';
+let runtimeInteractionLocked = false;
+let activeKeyboardSwitch = null;
 let activeCanvasButton = null;
 let thermostatExperimentRun = null;
 let thermostatExperimentResults = [];
@@ -1255,8 +1259,8 @@ function boundedQuickCircuitStatus(state, validLabel) {
 function renderPicoQuickControls(state = picoPublicState) {
   if (selectedCompilerProfile !== RP2040_PROFILE || !state) return;
   elements.quickstate.textContent = `Pico · ${state.phase} · ${boundedQuickCircuitStatus(state, 'wiring valid')}`;
-  elements.quickbuild.textContent = 'Build Pico';
-  elements.quickrun.textContent = 'Run Pico';
+  elements.quickbuild.textContent = 'Build';
+  elements.quickrun.textContent = 'Run';
   elements.quickpause.textContent = 'Pause';
   elements.quickreset.textContent = 'Reset';
   elements.quickstop.textContent = 'Stop';
@@ -1291,27 +1295,29 @@ function renderAvrQuickControls() {
   elements.quickrun.textContent = 'Run';
   elements.quickpause.textContent = 'Pause';
   elements.quickreset.textContent = 'Reset';
-  elements.quickstop.textContent = 'Stop unavailable';
+  elements.quickstop.textContent = 'Stop';
   elements.quickbuild.disabled = elements.build.disabled;
   elements.quickrun.disabled = elements.run.disabled;
   elements.quickpause.disabled = elements.pause.disabled;
   elements.quickreset.disabled = elements.reset.disabled;
-  elements.quickstop.disabled = true;
+  elements.quickstop.disabled = !worker;
   elements.quickbuild.title = '';
   elements.quickrun.title = '';
   elements.quickpause.title = '';
   elements.quickreset.title = '';
-  elements.quickstop.title = 'Stop is unavailable for the AVR browser runtime; use Pause or Reset.';
-  renderBeginnerRuntimeToggle({ phase: lifecycle.phase, supportsPause: true, stopAvailable: false });
+  elements.quickstop.title = worker
+    ? 'Stop the current AVR runtime and return to editable circuit mode.'
+    : 'No AVR runtime session is active.';
+  renderBeginnerRuntimeToggle({ phase: lifecycle.phase, supportsPause: true, stopAvailable: true });
 }
 
 function renderC3QuickControls(state = c3PublicState) {
   if (selectedCompilerProfile !== ESP32C3_PROFILE || !state) return;
   elements.quickstate.textContent = `ESP32-C3 · ${state.phase} · ${boundedQuickCircuitStatus(state, 'model wiring valid')}`;
-  elements.quickbuild.textContent = 'Build C3';
-  elements.quickrun.textContent = 'Run actual QEMU';
-  elements.quickpause.textContent = 'Pause unavailable';
-  elements.quickreset.textContent = 'Reset replay is part of Run';
+  elements.quickbuild.textContent = 'Build';
+  elements.quickrun.textContent = 'Run';
+  elements.quickpause.textContent = 'Pause';
+  elements.quickreset.textContent = 'Reset';
   elements.quickstop.textContent = 'Stop';
   elements.quickbuild.disabled = state.phase === 'building' || state.phase === 'running';
   elements.quickrun.disabled = !state.runnable || state.phase === 'running';
@@ -1327,10 +1333,10 @@ function renderC3QuickControls(state = c3PublicState) {
 function renderStm32QuickControls(state = stm32PublicState) {
   if (selectedCompilerProfile !== STM32F429ZI_PROFILE || !state) return;
   elements.quickstate.textContent = `STM32F429ZI · ${state.phase} · ${boundedQuickCircuitStatus(state, 'PB0 wiring valid')}`;
-  elements.quickbuild.textContent = 'Build STM32 ELF';
-  elements.quickrun.textContent = 'Run actual Renode';
-  elements.quickpause.textContent = 'Pause unavailable';
-  elements.quickreset.textContent = 'Reset in fresh Renode';
+  elements.quickbuild.textContent = 'Build';
+  elements.quickrun.textContent = 'Run';
+  elements.quickpause.textContent = 'Pause';
+  elements.quickreset.textContent = 'Reset';
   elements.quickstop.textContent = 'Stop';
   elements.quickbuild.disabled = ['building', 'running'].includes(state.phase);
   elements.quickrun.disabled = !state.runnable || ['building', 'running'].includes(state.phase);
@@ -1523,9 +1529,16 @@ function openDht11ReleaseFeature() {
   })) install();
 }
 
+function boundedRuntimeAuthoringLocked(state) {
+  return ['starting', 'running', 'pausing', 'paused', 'resetting'].includes(state?.phase);
+}
+
 function renderBoundedComponentCatalog(options) {
   const { profile, state, editCircuit, search, count, list, properties } = options;
   const { draft, selection, catalog } = state.circuitEditor;
+  const authoringLocked = boundedRuntimeAuthoringLocked(state);
+  properties.inert = authoringLocked;
+  properties.setAttribute('aria-disabled', String(authoringLocked));
   const picker = search.closest('[data-component-picker-contract="intent-mcu-avr-catalog-picker@1"]');
   if (!picker) throw new Error(`COMPONENT_PICKER_CONTRACT_MISSING:${profile}`);
   const control = (role) => picker.querySelector(`[data-picker-role="${role}"]`);
@@ -1603,7 +1616,7 @@ function renderBoundedComponentCatalog(options) {
     const row = document.createElement('article');
     row.className = 'catalog-item'; row.dataset.type = part.type;
     row.dataset.present = String(part.present);
-    const addable = Boolean(part.addable || part.repeatable);
+    const addable = !authoringLocked && Boolean(part.addable || part.repeatable);
     row.setAttribute('role', addable ? 'button' : 'listitem'); row.tabIndex = addable ? 0 : -1;
     row.draggable = addable;
     row.setAttribute('aria-label', addable
@@ -2831,7 +2844,7 @@ function picoEditorPosition(event, card, diagram = elements.picodiagram) {
 }
 
 function startPicoEditorDrag(event, componentId, card) {
-  if (event.button !== 0) return;
+  if (event.button !== 0 || boundedRuntimeAuthoringLocked(picoPublicState)) return;
   event.preventDefault();
   picoPublicWorkbench.circuitEditor.select({ kind: 'component', id: componentId });
   picoPublicState = picoPublicWorkbench.snapshot();
@@ -2865,23 +2878,26 @@ function finishPicoEditorDrag(event) {
 function renderPicoCircuitEditor(state) {
   if (!state?.circuitEditor) return;
   const { draft, selection, wireDraft, canUndo, canRedo, validation } = state.circuitEditor;
+  const authoringLocked = boundedRuntimeAuthoringLocked(state);
   elements.picocircuitselection.textContent = selection.kind === 'none'
     ? 'Nothing selected' : `${selection.kind === 'net' ? 'Cable' : 'Part'} · ${selection.id}`;
   const selectedComponent = selection.kind === 'component'
     ? draft.components.find((component) => component.id === selection.id) : null;
   const responsiveScale = elements.picodiagram.getBoundingClientRect().width <= 430 ? 0.6 : 1;
   picoEditorResponsiveScale = responsiveScale;
-  elements.picodelete.disabled = selection.kind === 'none' || selectedComponent?.type === RP2040_PROFILE;
-  elements.picorotate.disabled = selection.kind !== 'component';
-  elements.picoundo.disabled = !canUndo; elements.picoredo.disabled = !canRedo;
-  elements.picoreconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
-  elements.picobranch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.picodelete.disabled = authoringLocked || selection.kind === 'none' || selectedComponent?.type === RP2040_PROFILE;
+  elements.picorotate.disabled = authoringLocked || selection.kind !== 'component';
+  elements.picoundo.disabled = authoringLocked || !canUndo; elements.picoredo.disabled = authoringLocked || !canRedo;
+  elements.picoreconnect.disabled = authoringLocked || selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.picobranch.disabled = authoringLocked || selection.kind !== 'net' || wireDraft.mode !== 'none';
   renderNamedBranchRemoval(elements.picobranchendpoint, elements.picoremovebranch, draft, selection, wireDraft);
+  elements.picobranchendpoint.disabled ||= authoringLocked;
+  elements.picoremovebranch.disabled ||= authoringLocked;
   const picoRouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
-  elements.picoaddbend.disabled = !picoRouteSelected;
-  elements.picorouteback.disabled = !picoRouteSelected;
-  elements.picorouteforward.disabled = !picoRouteSelected;
-  elements.picowirecolor.disabled = !picoRouteSelected;
+  elements.picoaddbend.disabled = authoringLocked || !picoRouteSelected;
+  elements.picorouteback.disabled = authoringLocked || !picoRouteSelected;
+  elements.picorouteforward.disabled = authoringLocked || !picoRouteSelected;
+  elements.picowirecolor.disabled = authoringLocked || !picoRouteSelected;
   if (picoRouteSelected) elements.picowirecolor.value = draft.layout.wireStyles[selection.id] ?? '#39dff2';
   elements.picowirecancel.disabled = wireDraft.mode === 'none';
   elements.picowirestate.textContent = namedWireInstruction(wireDraft);
@@ -2917,6 +2933,7 @@ function renderPicoCircuitEditor(state) {
       const anchor = document.createElement('button'); anchor.type = 'button'; anchor.className = 'pin-anchor';
       anchor.dataset.picoEndpoint = `${component.id}.${pin.id}`;
       anchor.dataset.editorEndpoint = `${component.id}.${pin.id}`; anchor.dataset.label = pin.label;
+      anchor.disabled = authoringLocked;
       anchor.title = `${component.id}.${pin.id} · ${pin.label}`; anchor.setAttribute('aria-label', anchor.title);
       anchor.style.setProperty('--pin-x', String(pin.anchor.x)); anchor.style.setProperty('--pin-y', String(pin.anchor.y));
       const pinLabel = document.createElement('span'); pinLabel.className = 'pico-editor-pin-label'; pinLabel.textContent = pin.label; anchor.append(pinLabel);
@@ -3123,7 +3140,7 @@ function drawC3EditorWires() {
 }
 
 function startC3EditorDrag(event, componentId, card) {
-  if (event.button !== 0) return;
+  if (event.button !== 0 || boundedRuntimeAuthoringLocked(c3PublicState)) return;
   event.preventDefault();
   c3PublicWorkbench.circuitEditor.select({ kind: 'component', id: componentId });
   c3PublicState = c3PublicWorkbench.snapshot();
@@ -3157,23 +3174,26 @@ function finishC3EditorDrag(event) {
 function renderC3CircuitEditor(state) {
   if (!state?.circuitEditor) return;
   const { draft, selection, wireDraft, canUndo, canRedo, validation } = state.circuitEditor;
+  const authoringLocked = boundedRuntimeAuthoringLocked(state);
   elements.c3circuitselection.textContent = selection.kind === 'none'
     ? 'Nothing selected' : `${selection.kind === 'net' ? 'Cable' : 'Part'} · ${selection.id}`;
   const selectedComponent = selection.kind === 'component'
     ? draft.components.find((component) => component.id === selection.id) : null;
   const responsiveScale = elements.c3diagram.getBoundingClientRect().width <= 430 ? 0.6 : 1;
   c3EditorResponsiveScale = responsiveScale;
-  elements.c3delete.disabled = selection.kind === 'none' || selectedComponent?.type === ESP32C3_PROFILE;
-  elements.c3rotate.disabled = selection.kind !== 'component';
-  elements.c3undo.disabled = !canUndo; elements.c3redo.disabled = !canRedo;
-  elements.c3reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
-  elements.c3branch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.c3delete.disabled = authoringLocked || selection.kind === 'none' || selectedComponent?.type === ESP32C3_PROFILE;
+  elements.c3rotate.disabled = authoringLocked || selection.kind !== 'component';
+  elements.c3undo.disabled = authoringLocked || !canUndo; elements.c3redo.disabled = authoringLocked || !canRedo;
+  elements.c3reconnect.disabled = authoringLocked || selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.c3branch.disabled = authoringLocked || selection.kind !== 'net' || wireDraft.mode !== 'none';
   renderNamedBranchRemoval(elements.c3branchendpoint, elements.c3removebranch, draft, selection, wireDraft);
+  elements.c3branchendpoint.disabled ||= authoringLocked;
+  elements.c3removebranch.disabled ||= authoringLocked;
   const c3RouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
-  elements.c3addbend.disabled = !c3RouteSelected;
-  elements.c3routeback.disabled = !c3RouteSelected;
-  elements.c3routeforward.disabled = !c3RouteSelected;
-  elements.c3wirecolor.disabled = !c3RouteSelected;
+  elements.c3addbend.disabled = authoringLocked || !c3RouteSelected;
+  elements.c3routeback.disabled = authoringLocked || !c3RouteSelected;
+  elements.c3routeforward.disabled = authoringLocked || !c3RouteSelected;
+  elements.c3wirecolor.disabled = authoringLocked || !c3RouteSelected;
   if (c3RouteSelected) elements.c3wirecolor.value = draft.layout.wireStyles[selection.id] ?? '#39dff2';
   elements.c3wirecancel.disabled = wireDraft.mode === 'none';
   elements.c3wirestate.textContent = namedWireInstruction(wireDraft);
@@ -3209,6 +3229,7 @@ function renderC3CircuitEditor(state) {
       const anchor = document.createElement('button'); anchor.type = 'button'; anchor.className = 'pin-anchor';
       anchor.dataset.c3Endpoint = `${component.id}.${pin.id}`;
       anchor.dataset.editorEndpoint = `${component.id}.${pin.id}`; anchor.dataset.label = pin.label;
+      anchor.disabled = authoringLocked;
       anchor.title = `${component.id}.${pin.id} · ${pin.label}`; anchor.setAttribute('aria-label', anchor.title);
       anchor.style.setProperty('--pin-x', String(pin.anchor.x)); anchor.style.setProperty('--pin-y', String(pin.anchor.y));
       const pinLabel = document.createElement('span'); pinLabel.className = 'pico-editor-pin-label'; pinLabel.textContent = pin.label; anchor.append(pinLabel);
@@ -3417,7 +3438,7 @@ function drawStm32EditorWires() {
 }
 
 function startStm32EditorDrag(event, componentId, card) {
-  if (event.button !== 0) return;
+  if (event.button !== 0 || boundedRuntimeAuthoringLocked(stm32PublicState)) return;
   event.preventDefault();
   stm32PublicWorkbench.circuitEditor.select({ kind: 'component', id: componentId });
   stm32PublicState = stm32PublicWorkbench.snapshot();
@@ -3453,23 +3474,26 @@ function finishStm32EditorDrag(event) {
 function renderStm32CircuitEditor(state) {
   if (!state?.circuitEditor) return;
   const { draft, selection, wireDraft, canUndo, canRedo, validation } = state.circuitEditor;
+  const authoringLocked = boundedRuntimeAuthoringLocked(state);
   elements.stm32circuitselection.textContent = selection.kind === 'none'
     ? 'Nothing selected' : `${selection.kind === 'net' ? 'Cable' : 'Part'} · ${selection.id}`;
   const selectedComponent = selection.kind === 'component'
     ? draft.components.find((component) => component.id === selection.id) : null;
   const responsiveScale = elements.stm32diagram.getBoundingClientRect().width <= 430 ? 0.6 : 1;
   stm32EditorResponsiveScale = responsiveScale;
-  elements.stm32delete.disabled = selection.kind === 'none' || selectedComponent?.type === STM32F429ZI_PROFILE;
-  elements.stm32rotate.disabled = selection.kind !== 'component';
-  elements.stm32undo.disabled = !canUndo; elements.stm32redo.disabled = !canRedo;
-  elements.stm32reconnect.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
-  elements.stm32branch.disabled = selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.stm32delete.disabled = authoringLocked || selection.kind === 'none' || selectedComponent?.type === STM32F429ZI_PROFILE;
+  elements.stm32rotate.disabled = authoringLocked || selection.kind !== 'component';
+  elements.stm32undo.disabled = authoringLocked || !canUndo; elements.stm32redo.disabled = authoringLocked || !canRedo;
+  elements.stm32reconnect.disabled = authoringLocked || selection.kind !== 'net' || wireDraft.mode !== 'none';
+  elements.stm32branch.disabled = authoringLocked || selection.kind !== 'net' || wireDraft.mode !== 'none';
   renderNamedBranchRemoval(elements.stm32branchendpoint, elements.stm32removebranch, draft, selection, wireDraft);
+  elements.stm32branchendpoint.disabled ||= authoringLocked;
+  elements.stm32removebranch.disabled ||= authoringLocked;
   const stm32RouteSelected = selection.kind === 'net' && wireDraft.mode === 'none';
-  elements.stm32addbend.disabled = !stm32RouteSelected;
-  elements.stm32routeback.disabled = !stm32RouteSelected;
-  elements.stm32routeforward.disabled = !stm32RouteSelected;
-  elements.stm32wirecolor.disabled = !stm32RouteSelected;
+  elements.stm32addbend.disabled = authoringLocked || !stm32RouteSelected;
+  elements.stm32routeback.disabled = authoringLocked || !stm32RouteSelected;
+  elements.stm32routeforward.disabled = authoringLocked || !stm32RouteSelected;
+  elements.stm32wirecolor.disabled = authoringLocked || !stm32RouteSelected;
   if (stm32RouteSelected) elements.stm32wirecolor.value = draft.layout.wireStyles[selection.id] ?? '#39dff2';
   elements.stm32wirecancel.disabled = wireDraft.mode === 'none';
   elements.stm32wirestate.textContent = namedWireInstruction(wireDraft);
@@ -3506,6 +3530,7 @@ function renderStm32CircuitEditor(state) {
       const anchor = document.createElement('button'); anchor.type = 'button'; anchor.className = 'pin-anchor';
       anchor.dataset.stm32Endpoint = `${component.id}.${pin.id}`;
       anchor.dataset.editorEndpoint = `${component.id}.${pin.id}`; anchor.dataset.label = pin.label;
+      anchor.disabled = authoringLocked;
       anchor.title = `${component.id}.${pin.id} · ${pin.label}`; anchor.setAttribute('aria-label', anchor.title);
       anchor.style.setProperty('--pin-x', String(pin.anchor.x)); anchor.style.setProperty('--pin-y', String(pin.anchor.y));
       const pinLabel = document.createElement('span'); pinLabel.className = 'pico-editor-pin-label';
@@ -7523,8 +7548,8 @@ function renderPublicControllerWorkbench() {
   elements.togglecatalog.hidden = false;
   elements.toggleinspector.hidden = false;
   sharedWorkbenchShell.activate(selectedCompilerProfile);
-  elements.quickbuild.textContent = preview ? 'Build unavailable' : pico ? 'Build Pico' : c3 ? 'Build C3' : stm32 ? 'Build STM32 ELF' : 'Build';
-  elements.quickrun.textContent = preview ? 'Run unavailable' : pico ? 'Run Pico' : c3 ? 'Run actual QEMU' : stm32 ? 'Run actual Renode' : 'Run';
+  elements.quickbuild.textContent = preview ? 'Build unavailable' : 'Build';
+  elements.quickrun.textContent = preview ? 'Run unavailable' : 'Run';
   elements.quickbuild.disabled = preview || (avr && elements.build.disabled);
   if (preview) {
     elements.quickrun.disabled = true;
@@ -12094,6 +12119,8 @@ function releaseCanvasButton(reason = 'canvas button') {
 function stopRuntime(message = 'No current artifact loaded', {
   updateLifecycle = true, stale = false, preserveX47Terminal = false,
 } = {}) {
+  releaseActiveKeyboardSwitch('runtime stop');
+  runtimeInteractionLocked = false;
   retireX48RoomLoop('X48_RUNTIME_RETIRED', { command: 'x48-cancel', restoreControls: false });
   x48RuntimeAuthority = null;
   retireX47Integration('X47_RUNTIME_RETIRED', { preserveTerminal: preserveX47Terminal });
@@ -12115,9 +12142,11 @@ function stopRuntime(message = 'No current artifact loaded', {
   setRuntimeEnabled(false);
   elements.workerstate.textContent = message;
   clearRuntimePresentation();
+  setCanvasInteractionMode('select', { force: true });
   if (updateLifecycle) applyLifecycle({
     type: 'runtime.stop', stale, empty: currentProject().circuit.components.length === 0, reason: message,
   });
+  if (selectedCompilerProfile === AVR_PROFILE) renderAvrQuickControls();
 }
 
 function detachOutstandingBuild() {
@@ -12170,6 +12199,13 @@ function installProjectGeneration({ empty, reason, runtimeMessage }) {
 }
 
 function applyEditor(command, message = command.type) {
+  const interactionCommand = ['component.control.set', 'viewport.set'].includes(command.type);
+  if (runtimeInteractionLocked && !interactionCommand) {
+    const rejected = { ok: false, code: 'RUNTIME_AUTHORING_LOCKED', revision: editor.revision };
+    showActionableError(elements.projectmessage, rejected.code,
+      'Stop the runtime before changing source, parts, wiring or layout. Runtime controls and the canvas view remain available.');
+    return rejected;
+  }
   if (boundedSubcircuits.instances.length && !command.type.startsWith('subcircuit.')
       && !['undo', 'redo'].includes(command.type)) {
     const generated = generatedSubcircuitComponentIds();
@@ -12778,7 +12814,8 @@ function moveComponentDrag(event) {
 
 function cardPointerDrag(card, componentId) {
   card.addEventListener('pointerdown', (event) => {
-    if (canvasInteractionMode !== 'select' || event.target.closest('.pin-anchor,.component-control-hit') || event.button !== 0) return;
+    if (runtimeInteractionLocked || canvasInteractionMode !== 'select'
+        || event.target.closest('.pin-anchor,.component-control-hit') || event.button !== 0) return;
     const box = elements.circuitcanvas.getBoundingClientRect();
     const pointer = worldPoint((event.clientX - box.left) / box.width, (event.clientY - box.top) / box.height);
     const original = structuredClone(currentProject().layout.positions[componentId]);
@@ -12896,6 +12933,7 @@ function renderComponents() {
       anchor.style.setProperty('--pin-label-lane', String(pinIndex % 5));
       anchor.title = `${component.id}.${pin.id} · ${pin.label} · ${pin.role}`;
       anchor.setAttribute('aria-label', anchor.title);
+      anchor.disabled = runtimeInteractionLocked || canvasInteractionMode === 'interact';
       anchor.style.setProperty('--pin-x', String(pin.anchor.x));
       anchor.style.setProperty('--pin-y', String(pin.anchor.y));
       const visibleLabel = document.createElement('span');
@@ -12916,6 +12954,7 @@ function renderComponents() {
             : 'Possible named-pin target; final electrical validation decides whether the connection is accepted.');
       }
       anchor.addEventListener('click', (event) => {
+        if (runtimeInteractionLocked || canvasInteractionMode !== 'select') return;
         event.stopPropagation();
         const intended = nearestPinAnchor(card, event, anchor);
         const endpoint = parseEndpoint(intended.dataset.endpoint);
@@ -12982,7 +13021,8 @@ function renderComponents() {
     };
     card.addEventListener('click', selectCard);
     card.addEventListener('keydown', (event) => {
-      if (!['Enter', ' '].includes(event.key) || event.target !== card) return;
+      if (event.target !== card || (event.key !== 'Enter'
+          && !(event.key === ' ' && canvasInteractionMode === 'select'))) return;
       event.preventDefault();
       selectCard();
     });
@@ -13081,7 +13121,7 @@ function renderCatalog() {
   const maximumStart = matches.length ? Math.floor((matches.length - 1) / CATALOG_WINDOW_LIMIT) * CATALOG_WINDOW_LIMIT : 0;
   catalogWindowStart = Math.min(catalogWindowStart, maximumStart);
   const windowRecords = matches.slice(catalogWindowStart, catalogWindowStart + CATALOG_WINDOW_LIMIT);
-  const interactive = catalogFixtureRecords === null;
+  const interactive = catalogFixtureRecords === null && !runtimeInteractionLocked;
   const buttons = windowRecords.map((definition) => createCatalogRow(definition, { interactive, thumbnail: true }));
   elements.cataloglist.replaceChildren(...buttons);
   if (elements.cataloglist.closest('#simple-parts-mount')) {
@@ -13312,6 +13352,10 @@ function freshComponentId(type) {
 }
 
 function addComponent(type, point = null) {
+  if (runtimeInteractionLocked) {
+    elements.projectmessage.textContent = 'Run is active: Stop the runtime before adding or changing parts.';
+    return { ok: false, code: 'RUNTIME_AUTHORING_LOCKED', revision: editor.revision };
+  }
   try {
     const candidatePrefix = candidateComponentPrefix(type);
     const component = editor.kind === 'candidate-project-v3' && candidatePrefix
@@ -13716,29 +13760,35 @@ function renderInspector() {
       : selection.kind === 'net'
         ? 'Whole net selected for inspection. Use the separately labelled whole-net action to remove it.'
         : 'Select a part or wire section to inspect its exact target.';
-  elements.rotatecomponent.disabled = !component;
-  elements.duplicatecomponent.disabled = !component || component.type.startsWith('board.');
-  elements.deletecomponent.disabled = !component;
+  const authoringLocked = runtimeInteractionLocked || canvasInteractionMode === 'interact';
+  elements.rotatecomponent.disabled = authoringLocked || !component;
+  elements.duplicatecomponent.disabled = authoringLocked || !component || component.type.startsWith('board.');
+  elements.deletecomponent.disabled = authoringLocked || !component;
   renderPropertyEditor(component);
   renderAppearanceEditor(component);
   renderAvrComponentEditor(component);
+  for (const root of [elements.propertyeditor, elements.appearanceeditor, elements.componenteditor]) {
+    root.inert = authoringLocked;
+    root.setAttribute('aria-disabled', String(authoringLocked));
+  }
 
   const prior = selectedNetId;
   const options = [new Option('No net selected', ''), ...currentProject().circuit.nets.map((net) => new Option(`${net.id} · ${net.endpoints.length} pins`, net.id))];
   elements.selectednet.replaceChildren(...options);
+  elements.selectednet.disabled = authoringLocked;
   if (currentProject().circuit.nets.some((net) => net.id === prior)) elements.selectednet.value = prior;
   else if (selection.kind !== 'component') setSelection({ kind: 'none' });
   net = currentProject().circuit.nets.find((item) => item.id === selectedNetId) ?? null;
-  elements.addbend.disabled = !net || !selectedRouteSegment;
-  elements.deletebranch.disabled = !net || !selectedRouteSegment;
+  elements.addbend.disabled = authoringLocked || !net || !selectedRouteSegment;
+  elements.deletebranch.disabled = authoringLocked || !net || !selectedRouteSegment;
   elements.deletebranch.textContent = net?.endpoints.length === 2 ? 'Delete selected connection' : 'Delete selected branch';
-  elements.deletewire.disabled = !net;
-  elements.reconnectmode.disabled = !net || !selectedRouteSegment;
-  elements.wirecolor.disabled = !net;
+  elements.deletewire.disabled = authoringLocked || !net;
+  elements.reconnectmode.disabled = authoringLocked || !net || !selectedRouteSegment;
+  elements.wirecolor.disabled = authoringLocked || !net;
   if (net) elements.wirecolor.value = currentProject().layout.wireStyles[net.id].color;
   const junction = net && currentProject().circuit.junctions.find((item) => item.net === net.id);
   const junctionRemovalBlocked = Boolean(junction && net.endpoints.length > 2);
-  elements.removejunction.disabled = !junction || junctionRemovalBlocked;
+  elements.removejunction.disabled = authoringLocked || !junction || junctionRemovalBlocked;
   elements.removejunction.title = junctionRemovalBlocked
     ? 'This junction is required by the multi-pin net. Remove a named branch instead.'
     : junction ? 'Remove this redundant junction without changing any pin connection.' : 'This net has no junction.';
@@ -13746,6 +13796,7 @@ function renderInspector() {
     ? `${selectedRouteSegment ? `Selected branch: ${selectedRouteSegment.endpoint}\n` : ''}${net.endpoints.map(endpointKey).join('\n')}${junctionRemovalBlocked ? '\n\nJunction removal unavailable: this multi-pin net requires its explicit junction. Select a named branch to disconnect it safely.' : junction ? '\n\nPolicy: the explicit junction hub stays fixed during section moves.' : '\n\nPolicy: crossings and overlaps never connect.'}`
     : 'Select a net to inspect all connected pins.';
   renderWireBends(net);
+  renderSelectedRuntimeControl();
 }
 
 function renderRuntimeControls() {
@@ -14370,7 +14421,13 @@ function renderProject() {
           : `${project.metadata.name} · fresh firmware is built when you choose Run.`;
     }
   }
-  elements.undo.disabled = !editor.undoStack.length; elements.redo.disabled = !editor.redoStack.length;
+  elements.undo.disabled = runtimeInteractionLocked || !editor.undoStack.length;
+  elements.redo.disabled = runtimeInteractionLocked || !editor.redoStack.length;
+  elements.source.disabled = runtimeInteractionLocked;
+  elements.sourcefile.disabled = runtimeInteractionLocked;
+  elements.sourcefileadd.disabled = runtimeInteractionLocked;
+  elements.sourcefilename.disabled = runtimeInteractionLocked;
+  elements.sourcefileremove.disabled = runtimeInteractionLocked || selectedSourceFile === 'main.ino';
   elements.zoomvalue.value = `${Math.round(project.layout.viewport.zoom * 100)}%`;
   for (const option of elements.logicchannels.options) option.selected = project.instruments.logicChannels.includes(option.value);
   if ([...elements.pinselect.options].some((option) => option.value === project.instruments.selectedPin)) elements.pinselect.value = project.instruments.selectedPin;
@@ -14823,6 +14880,11 @@ function renderRuntime(message, { publishState = true } = {}) {
   elements.pindetail.textContent = pin?.pwm ? `${(pin.pwm.duty * 100).toFixed(1)}% · ${pin.pwm.periodCycles} cycles` : Number.isInteger(pin?.adc) ? `ADC ${pin.adc}` : '—';
   elements.pindiagnostic.textContent = pin?.diagnostic ?? '—'; elements.pincycle.textContent = message.cycle.toLocaleString('en-US');
   const stopped = message.kind === 'error' || message.kind === 'stopped-error';
+  if (stopped && runtimeInteractionLocked) {
+    releaseActiveKeyboardSwitch('runtime error');
+    runtimeInteractionLocked = false;
+    setCanvasInteractionMode('select', { force: true });
+  }
   elements.workerstate.textContent = stopped ? `Stopped: ${message.message}` : message.paused ? 'Paused' : 'Running';
   if (stopped) { elements.run.disabled = true; elements.pause.disabled = true; elements.step.disabled = true; }
   else { elements.run.disabled = !message.paused; elements.pause.disabled = message.paused; elements.step.disabled = !message.paused; }
@@ -14973,6 +15035,8 @@ async function loadArtifact(hex, artifactIdentity, {
     if (!ownsWorker()) return;
     terminateOwnedWorker();
     running = false;
+    runtimeInteractionLocked = false;
+    setCanvasInteractionMode('select', { force: true });
     setRuntimeEnabled(false);
     const state = { kind: 'stopped-error', message, cycle: 0, instructions: 0, paused: true };
     applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: state });
@@ -15448,7 +15512,12 @@ elements.catalognext.addEventListener('click', () => {
 });
 elements.circuitcanvas.addEventListener('dragover', (event) => event.preventDefault(), true);
 elements.circuitcanvas.addEventListener('drop', (event) => {
-  event.preventDefault(); const type = event.dataTransfer.getData('application/x-intent-component'); if (!uiComponentCatalog[type]?.selectable) return;
+  event.preventDefault();
+  if (runtimeInteractionLocked) {
+    elements.projectmessage.textContent = 'Run is active: Stop the runtime before adding parts.';
+    return;
+  }
+  const type = event.dataTransfer.getData('application/x-intent-component'); if (!uiComponentCatalog[type]?.selectable) return;
   const box = elements.circuitcanvas.getBoundingClientRect(); const view = currentProject().layout.viewport;
   const x = Math.max(0.07, Math.min(0.93, ((event.clientX - box.left) / box.width - 0.5 - view.panX) / view.zoom + 0.5));
   const y = Math.max(0.08, Math.min(0.92, ((event.clientY - box.top) / box.height - 0.5 - view.panY) / view.zoom + 0.5));
@@ -15529,6 +15598,8 @@ elements.run.addEventListener('click', () => {
   clearX40SharedTimeline('Run invalidated the prior shared timeline.');
   const result = applyLifecycle({ type: 'runtime.run' });
   if (result.accepted) {
+    runtimeInteractionLocked = true;
+    setCanvasInteractionMode('interact', { force: true });
     if (x47WorkerIdentity && ['await-run', 'ready'].includes(x47UiOwner.snapshot().phase)) {
       try { renderX47Integration(x47UiOwner.noteRun({ workerToken,
         runtimeIdentity: x47WorkerIdentity })); } catch { retireX47Integration('X47_RUN_BINDING_REJECTED'); }
@@ -15890,19 +15961,177 @@ function setSerialDock(open, { returnFocus = false } = {}) {
   requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires));
 }
 
-function setCanvasInteractionMode(mode) {
+function selectedRuntimeDescriptor() {
+  const component = currentProject().circuit.components.find(({ id }) => id === selectedComponentId);
+  if (!component) return null;
+  if (['potentiometer.linear-v1', 'potentiometer.trimmer-v1', 'potentiometer.linear-3v3-v1']
+    .includes(component.type) && Number.isFinite(component.controls?.position)) {
+    return { kind: 'potentiometer', component, key: 'position', minimum: 0, maximum: 100, step: 1 };
+  }
+  if (typeof component.controls?.pressed === 'boolean') {
+    return { kind: 'switch', component, key: 'pressed', momentary: true };
+  }
+  if (typeof component.controls?.closed === 'boolean') {
+    return { kind: 'switch', component, key: 'closed', momentary: false };
+  }
+  if (['A', 'B'].includes(component.controls?.selectedThrow)) {
+    return { kind: 'switch', component, key: 'selectedThrow', momentary: false };
+  }
+  return null;
+}
+
+function renderSelectedRuntimeControl() {
+  const descriptor = selectedRuntimeDescriptor();
+  const interactive = canvasInteractionMode === 'interact' && runtimeInteractionLocked;
+  elements.selectedruntimevalue.hidden = descriptor?.kind !== 'potentiometer';
+  elements.selectedruntimevalue.closest('label').hidden = descriptor?.kind !== 'potentiometer';
+  elements.selectedruntimeaction.hidden = descriptor?.kind !== 'switch';
+  if (!descriptor) {
+    elements.selectedruntimecontrol.dataset.kind = 'none';
+    elements.selectedruntimecontrolname.textContent = 'No interactive component selected';
+    elements.selectedruntimevalue.disabled = true;
+    elements.selectedruntimeaction.disabled = true;
+    elements.selectedruntimerange.textContent = interactive
+      ? 'Select a potentiometer or switch. Wiring and placement stay locked.'
+      : 'Run, then select a potentiometer or switch.';
+    return;
+  }
+  elements.selectedruntimecontrol.dataset.kind = descriptor.kind;
+  elements.selectedruntimecontrolname.textContent = descriptor.component.label;
+  if (descriptor.kind === 'potentiometer') {
+    const percent = Math.round(descriptor.component.controls.position * 100);
+    elements.selectedruntimevalue.min = String(descriptor.minimum);
+    elements.selectedruntimevalue.max = String(descriptor.maximum);
+    elements.selectedruntimevalue.step = String(descriptor.step);
+    elements.selectedruntimevalue.value = String(percent);
+    elements.selectedruntimevalue.disabled = !interactive;
+    elements.selectedruntimerange.textContent = `Min ${descriptor.minimum}% · max ${descriptor.maximum}% · step ${descriptor.step}% · use ↑/↓`;
+    return;
+  }
+  elements.selectedruntimeaction.disabled = !interactive;
+  elements.selectedruntimeaction.dataset.momentary = String(descriptor.momentary);
+  elements.selectedruntimeaction.textContent = descriptor.momentary ? 'Hold switch · Space' : 'Toggle switch · Space';
+  const state = descriptor.key === 'selectedThrow'
+    ? descriptor.component.controls.selectedThrow
+    : descriptor.component.controls[descriptor.key] ? 'ON' : 'OFF';
+  elements.selectedruntimerange.textContent = `${state} · ${descriptor.momentary ? 'hold Space, release to let go' : 'press Space to toggle'}`;
+}
+
+function setSelectedPotentiometerPercent(rawPercent, action = 'keyboard') {
+  const descriptor = selectedRuntimeDescriptor();
+  if (!runtimeInteractionLocked || descriptor?.kind !== 'potentiometer') return false;
+  const percent = clamp(Math.round(Number(rawPercent)), descriptor.minimum, descriptor.maximum);
+  if (!Number.isFinite(percent)) return false;
+  const position = percent / 100;
+  const result = applyEditor({
+    type: 'component.control.set', componentId: descriptor.component.id,
+    key: descriptor.key, value: position,
+  }, `${descriptor.component.label} ${percent}% through ${action}`);
+  if (result.ok) worker?.postMessage({
+    command: 'control', componentId: descriptor.component.id, key: descriptor.key, value: position,
+  });
+  renderSelectedRuntimeControl();
+  return Boolean(result.ok);
+}
+
+function setSelectedSwitchValue(descriptor, value, action) {
+  if (!descriptor || descriptor.kind !== 'switch' || !runtimeInteractionLocked) return false;
+  if (descriptor.component.type === 'button.momentary-v1' && descriptor.key === 'pressed') {
+    return Boolean(setMomentaryControl(descriptor.component.id, value, action)?.ok);
+  }
+  const prepared = editor.kind === 'candidate-project-v3'
+    ? selectedCandidateContactControl(descriptor.component.id, descriptor.key, value)
+    : { ok: true, command: { type: 'component.control.set', componentId: descriptor.component.id,
+      key: descriptor.key, value }, worker: { command: 'control', componentId: descriptor.component.id,
+      key: descriptor.key, value } };
+  if (!prepared.ok) {
+    showActionableError(elements.projectmessage, prepared.code, `${action}: ${descriptor.component.id}`);
+    return false;
+  }
+  const result = applyEditor(prepared.command, `${descriptor.component.label} through ${action}`);
+  if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+  renderSelectedRuntimeControl();
+  return Boolean(result.ok);
+}
+
+function operateSelectedSwitch(pressed, action = 'keyboard') {
+  const descriptor = selectedRuntimeDescriptor();
+  if (descriptor?.kind !== 'switch') return false;
+  if (descriptor.momentary) return setSelectedSwitchValue(descriptor, pressed, action);
+  if (!pressed) return true;
+  const value = descriptor.key === 'selectedThrow'
+    ? (descriptor.component.controls.selectedThrow === 'A' ? 'B' : 'A')
+    : !descriptor.component.controls[descriptor.key];
+  return setSelectedSwitchValue(descriptor, value, action);
+}
+
+function releaseActiveKeyboardSwitch(action = 'keyboard release') {
+  if (!activeKeyboardSwitch) return false;
+  const active = activeKeyboardSwitch;
+  activeKeyboardSwitch = null;
+  const component = currentProject().circuit.components.find(({ id }) => id === active.componentId);
+  if (!component) return false;
+  return setSelectedSwitchValue({
+    kind: 'switch', component, key: active.key, momentary: true,
+  }, false, action);
+}
+
+function setCanvasInteractionMode(mode, { force = false } = {}) {
   if (!['select', 'interact'].includes(mode)) return;
+  if (mode === 'select' && runtimeInteractionLocked && !force) {
+    elements.wirestate.textContent = 'Run is active: placement and wiring stay locked. Choose Stop to return to Edit.';
+    return;
+  }
+  if (mode === 'interact') {
+    cancelComponentDrag(); cancelRouteDrag(); cancelPendingWiring();
+  }
   if (mode === 'select') releaseCanvasButton('mode change');
   canvasInteractionMode = mode;
   elements.circuitcanvas.dataset.mode = mode;
+  elements.circuitcanvas.dataset.authoringLocked = String(runtimeInteractionLocked);
+  elements.source.disabled = runtimeInteractionLocked;
+  elements.sourcefile.disabled = runtimeInteractionLocked;
+  elements.sourcefileadd.disabled = runtimeInteractionLocked;
+  elements.sourcefilename.disabled = runtimeInteractionLocked;
+  elements.sourcefileremove.disabled = runtimeInteractionLocked || selectedSourceFile === 'main.ino';
+  elements.undo.disabled = runtimeInteractionLocked || !editor.undoStack.length;
+  elements.redo.disabled = runtimeInteractionLocked || !editor.redoStack.length;
+  elements.canvasselectmode.disabled = runtimeInteractionLocked;
   elements.canvasselectmode.setAttribute('aria-pressed', String(mode === 'select'));
   elements.canvasinteractmode.setAttribute('aria-pressed', String(mode === 'interact'));
   elements.wirestate.textContent = mode === 'interact'
-    ? 'Interact mode: hold the tactile button with pointer, Space, or Enter while reading Serial.'
-    : 'Select mode: move parts, choose pins, and edit wire sections.';
-  publish({ canvasInteractionMode: mode });
+    ? 'Interact mode: placement and wiring are locked. Select a control; use ↑/↓ for a dial or Space for a switch.'
+    : 'Edit mode: move parts, choose pins, and edit wire sections.';
+  publish({ canvasInteractionMode: mode, runtimeInteractionLocked });
   renderComponents();
+  renderInspector();
+  renderCatalog();
+  renderSelectedRuntimeControl();
 }
+
+elements.selectedruntimevalue.addEventListener('input', () => {
+  if (elements.selectedruntimevalue.value !== '') {
+    setSelectedPotentiometerPercent(Number(elements.selectedruntimevalue.value), 'value field');
+  }
+});
+elements.selectedruntimeaction.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || elements.selectedruntimeaction.disabled) return;
+  if (elements.selectedruntimeaction.dataset.momentary === 'true') {
+    event.preventDefault();
+    const descriptor = selectedRuntimeDescriptor();
+    activeKeyboardSwitch = descriptor ? { componentId: descriptor.component.id, key: descriptor.key } : null;
+    operateSelectedSwitch(true, 'visible switch control');
+  }
+});
+for (const eventName of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+  elements.selectedruntimeaction.addEventListener(eventName, () => {
+    if (!activeKeyboardSwitch || elements.selectedruntimeaction.dataset.momentary !== 'true') return;
+    releaseActiveKeyboardSwitch('visible switch control');
+  });
+}
+elements.selectedruntimeaction.addEventListener('click', () => {
+  if (elements.selectedruntimeaction.dataset.momentary !== 'true') operateSelectedSwitch(true, 'visible switch control');
+});
 
 elements.serialtab.addEventListener('click', () => {
   sharedWorkbenchShell.openSerial();
@@ -16219,7 +16448,8 @@ elements.circuitcanvas.addEventListener('wheel', (event) => {
   setViewport({ zoom, panX: clamp(screenX - 0.5 - (world.x - 0.5) * zoom, -1, 1), panY: clamp(screenY - 0.5 - (world.y - 0.5) * zoom, -1, 1) });
 }, { passive: false });
 elements.circuitcanvas.addEventListener('pointerdown', (event) => {
-  if (event.button !== 0 || event.target.closest?.('.pin-anchor,.component-control-hit')) return;
+  if (runtimeInteractionLocked || canvasInteractionMode !== 'select' || event.button !== 0
+      || event.target.closest?.('.pin-anchor,.component-control-hit')) return;
   const candidates = wireTargetsAtPoint(event.clientX, event.clientY);
   const target = cycledWireTarget(candidates, event.clientX, event.clientY);
   if (!target?.routeInteraction) return;
@@ -17029,6 +17259,15 @@ elements.quickstop.addEventListener('click', () => {
   if (selectedCompilerProfile === ESP32C3_PROFILE) void c3PublicWorkbench.dispose('C3 session discarded.');
   else if (selectedCompilerProfile === RP2040_PROFILE) picoPublicWorkbench.stop();
   else if (selectedCompilerProfile === STM32F429ZI_PROFILE) stm32PublicWorkbench.stop();
+  else if (worker && x47WorkerIdentity && x47UiOwner.snapshot().request
+      && x47UiOwner.snapshot().queueReceipt && x47StopTimer === null) {
+    elements.quickstop.disabled = true;
+    elements.quickstop.textContent = 'Stopping…';
+    document.dispatchEvent(new CustomEvent('x47-stop-request'));
+  } else if (worker) {
+    stopRuntime('Stopped by user · choose Build to start a fresh runtime.');
+    elements.beginnerstatus.textContent = 'Stopped · circuit editing is unlocked. Choose Build, then Run, to start again.';
+  }
 });
 elements.projectimport.addEventListener('change', async () => {
   const file = elements.projectimport.files[0]; if (!file) return;
@@ -17128,10 +17367,53 @@ function cancelPendingWiring() {
 }
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape'
-      && (cancelComponentDrag() || cancelRouteDrag() || releaseCanvasButton('Escape') || cancelCanvasPan() || cancelPendingWiring())) {
+      && (releaseActiveKeyboardSwitch('Escape') || cancelComponentDrag() || cancelRouteDrag()
+        || releaseCanvasButton('Escape') || cancelCanvasPan() || cancelPendingWiring())) {
     event.preventDefault(); return;
   }
   if (isTextEditingTarget(event.target)) return;
+  const plainKey = !event.ctrlKey && !event.metaKey && !event.altKey;
+  if (plainKey && event.key.toLowerCase() === 'b') {
+    event.preventDefault();
+    if (!elements.quickbuild.disabled) elements.quickbuild.click();
+    return;
+  }
+  if (event.key === 'F5') {
+    event.preventDefault();
+    if (event.shiftKey) {
+      if (!elements.quickstop.disabled) elements.quickstop.click();
+    } else if (!elements.quickrun.disabled) elements.quickrun.click();
+    return;
+  }
+  if (plainKey && event.key.toLowerCase() === 'p' && runtimeInteractionLocked) {
+    event.preventDefault();
+    if (!elements.quickpause.disabled) elements.quickpause.click();
+    else if (!elements.quickrun.disabled) elements.quickrun.click();
+    return;
+  }
+  if (runtimeInteractionLocked || canvasInteractionMode === 'interact') {
+    const descriptor = selectedRuntimeDescriptor();
+    if (descriptor?.kind === 'potentiometer' && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
+      event.preventDefault();
+      const current = Math.round(descriptor.component.controls.position * 100);
+      setSelectedPotentiometerPercent(current + (event.key === 'ArrowUp' ? descriptor.step : -descriptor.step), 'keyboard arrow');
+      return;
+    }
+    if (descriptor?.kind === 'switch' && event.key === ' ' && !event.repeat) {
+      event.preventDefault();
+      if (descriptor.momentary) activeKeyboardSwitch = {
+        componentId: descriptor.component.id, key: descriptor.key,
+      };
+      operateSelectedSwitch(true, 'Space shortcut');
+      return;
+    }
+    if (((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z')
+        || ['Delete', 'Backspace', 'ArrowLeft', 'ArrowRight', 'r', 'R'].includes(event.key)) {
+      event.preventDefault();
+      elements.wirestate.textContent = 'Run is active: authoring shortcuts are locked. Choose Stop to edit the circuit.';
+    }
+    return;
+  }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); (event.shiftKey ? elements.redo : elements.undo).click(); return; }
   if (event.key === 'Delete' || event.key === 'Backspace') {
     if (selection.kind === 'component') { event.preventDefault(); elements.deletecomponent.click(); }
@@ -17147,12 +17429,20 @@ document.addEventListener('keydown', (event) => {
     applyEditor({ type: 'component.move', componentId: selectedComponentId, x: Math.max(0.07, Math.min(0.93, position.x + delta[0])), y: Math.max(0.08, Math.min(0.92, position.y + delta[1])) }, `Moved ${selectedComponentId}`);
   }
 });
+document.addEventListener('keyup', (event) => {
+  if (event.key === ' ' && activeKeyboardSwitch) {
+    event.preventDefault();
+    releaseActiveKeyboardSwitch('Space shortcut release');
+  }
+});
 window.addEventListener('resize', () => requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires)));
 
 setInterval(() => {
   if (running && performance.now() - lastWorkerMessage > 2_000) {
     const binding = lifecycle.runtimeBinding;
     running = false; worker?.terminate(); worker = null; setRuntimeEnabled(false);
+    runtimeInteractionLocked = false;
+    setCanvasInteractionMode('select', { force: true });
     const state = { kind: 'stopped-error', message: 'Worker watchdog expired' };
     if (binding) applyLifecycle({ type: 'runtime.message', binding, message: state });
     publish({ runtime: state }); elements.workerstate.textContent = 'Stopped — rebuild the current project';

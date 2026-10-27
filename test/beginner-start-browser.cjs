@@ -34,24 +34,27 @@ const base = process.env.BEGINNER_START_URL || 'http://127.0.0.1:18932';
       assert.equal(first.moreOpen, false);
       assert(first.overflow <= 1, `${viewport.width}: first screen overflows`);
       assert.equal(await page.locator('#beginner-run').isVisible(), true);
-      assert.equal(await page.locator('#quick-build').isVisible(), false);
+      assert.equal(await page.locator('#quick-build').isVisible(), true);
+      for (const selector of ['#quick-run', '#quick-pause', '#quick-reset', '#quick-stop', '#runtime-shortcuts']) {
+        assert.equal(await page.locator(selector).isVisible(), true, `${selector} must be visible without opening Tools`);
+      }
 
       await page.click('#beginner-examples');
       assert.equal(await page.locator('#example-picker-dialog').evaluate((node) => node.open), true);
-      assert.equal(await page.locator('.starter-card').filter({ visible: true }).count(), 16);
+      assert.equal(await page.locator('.starter-card').filter({ visible: true }).count(), 24);
       await page.keyboard.press('Escape');
 
       await page.click('#beginner-scratch');
       await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.length === 0);
-      assert.match(await page.textContent('#beginner-status'), /Tomt prosjekt/u);
-      assert.equal(await page.textContent('#beginner-run'), 'Legg til deler');
+      assert.match(await page.textContent('#beginner-status'), /Empty project/u);
+      assert.equal(await page.textContent('#beginner-run'), 'Add parts');
       assert.equal(await page.locator('#simple-parts-drawer').isVisible(), true);
       assert.equal(await page.locator('#workbench-parts-dialog').evaluate((node) => node.open), false);
       assert.equal(await page.locator('#beginner-source').isVisible(), true);
       await page.click('#beginner-source');
       const starterSource = await page.evaluate(() => window.__M6_PROJECT__().source.files[0].content);
       assert.match(starterSource, /pinMode\(13, OUTPUT\)/u);
-      assert.match(await page.textContent('#beginner-status'), /Minimal LED-kode lagt inn/u);
+      assert.match(await page.textContent('#beginner-status'), /Minimal LED code added/u);
       await page.click('#workbench-more > summary');
       await page.click('#firmware-open');
       await page.fill('#source', '// authored source must stay');
@@ -59,42 +62,42 @@ const base = process.env.BEGINNER_START_URL || 'http://127.0.0.1:18932';
       await page.locator('#workbench-firmware-dialog .workbench-popup-close').click();
       await page.evaluate(() => document.querySelector('#beginner-source').click());
       assert.equal(await page.evaluate(() => window.__M6_PROJECT__().source.files[0].content), '// authored source must stay');
-      assert.match(await page.textContent('#beginner-status'), /Eksisterende kode ble beholdt/u);
+      assert.match(await page.textContent('#beginner-status'), /Existing code was kept/u);
 
       await page.click('#beginner-run');
       assert.equal(await page.locator('#simple-parts-drawer').isVisible(), true);
       assert.equal(await page.locator('#workbench-parts-dialog').evaluate((node) => node.open), false);
       assert.equal(buildRequests, 0);
       assert.equal((await page.evaluate(() => window.__M6_PROJECT__().metadata.name)), 'Untitled project');
-      assert.match(await page.textContent('#beginner-status'), /Ingenting ble erstattet/u);
+      assert.match(await page.textContent('#beginner-status'), /Nothing was replaced/u);
 
       for (const [profile, label] of [
-        ['board.rp2040-pico-v1', 'Fortsett med Pico'],
-        ['board.esp32-c3-devmodule-v1', 'Fortsett med ESP32-C3'],
-        ['board.stm32f429zi-nucleo144-v1', 'Fortsett med STM32'],
+        ['board.rp2040-pico-v1', 'Continue with Pico'],
+        ['board.esp32-c3-devmodule-v1', 'Continue with ESP32-C3'],
+        ['board.stm32f429zi-nucleo144-v1', 'Continue with STM32'],
       ]) {
         await page.selectOption('#board-select', profile);
         assert.equal(await page.textContent('#beginner-run'), label);
         await page.click('#beginner-run');
         assert.equal(await page.locator('#workbench-help-dialog').evaluate((node) => node.open), false);
-        assert.match(await page.textContent('#beginner-status'), /synlige .*kontrollene/u);
+        assert.match(await page.textContent('#beginner-status'), /visible .*controls/u);
         assert.equal(buildRequests, 0);
       }
       await page.selectOption('#board-select', 'board.atmega328p-16mhz-v1');
 
       await page.click('#beginner-examples');
-      await page.click('.starter-card[data-example="blink"]');
+      await page.click('.starter-card[data-example="blink"] .starter-action');
       if (await page.locator('#unsaved-change-dialog').isVisible()) await page.click('#unsaved-discard');
-      assert.equal(await page.textContent('#beginner-run'), 'Kjør LED-eksempelet');
+      assert.equal(await page.textContent('#beginner-run'), 'Run LED example');
       await page.click('#beginner-run');
-      await page.waitForFunction(() => document.querySelector('#beginner-status').textContent.includes('kunne ikke startes'));
+      await page.waitForFunction(() => document.querySelector('#beginner-status').textContent.includes('could not start'));
       assert.equal(buildRequests, 1);
       assert.equal((await page.evaluate(() => window.__M6_PROJECT__().metadata.name)), 'Blink demo');
-      assert.match(await page.textContent('#beginner-status'), /prøv Kjør igjen/u);
+      assert.match(await page.textContent('#beginner-status'), /choose Run to try again/u);
 
       if (!await page.locator('#workbench-more').evaluate((node) => node.open)) await page.click('#workbench-more > summary');
-      for (const selector of ['#quick-build', '#quick-run', '#quick-pause', '#quick-reset', '#project-files-open', '#firmware-open']) {
-        assert.equal(await page.locator(selector).isVisible(), true, `${selector} missing below More`);
+      for (const selector of ['#quick-build', '#quick-run', '#quick-pause', '#quick-reset', '#quick-stop', '#project-files-open', '#firmware-open']) {
+        assert.equal(await page.locator(selector).isVisible(), true, `${selector} missing from the visible controls or Tools`);
       }
       assert((await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 1);
       await context.close();

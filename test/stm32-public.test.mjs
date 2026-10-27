@@ -20,10 +20,37 @@ import {
 } from '../src/stm32-public-circuit.mjs';
 import { STM32_EXECUTION_IDENTITIES } from '../src/stm32-execution-identities.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
+import { Stm32PublicWorkbench } from '../src/stm32-public-workbench.mjs';
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
 const imageLock = Object.freeze({ image: 'local/not-used:1', imageId: `sha256:${'a'.repeat(64)}`,
   runtimeImageIds: [], toolchainManifestSha256: 'b'.repeat(64) });
+
+function workbenchElements() {
+  const element = (extra = {}) => ({ value: '', textContent: '', disabled: false, dataset: {},
+    files: [], addEventListener() {}, setAttribute() {}, click() {}, ...extra });
+  return Object.fromEntries(['source', 'name', 'build', 'run', 'reset', 'stop', 'save', 'open',
+    'openInput', 'state', 'message', 'sourceHash', 'artifactHash', 'diagram', 'led', 'circuitState',
+    'terminal'].map((key) => [key, element()]));
+}
+
+test('STM32 running phase rejects source and circuit authoring until Stop', () => {
+  const elements = workbenchElements();
+  const workbench = new Stm32PublicWorkbench({ elements, fetchFn: async () => {
+    throw new Error('network must not be used');
+  } });
+  workbench.active = true;
+  workbench.phase = 'running';
+  workbench.render();
+  const before = structuredClone(workbench.project.circuit);
+  const result = workbench.editCircuit('moveComponent', 'resistor-1', 0.2, 0.2);
+  assert.equal(result.code, 'STM32_RUNTIME_AUTHORING_LOCKED');
+  assert.deepEqual(workbench.project.circuit, before);
+  assert.equal(elements.source.disabled, true);
+  workbench.stop('Test stop.');
+  assert.equal(workbench.phase, 'editing');
+  assert.equal(elements.source.disabled, false);
+});
 
 test('STM32 named PB0 teaching circuit validates and edits transactionally', () => {
   const draft = createStm32CircuitDraft();

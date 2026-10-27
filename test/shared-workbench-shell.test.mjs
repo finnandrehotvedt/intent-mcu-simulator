@@ -113,8 +113,11 @@ test('X59 keeps finite presentation-only view state inside the X48-owned shared 
   assert.match(html, /id="beginner-run"[^>]*>Run LED example</u);
   assert.match(html, /id="beginner-examples"[^>]*>Examples</u);
   assert.match(html, /id="beginner-scratch"[^>]*>Start empty</u);
-  assert.match(html, /<details id="workbench-more"[^>]*><summary>More<\/summary>/u);
-  assert.match(shell, /popupControls\.prepend\(quickControls\)/u);
+  assert.match(html, /<details id="workbench-more"[^>]*><summary>Tools<\/summary>/u);
+  assert.match(html, /id="runtime-shortcuts"[^>]+aria-label="Keyboard shortcuts"/u);
+  assert.match(html, /id="canvas-select-mode"[\s\S]+id="selected-runtime-control"/u);
+  assert.match(shell, /primaryMount\.append\(quickControls\)/u);
+  assert.doesNotMatch(shell, /popupControls\.prepend\(quickControls\)/u);
   assert.match(shell, /SHARED_WORKBENCH_VIEW_MODE_UNKNOWN/);
   assert.match(shell, /viewMode\(\) \{ return viewMode; \}/);
   assert.match(shell, /activePopup === 'brief'/);

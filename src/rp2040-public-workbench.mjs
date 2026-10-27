@@ -697,6 +697,11 @@ export class Rp2040PublicWorkbench {
   }
 
   editCircuit(operation, ...args) {
+    if (['starting', 'running', 'pausing', 'paused', 'resetting'].includes(this.phase)) {
+      this.message = 'Runtime interaction is active. Stop before moving parts or changing wiring.';
+      this.render();
+      return { ok: false, code: 'RP2040_RUNTIME_AUTHORING_LOCKED' };
+    }
     if (this.pauseProofOperation) this.rejectPauseProof('RP2040_BUDGET_PAUSE_CIRCUIT_CHANGED');
     if (!['deleteSelected', 'undo', 'redo', 'moveComponent', 'rotateComponent',
       'activateEndpoint', 'beginReconnect', 'beginBranch', 'cancelWireDraft', 'connectEndpoints', 'reconnectEndpoint', 'branchEndpoint', 'deleteBranch',
@@ -790,7 +795,9 @@ export class Rp2040PublicWorkbench {
     );
     const runnable = Boolean(this.artifact && this.artifactRevision === this.revision && circuit.ok && wiringReady);
     const building = this.phase === 'building';
+    const authoringLocked = ['starting', 'running', 'pausing', 'paused', 'resetting'].includes(this.phase);
     this.elements.source.value = this.project.source;
+    this.elements.source.disabled = authoringLocked;
     this.elements.name.value = this.project.name;
     this.elements.state.textContent = this.phase;
     this.elements.message.textContent = this.message;

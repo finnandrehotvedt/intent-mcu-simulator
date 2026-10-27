@@ -28,7 +28,10 @@ const outputDir = process.env.ORDINARY_UX_OUTPUT || '/tmp/ordinary-ux-polish';
       assert.match(await page.locator('.app-introduction .lede').innerText(), /Build a circuit\. Connect pins\. Run\./u);
       assert.equal(await page.locator('.app-introduction details').getAttribute('open'), null);
       assert.equal(await page.locator('#beginner-run').innerText(), 'Run LED example');
-      assert.equal(await page.locator('#workbench-more > summary').innerText(), 'More');
+      assert.equal(await page.locator('#workbench-more > summary').innerText(), 'Tools');
+      assert.equal(await page.locator('#quick-build').isVisible(), true);
+      assert.equal(await page.locator('#quick-run').isVisible(), true);
+      assert.equal(await page.locator('#quick-stop').isVisible(), true);
 
       for (const pin of ['D13', 'GND1', 'ANODE', 'CATHODE']) {
         const anchor = page.locator(`.pin-anchor[data-endpoint$=".${pin}"]`).first();
@@ -53,8 +56,8 @@ const outputDir = process.env.ORDINARY_UX_OUTPUT || '/tmp/ordinary-ux-polish';
 
       await page.click('#beginner-examples');
       await page.waitForSelector('#example-picker-dialog[open]');
-      assert.equal(await page.locator('.starter-card').count(), 16);
-      assert.equal(await page.locator('.starter-card .starter-visual').count(), 16);
+      assert.equal(await page.locator('.starter-card').count(), 24);
+      assert.equal(await page.locator('.starter-card .starter-visual').count(), 24);
       assert.equal(await page.locator('.starter-card .starter-action').first().innerText(), 'Open');
       assert.match(await page.locator('#example-picker-description').innerText(), /schematic icon/u);
       assert.equal(await page.locator('.starter-teaching[open]').count(), 0);
