@@ -200,6 +200,22 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       }
       return { ok: true, code: 'OK', result: { ratio: input.ratio, outputVolts: input.ratio * 5 } };
     }
+    if (componentType === 'sensor.wind-direction-analogue-v1') {
+      if (!exactInput(input, ['directionDegrees']) || !Number.isFinite(input.directionDegrees)
+          || input.directionDegrees < 0 || input.directionDegrees > 360) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { directionDegrees: input.directionDegrees,
+        outputVolts: input.directionDegrees / 72 } };
+    }
+    if (componentType === 'sensor.hall-magnetic-analogue-v1') {
+      if (!exactInput(input, ['magneticFieldRatio']) || !Number.isFinite(input.magneticFieldRatio)
+          || input.magneticFieldRatio < -1 || input.magneticFieldRatio > 1) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { magneticFieldRatio: input.magneticFieldRatio,
+        outputVolts: (input.magneticFieldRatio + 1) * 2.5 } };
+    }
     if (componentType === 'sensor.light-threshold-digital-v1') {
       const { lightLevelPercent, thresholdPercent, hysteresisPercentagePoints, currentActive } = input ?? {};
       if (![lightLevelPercent, thresholdPercent, hysteresisPercentagePoints].every(Number.isFinite)

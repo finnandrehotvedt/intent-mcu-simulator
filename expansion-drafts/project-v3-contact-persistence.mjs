@@ -80,6 +80,12 @@ import {
   validateAnalogueDetectionSensor,
 } from './analogue-detection-sensors-v1.mjs';
 import {
+  ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
+  analogueDirectionFieldValue,
+  projectAnalogueDirectionFieldSensors,
+  validateAnalogueDirectionFieldSensor,
+} from './analogue-direction-field-sensors-v1.mjs';
+import {
   DIGITAL_LIGHT_THRESHOLD_DEFINITION,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
   projectDigitalLightThresholdModules,
@@ -223,6 +229,7 @@ function pinIds(component) {
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
+  if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return ['VCC', 'GND', 'DOUT'];
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
@@ -253,6 +260,7 @@ function componentPins(component) {
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.pins;
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) return ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type].pins;
   if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) return ANALOGUE_DETECTION_DEFINITIONS[component.type].pins;
+  if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) return ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type].pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].pins;
@@ -318,6 +326,10 @@ function validateCandidateComponent(component) {
   } else if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) {
     if (!validateAnalogueDetectionSensor(component)) {
       fail('PROJECT_CONTACT_ANALOGUE_DETECTION_SENSOR_STATE', [component.id]);
+    }
+  } else if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) {
+    if (!validateAnalogueDirectionFieldSensor(component)) {
+      fail('PROJECT_CONTACT_ANALOGUE_DIRECTION_FIELD_SENSOR_STATE', [component.id]);
     }
   } else if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     if (!validateDigitalLightThresholdComponent(component)) {
@@ -821,7 +833,24 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
     }
   }
-  const thresholdProjection = projectDigitalLightThresholdModules(detectionProjection.runtimeGraph);
+  const directionFieldProjection = projectAnalogueDirectionFieldSensors(detectionProjection.runtimeGraph);
+  if (!directionFieldProjection.ok) {
+    fail(`PROJECT_CONTACT_${directionFieldProjection.code}`, directionFieldProjection.details);
+  }
+  contacts.push(...directionFieldProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { [sensor.controlKey]: sensor.value, voltage: sensor.voltage },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of directionFieldProjection.sensors) {
+    const expected = production(implementation, sensor.type,
+      { [sensor.controlKey]: sensor.value }, [sensor.componentId]);
+    if (expected[sensor.controlKey] !== sensor.value || expected.outputVolts !== sensor.voltage) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const thresholdProjection = projectDigitalLightThresholdModules(directionFieldProjection.runtimeGraph);
   if (!thresholdProjection.ok) {
     fail(`PROJECT_CONTACT_${thresholdProjection.code}`, thresholdProjection.details);
   }
@@ -1072,6 +1101,15 @@ function draftContacts(graph) {
         componentId: component.id,
         type: component.type,
         state: { ratio: analogueDetectionRatio(component) },
+        runtimeProjection: null,
+      }];
+    }
+    if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) {
+      const key = ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type].controlKeys[0];
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { [key]: analogueDirectionFieldValue(component) },
         runtimeProjection: null,
       }];
     }

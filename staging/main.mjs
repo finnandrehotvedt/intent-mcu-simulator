@@ -490,6 +490,12 @@ import {
   UV_ANALOGUE_TYPE,
 } from '../expansion-drafts/analogue-detection-sensors-v1.mjs';
 import {
+  ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
+  HALL_MAGNETIC_ANALOGUE_TYPE,
+  WIND_DIRECTION_ANALOGUE_TYPE,
+  analogueDirectionFieldVoltage,
+} from '../expansion-drafts/analogue-direction-field-sensors-v1.mjs';
+import {
   ROTARY_ENCODER_TYPE,
   nextRotaryEncoderDetent,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
@@ -13027,6 +13033,8 @@ function candidateComponentPrefix(type) {
       [MQ_GAS_ANALOGUE_TYPE]: 'mq-gas',
       [CO2_ANALOGUE_TYPE]: 'co2-sensor',
       [UV_ANALOGUE_TYPE]: 'uv-sensor',
+      [WIND_DIRECTION_ANALOGUE_TYPE]: 'wind-direction',
+      [HALL_MAGNETIC_ANALOGUE_TYPE]: 'hall-field',
       [COMMON_CATHODE_RGB_LED_TYPE]: 'rgb-led',
       [RGB_COMMON_ANODE_TYPE]: 'rgb-led-ca',
       [LED_BAR_GRAPH_TYPE]: 'led-bar',
@@ -13089,6 +13097,8 @@ function addComponent(type, point = null) {
       [MQ_GAS_ANALOGUE_TYPE]: { x: 0.58, y: 0.44 },
       [CO2_ANALOGUE_TYPE]: { x: 0.72, y: 0.44 },
       [UV_ANALOGUE_TYPE]: { x: 0.86, y: 0.44 },
+      [WIND_DIRECTION_ANALOGUE_TYPE]: { x: 0.58, y: 0.38 },
+      [HALL_MAGNETIC_ANALOGUE_TYPE]: { x: 0.72, y: 0.38 },
       [COMMON_CATHODE_RGB_LED_TYPE]: { x: 0.78, y: 0.7 },
       [RGB_COMMON_ANODE_TYPE]: { x: 0.78, y: 0.7 },
       [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },
@@ -13732,6 +13742,34 @@ function renderRuntimeControls() {
           return;
         }
         const result = applyEditor(prepared.command, `${component.label} idealized response ${input.value}%`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      const definition = ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type];
+      const key = definition.controlKeys[0]; const value = component.controls[key];
+      const isDirection = component.type === WIND_DIRECTION_ANALOGUE_TYPE;
+      const display = isDirection ? `${Math.round(value)}°` : `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
+      label.textContent = `${component.label} · idealized ${display} · ${analogueDirectionFieldVoltage(component.type, value).toFixed(2)} V`;
+      const input = document.createElement('input'); input.type = 'range';
+      input.min = String(definition.control.minimum); input.max = String(definition.control.maximum);
+      input.step = isDirection ? '1' : '0.01'; input.value = String(value);
+      input.dataset.control = `${component.id}.${key}`; input.id = `control-${component.id}-${key}`;
+      label.htmlFor = input.id;
+      input.setAttribute('aria-label', isDirection
+        ? `${component.label} idealized direction, 0 to 360 degrees`
+        : `${component.label} idealized signed field ratio, minus 1 to plus 1`);
+      input.addEventListener('input', () => {
+        const nextValue = Number(input.value);
+        const prepared = selectedCandidateContactControl(component.id, key, nextValue);
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'Analogue direction or field control rejected.');
+          return;
+        }
+        const messageValue = isDirection ? `${input.value}°` : input.value;
+        const result = applyEditor(prepared.command, `${component.label} idealized signal ${messageValue}`);
         if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
       });
       row.append(label, input); return [row];

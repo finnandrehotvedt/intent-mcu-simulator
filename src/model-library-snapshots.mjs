@@ -150450,6 +150450,92 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "caff43482f03842e429a51344f4530d505483b3c5049c861abc858259d77679b",
+      "componentType": "sensor.hall-magnetic-analogue-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.hall-magnetic-analogue-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.hall-magnetic-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-hall-magnetic-analogue",
+        "thumbnail": "sensor-hall-magnetic-analogue",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "892c58803a4a9a1f60e41769e75a806b1e3c1fa68ccaa6cd241b0d77c520dd04",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "magneticFieldRatio": {
+            "default": 0,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": -1,
+            "mutability": "authored",
+            "unit": "signed ratio"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.hall-magnetic-analogue-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Idealized module signal only: −1 negative through 0 neutral to +1 positive ideal response maps linearly to 0–5 V on AOUT.",
+            "No tesla or gauss calibration, magnet identity, field geometry, distance, orientation, saturation, hysteresis, temperature drift, loading, tolerance, noise or response time is modelled.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "d13d17735f549ddf4de4df9037808e734513fda6afebe158de89bdbbe40351c2",
+      "supportStatus": "simulated"
+    },
+    {
       "behaviorContractSha256": "46abdec866bac0c9d55a901a438bdc2b24f1ce692a1f686c02cdd6e1437ad9f1",
       "componentType": "sensor.hall-switch-digital-v1",
       "componentVersion": 1,
@@ -151661,6 +151747,92 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         }
       },
       "semanticSha256": "313cd3e3d582d43f7e470e6ddccc73a0021ad0ef7099411d33c0bdd75307e7bf",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "df1db77d858894be7f24c7c87b26fb842d6754c08be98ee83990a7cd7179458a",
+      "componentType": "sensor.wind-direction-analogue-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.wind-direction-analogue-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.wind-direction-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-wind-direction-analogue",
+        "thumbnail": "sensor-wind-direction-analogue",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "aa0a6ff96580d2d98baa54db4ce67c9dd37243f5f8e2a437177325f4963ae039",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "directionDegrees": {
+            "default": 180,
+            "kind": "number",
+            "maximum": 360,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "°"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.wind-direction-analogue-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Idealized module signal only: 0° to 360° ideal direction maps linearly to 0–5 V on AOUT.",
+            "No physical vane, wind speed, compass reference, north alignment, wrap dead band, resistance ladder, calibration, loading, tolerance, noise or response time is modelled.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "d2b843a1e196c1316607aa245119abc961c246b522792d5587ec6e5b7ce0a6b6",
       "supportStatus": "simulated"
     },
     {
@@ -153361,7 +153533,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "7e02b7b1d3df09333967c2d214b5be129b521f41772750996bde81603cc143c2"
+      "sha256": "cdb3898595ee44b3cfbda99a56ffc138a5fdef5af8cfb48a4718daa1573ae299"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -153369,7 +153541,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "244112a4246f87ce2eca3d1073a82f7276604f09f5974770cdb24fc7cc7a55ae"
+      "sha256": "1f5e2dd97a2cb9ce125916734da1ba8a3f08f9ce794b962ca667ecdf4656599d"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -153401,7 +153573,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "fab266b6389b2f27c7bb9d4579fd9e0cd0c1a4fe4545837cfe7d1ddb01e6cca4"
+      "sha256": "fa0fe17f87a714181a27da3fd54747619ea83d5f09ea1ab8a56cafcbbeaa30ce"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -153409,7 +153581,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "e72ab9e05060e602ab99225ec87a75c6e825c243f038e9c175e191828169362e"
+      "sha256": "1aa8600836dc8575a5f75280c904d4dfcbe35f529774df36c8088458a879dbba"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -153457,7 +153629,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "109812ae4bcf3c7390e7191cbcb1de20e290078e25f7cfb999d7d10f1b6ad386"
+      "sha256": "a6a9e214617aac679382e6ec21370f95e2edb8a359b40880321aeebb47a39f83"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -153498,6 +153670,14 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     {
       "path": "expansion-drafts/analogue-detection-sensors-artwork-v1.mjs",
       "sha256": "d1f4561eab8eaace4d3e177850fd58f4b887bdd222ea11099065ec5b72b8d575"
+    },
+    {
+      "path": "expansion-drafts/analogue-direction-field-sensors-v1.mjs",
+      "sha256": "75bf026fdcef9d475cb140fdc990090f93b150602fe074a4f7da77fbf15c40b5"
+    },
+    {
+      "path": "expansion-drafts/analogue-direction-field-sensors-artwork-v1.mjs",
+      "sha256": "bd4176d3891ba3738350f3fb769c159ab78e5423bb2094a9931a4565cbedd66b"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -153569,10 +153749,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "d5ae861c1d54c31fda91f709d40acac8a31ee203053f117ecd173c1957c51627"
+      "sha256": "05ebad40170714bb12e1b2f947f728dc0f0338cb7adb665a22730d8e31622a2c"
     }
   ],
-  "implementationSha256": "25a324b57d25cab870100b44ac7953025a1968ff59aba41d8cbaaad07241212d",
+  "implementationSha256": "93bea9131755d77083c978f0ac407a3932bbef907d3f0a9f5ac91e0d18750a6d",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -153582,7 +153762,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "8d3c953a205d213e77dfff9fa60709f3a7c7d0b1c1fec3dbfa518f3ffe04bf8a",
+  "manifestSha256": "f5b7ab28e89bb8dfdf5b1ba90832dd284c5f1a0b9e70b08f2b5afded351c2e72",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

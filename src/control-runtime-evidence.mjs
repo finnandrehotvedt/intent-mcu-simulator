@@ -35,6 +35,8 @@ const rows = [
   ['sensor.mq-gas-analogue-v1', 'gasResponseRatio', 'control · normalized position', 'A2 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.co2-analogue-v1', 'co2ResponseRatio', 'control · normalized position', 'A3 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.uv-analogue-v1', 'uvResponseRatio', 'control · normalized position', 'A4 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.wind-direction-analogue-v1', 'directionDegrees', 'control · normalized direction position', 'A0 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.hall-magnetic-analogue-v1', 'magneticFieldRatio', 'control · normalized bipolar position', 'A1 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'lightLevelPercent', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'thresholdPercent', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'hysteresisPercentagePoints', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
@@ -58,7 +60,9 @@ const rows = [
   workerEvent,
   observable,
   evidence,
-  evidenceSource: ['gasResponseRatio', 'co2ResponseRatio', 'uvResponseRatio'].includes(field)
+  evidenceSource: ['directionDegrees', 'magneticFieldRatio'].includes(field)
+    ? 'test/analogue-direction-field-sensors-browser.cjs'
+    : ['gasResponseRatio', 'co2ResponseRatio', 'uvResponseRatio'].includes(field)
     ? 'test/analogue-exposure-sensors-browser.cjs'
     : ['wetnessRatio', 'soundLevelRatio', 'flameIntensityRatio'].includes(field)
     ? 'test/analogue-detection-sensors-browser.cjs'

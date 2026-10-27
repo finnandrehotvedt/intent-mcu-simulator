@@ -66,6 +66,9 @@ import { ANALOGUE_MOISTURE_LEVEL_DEFINITIONS, ANALOGUE_WATER_LEVEL_TYPE,
 import { ANALOGUE_DETECTION_DEFINITIONS, CO2_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
   MQ_GAS_ANALOGUE_TYPE, RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
 } from '../expansion-drafts/analogue-detection-sensors-v1.mjs';
+import { ANALOGUE_DIRECTION_FIELD_DEFINITIONS, HALL_MAGNETIC_ANALOGUE_TYPE,
+  WIND_DIRECTION_ANALOGUE_TYPE,
+} from '../expansion-drafts/analogue-direction-field-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
 export const CANDIDATE_EDITOR_HISTORY_LIMIT = 64;
@@ -93,6 +96,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
   RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
   MQ_GAS_ANALOGUE_TYPE, CO2_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
+  WIND_DIRECTION_ANALOGUE_TYPE, HALL_MAGNETIC_ANALOGUE_TYPE,
 ]);
 
 function validPoint(value) {
@@ -219,6 +223,8 @@ function contactSupport(result) {
             ? 'potentiometer.linear-v1-ideal-analogue-sensor-adapter'
           : ANALOGUE_DETECTION_DEFINITIONS[contact.type]
             ? 'potentiometer.linear-v1-ideal-analogue-sensor-adapter'
+          : ANALOGUE_DIRECTION_FIELD_DEFINITIONS[contact.type]
+            ? 'potentiometer.linear-v1-ideal-analogue-sensor-adapter'
           : contact.type === DIGITAL_LIGHT_THRESHOLD_TYPE
             ? 'button.momentary-v1'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
@@ -280,6 +286,8 @@ function contactSupport(result) {
         ? 'Ideal linear 0–5 V environment-module signal only; no calibrated soil, liquid, geometry, material or response-time accuracy is modelled.'
         : ANALOGUE_DETECTION_DEFINITIONS[contact.type]
         ? 'Ideal linear 0–5 V detector response only; no calibrated concentration, rainfall, sound-pressure, UV index, physical geometry, spectral, timing, alarm or safety accuracy is modelled.'
+        : ANALOGUE_DIRECTION_FIELD_DEFINITIONS[contact.type]
+        ? 'Ideal linear 0–5 V direction or signed field response only; no physical vane, compass, tesla/gauss, geometry, calibration, saturation, timing or electrical accuracy is modelled.'
         : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
         ? 'Ideal linear 0–5 V module signal only; no lux accuracy or physical LDR response is modelled.'
         : contact.type === SPDT_CONTACT_TYPE
@@ -970,6 +978,20 @@ export class CandidateEditorSession {
               return failure('PROJECT_CONTACT_ANALOGUE_DETECTION_SENSOR_STATE', this.revision);
             }
             const evaluated = this.evaluateModel(component.type, { ratio: command.value });
+            if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
+            component.controls[expectedKey] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) {
+            const definition = ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type];
+            const expectedKey = definition.controlKeys[0];
+            if (command.key !== expectedKey || !Number.isFinite(command.value)
+                || command.value < definition.control.minimum
+                || command.value > definition.control.maximum) {
+              return failure('PROJECT_CONTACT_ANALOGUE_DIRECTION_FIELD_SENSOR_STATE', this.revision);
+            }
+            const evaluated = this.evaluateModel(component.type, { [expectedKey]: command.value });
             if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
             component.controls[expectedKey] = command.value;
             runtimeDirty = true;

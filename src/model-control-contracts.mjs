@@ -112,6 +112,14 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     uvResponseRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
       unit: 'ratio', mutability: 'authored' },
   },
+  'sensor.wind-direction-analogue-v1': {
+    directionDegrees: { kind: 'number', minimum: 0, maximum: 360, default: 180,
+      unit: '°', mutability: 'authored' },
+  },
+  'sensor.hall-magnetic-analogue-v1': {
+    magneticFieldRatio: { kind: 'number', minimum: -1, maximum: 1, default: 0,
+      unit: 'signed ratio', mutability: 'authored' },
+  },
   'sensor.light-threshold-digital-v1': {
     lightLevelPercent: { kind: 'number', minimum: 0, maximum: 100, default: 40,
       unit: '%', mutability: 'authored' },
