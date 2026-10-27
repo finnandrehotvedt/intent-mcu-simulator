@@ -1,0 +1,251 @@
+{
+  "schema": "intent-mcu-transistor-component-example-manifest@1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "b075bedefb91daca0697f76a37684a516c67ca29a7cbb60b1d3ed6b132580f2e",
+    "implementationSha256": "2e35bfd80cc390362a5db6246fea09ff0b02702442e25411f8469b944e0ff168"
+  },
+  "requirementIds": [
+    "CMP-010",
+    "CMP-011",
+    "CMP-012"
+  ],
+  "profileBehavior": {
+    "board.atmega328p-16mhz-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+    "board.rp2040-pico-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+    "board.esp32-c3-devmodule-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+    "board.stm32f429zi-nucleo144-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence"
+  },
+  "entries": [
+    {
+      "id": "avr-transistor-components",
+      "profile": "board.atmega328p-16mhz-v1",
+      "file": "avr-transistor-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-010",
+        "CMP-011",
+        "CMP-012"
+      ],
+      "componentTypes": [
+        "transistor.bjt-npn-v1",
+        "transistor.bjt-pnp-v1",
+        "transistor.mosfet-n-channel-v1"
+      ],
+      "componentIds": [
+        "npn-1",
+        "pnp-1",
+        "nmos-1"
+      ],
+      "nameplateValues": {
+        "transistor.bjt-npn-v1": {
+          "nominalCurrentGain": 100,
+          "maxCollectorEmitterVoltageVolts": 40,
+          "maxCollectorCurrentAmps": 0.6
+        },
+        "transistor.bjt-pnp-v1": {
+          "nominalCurrentGain": 100,
+          "maxCollectorEmitterVoltageVolts": 40,
+          "maxCollectorCurrentAmps": 0.6
+        },
+        "transistor.mosfet-n-channel-v1": {
+          "nominalGateThresholdVoltageVolts": 2,
+          "maxDrainSourceVoltageVolts": 60,
+          "maxDrainCurrentAmps": 10
+        }
+      },
+      "namedWiring": [
+        "board-1.D2 → npn-1.BASE",
+        "board-1.D3 → pnp-1.BASE",
+        "board-1.D4 → nmos-1.GATE",
+        "npn-1.COLLECTOR ↔ pnp-1.COLLECTOR",
+        "pnp-1.EMITTER ↔ nmos-1.DRAIN",
+        "board-1.GND1 ↔ npn-1.EMITTER ↔ nmos-1.SOURCE"
+      ],
+      "expectedVisibleBehavior": "Opening restores three original transistor SVG symbols, exact BJT/MOSFET terminals, bounded nameplate values and six authored nets.",
+      "runtimeUnavailableCode": "TRANSISTOR_SWITCHING_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw three-terminal semiconductor authoring only. No bias network, nonlinear gain/current, switching threshold, body diode, saturation, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority or physical equivalence.",
+      "sourceSha256": "b97b1a68ef7cab21a3d2727479729170bad58f3317233d24a7c14e7d1f256976",
+      "projectSha256": "0407db958dd0b93606b430b5970f50fa6f63c898b21a2c5bc8cc812ac770afa8",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "pico-transistor-components",
+      "profile": "board.rp2040-pico-v1",
+      "file": "pico-transistor-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-010",
+        "CMP-011",
+        "CMP-012"
+      ],
+      "componentTypes": [
+        "transistor.bjt-npn-v1",
+        "transistor.bjt-pnp-v1",
+        "transistor.mosfet-n-channel-v1"
+      ],
+      "componentIds": [
+        "npn-1",
+        "pnp-1",
+        "nmos-1"
+      ],
+      "nameplateValues": {
+        "transistor.bjt-npn-v1": {
+          "nominalCurrentGain": 100,
+          "maxCollectorEmitterVoltageVolts": 40,
+          "maxCollectorCurrentAmps": 0.6
+        },
+        "transistor.bjt-pnp-v1": {
+          "nominalCurrentGain": 100,
+          "maxCollectorEmitterVoltageVolts": 40,
+          "maxCollectorCurrentAmps": 0.6
+        },
+        "transistor.mosfet-n-channel-v1": {
+          "nominalGateThresholdVoltageVolts": 2,
+          "maxDrainSourceVoltageVolts": 60,
+          "maxDrainCurrentAmps": 10
+        }
+      },
+      "namedWiring": [
+        "pico-1.GP1 → npn-1.BASE",
+        "pico-1.GP2 → pnp-1.BASE",
+        "pico-1.GP3 → nmos-1.GATE",
+        "npn-1.COLLECTOR ↔ pnp-1.COLLECTOR",
+        "pnp-1.EMITTER ↔ nmos-1.DRAIN",
+        "pico-1.GND8 ↔ npn-1.EMITTER ↔ nmos-1.SOURCE"
+      ],
+      "expectedVisibleBehavior": "Opening restores three original transistor SVG symbols, exact BJT/MOSFET terminals, bounded nameplate values and six authored nets.",
+      "runtimeUnavailableCode": "TRANSISTOR_SWITCHING_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw three-terminal semiconductor authoring only. No bias network, nonlinear gain/current, switching threshold, body diode, saturation, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority or physical equivalence.",
+      "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
+      "projectSha256": "a6f7ebba7418e1cfde8f9f84f13ac6720bcb16fe575bac031fada98dec4d906a",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "esp32-c3-transistor-components",
+      "profile": "board.esp32-c3-devmodule-v1",
+      "file": "esp32-c3-transistor-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-010",
+        "CMP-011",
+        "CMP-012"
+      ],
+      "componentTypes": [
+        "transistor.bjt-npn-v1",
+        "transistor.bjt-pnp-v1",
+        "transistor.mosfet-n-channel-v1"
+      ],
+      "componentIds": [
+        "npn-1",
+        "pnp-1",
+        "nmos-1"
+      ],
+      "nameplateValues": {
+        "transistor.bjt-npn-v1": {
+          "nominalCurrentGain": 100,
+          "maxCollectorEmitterVoltageVolts": 40,
+          "maxCollectorCurrentAmps": 0.6
+        },
+        "transistor.bjt-pnp-v1": {
+          "nominalCurrentGain": 100,
+          "maxCollectorEmitterVoltageVolts": 40,
+          "maxCollectorCurrentAmps": 0.6
+        },
+        "transistor.mosfet-n-channel-v1": {
+          "nominalGateThresholdVoltageVolts": 2,
+          "maxDrainSourceVoltageVolts": 60,
+          "maxDrainCurrentAmps": 10
+        }
+      },
+      "namedWiring": [
+        "c3-1.GPIO3 → npn-1.BASE",
+        "c3-1.GPIO0 → pnp-1.BASE",
+        "c3-1.GPIO1 → nmos-1.GATE",
+        "npn-1.COLLECTOR ↔ pnp-1.COLLECTOR",
+        "pnp-1.EMITTER ↔ nmos-1.DRAIN",
+        "c3-1.GND8 ↔ npn-1.EMITTER ↔ nmos-1.SOURCE"
+      ],
+      "expectedVisibleBehavior": "Opening restores three original transistor SVG symbols, exact BJT/MOSFET terminals, bounded nameplate values and six authored nets.",
+      "runtimeUnavailableCode": "TRANSISTOR_SWITCHING_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw three-terminal semiconductor authoring only. No bias network, nonlinear gain/current, switching threshold, body diode, saturation, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority or physical equivalence.",
+      "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
+      "projectSha256": "90282a3afbbf07e11d74e7cbe84fa2c40b3a71fa58527e270c1a03666d7604f4",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    },
+    {
+      "id": "stm32-transistor-components",
+      "profile": "board.stm32f429zi-nucleo144-v1",
+      "file": "stm32-transistor-components.intent-mcu.json",
+      "requirementIds": [
+        "CMP-010",
+        "CMP-011",
+        "CMP-012"
+      ],
+      "componentTypes": [
+        "transistor.bjt-npn-v1",
+        "transistor.bjt-pnp-v1",
+        "transistor.mosfet-n-channel-v1"
+      ],
+      "componentIds": [
+        "npn-1",
+        "pnp-1",
+        "nmos-1"
+      ],
+      "nameplateValues": {
+        "transistor.bjt-npn-v1": {
+          "nominalCurrentGain": 100,
+          "maxCollectorEmitterVoltageVolts": 40,
+          "maxCollectorCurrentAmps": 0.6
+        },
+        "transistor.bjt-pnp-v1": {
+          "nominalCurrentGain": 100,
+          "maxCollectorEmitterVoltageVolts": 40,
+          "maxCollectorCurrentAmps": 0.6
+        },
+        "transistor.mosfet-n-channel-v1": {
+          "nominalGateThresholdVoltageVolts": 2,
+          "maxDrainSourceVoltageVolts": 60,
+          "maxDrainCurrentAmps": 10
+        }
+      },
+      "namedWiring": [
+        "stm32-1.PB1 → npn-1.BASE",
+        "stm32-1.PB7 → pnp-1.BASE",
+        "stm32-1.PB0 → nmos-1.GATE",
+        "npn-1.COLLECTOR ↔ pnp-1.COLLECTOR",
+        "pnp-1.EMITTER ↔ nmos-1.DRAIN",
+        "stm32-1.GND20 ↔ npn-1.EMITTER ↔ nmos-1.SOURCE"
+      ],
+      "expectedVisibleBehavior": "Opening restores three original transistor SVG symbols, exact BJT/MOSFET terminals, bounded nameplate values and six authored nets.",
+      "runtimeUnavailableCode": "TRANSISTOR_SWITCHING_MODEL_UNAVAILABLE",
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.rp2040-pico-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.esp32-c3-devmodule-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence",
+        "board.stm32f429zi-nucleo144-v1": "authoring-only raw three-terminal semiconductor data; no bias/switching/current runtime, Build/Run authority or physical-hardware equivalence"
+      },
+      "limitations": "Raw three-terminal semiconductor authoring only. No bias network, nonlinear gain/current, switching threshold, body diode, saturation, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority or physical equivalence.",
+      "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
+      "projectSha256": "db15dff5bb1a64214489e1918631397d25ad429efc434e50b4db4676b6a32e73",
+      "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
+    }
+  ]
+}

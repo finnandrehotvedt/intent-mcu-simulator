@@ -163,6 +163,9 @@ import { createPassiveEnergyStorageArtwork } from '../expansion-drafts/passive-e
 import { DIODE_COMPONENT_DEFINITIONS,
   createDiodeComponent } from '../expansion-drafts/diode-components-v1.mjs';
 import { createDiodeArtwork } from '../expansion-drafts/diode-components-artwork-v1.mjs';
+import { TRANSISTOR_COMPONENT_DEFINITIONS,
+  createTransistorComponent } from '../expansion-drafts/transistor-components-v1.mjs';
+import { createTransistorArtwork } from '../expansion-drafts/transistor-components-artwork-v1.mjs';
 import { CONTACT_SENSOR_DEFINITIONS, createContactSensor } from '../expansion-drafts/contact-sensors-v1.mjs';
 import { createContactSensorArtwork } from '../expansion-drafts/contact-sensors-artwork-v1.mjs';
 
@@ -237,6 +240,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   ...RESISTIVE_DIVIDER_SENSOR_DEFINITIONS,
   ...PASSIVE_ENERGY_STORAGE_DEFINITIONS,
   ...DIODE_COMPONENT_DEFINITIONS,
+  ...TRANSISTOR_COMPONENT_DEFINITIONS,
   ...CONTACT_SENSOR_DEFINITIONS,
 });
 
@@ -330,6 +334,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (DIODE_COMPONENT_DEFINITIONS[component?.type]) {
     return createDiodeArtwork(documentObject, definition, component, options);
   }
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[component?.type]) {
+    return createTransistorArtwork(documentObject, definition, component, options);
+  }
   if (CONTACT_SENSOR_DEFINITIONS[component?.type]) {
     return createContactSensorArtwork(documentObject, definition, component, options);
   }
@@ -372,6 +379,7 @@ export function createCandidateUiComponent(type, id) {
   if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[type]) return createResistiveDividerSensor(type, id);
   if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[type]) return createPassiveEnergyStorageComponent(type, id);
   if (DIODE_COMPONENT_DEFINITIONS[type]) return createDiodeComponent(type, id);
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[type]) return createTransistorComponent(type, id);
   if (CONTACT_SENSOR_DEFINITIONS[type]) return createContactSensor(type, id);
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');
 }

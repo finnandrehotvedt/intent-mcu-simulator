@@ -9,6 +9,9 @@ import { ELECTROLYTIC_CAPACITOR_TYPE, FIXED_INDUCTOR_TYPE, NONPOLAR_CAPACITOR_TY
   validatePassiveEnergyStorageAuthoringGraph } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
 import { DIODE_COMPONENT_DEFINITIONS, SCHOTTKY_DIODE_TYPE, SILICON_DIODE_TYPE,
   ZENER_DIODE_TYPE, validateDiodeAuthoringGraph } from '../expansion-drafts/diode-components-v1.mjs';
+import { NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
+  TRANSISTOR_COMPONENT_DEFINITIONS,
+  validateTransistorAuthoringGraph } from '../expansion-drafts/transistor-components-v1.mjs';
 
 import {
   CATALOG_CATEGORIES,
@@ -1523,7 +1526,8 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
 
   if (!['resistor.fixed-v1', 'led.basic-v1', 'potentiometer.linear-3v3-v1',
     ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
-    ...Object.keys(DIODE_COMPONENT_DEFINITIONS)].includes(selected.type)) {
+    ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
+    ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS)].includes(selected.type)) {
     const note = document.createElement('p');
     note.textContent = `${selectedPart.displayName} is a 3.3 V authoring-only part. Its named pins persist, but it cannot grant Build or Run authority.`;
     const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
@@ -1537,7 +1541,8 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
   const limit = document.createElement('small');
   let input;
   const authoringDefinition = PASSIVE_ENERGY_STORAGE_DEFINITIONS[selected.type]
-    ?? DIODE_COMPONENT_DEFINITIONS[selected.type];
+    ?? DIODE_COMPONENT_DEFINITIONS[selected.type]
+    ?? TRANSISTOR_COMPONENT_DEFINITIONS[selected.type];
   if (['resistor.fixed-v1', 'potentiometer.linear-3v3-v1'].includes(selected.type)) {
     label.append('Resistance (Ω)');
     limit.textContent = selected.type === 'resistor.fixed-v1'
@@ -1550,7 +1555,9 @@ function renderBoundedComponentCatalog({ profile, state, editCircuit, list, prop
     label.append(`${key} (${contract.unit})`);
     limit.textContent = DIODE_COMPONENT_DEFINITIONS[selected.type]
       ? 'Authoring value only. No nonlinear I-V/reverse-breakdown model or Build/Run authority is added.'
-      : 'Authoring value only. No transient/frequency solver or Build/Run authority is added.';
+      : TRANSISTOR_COMPONENT_DEFINITIONS[selected.type]
+        ? 'Authoring value only. No bias/switching/current model or Build/Run authority is added.'
+        : 'Authoring value only. No transient/frequency solver or Build/Run authority is added.';
     input = document.createElement('input'); input.type = 'number'; input.min = String(contract.minimum);
     input.max = String(contract.maximum); input.step = 'any'; input.value = String(selected.properties[key]);
     input.dataset.boundedProperty = key;
@@ -7805,7 +7812,9 @@ const commonProjectAdapters = Object.freeze({
         ? { components: project.candidateCircuit.components, nets: project.candidateCircuit.nets }
         : project.circuit;
       const passive = validatePassiveEnergyStorageAuthoringGraph(graph);
-      return passive.ok ? passive : validateDiodeAuthoringGraph(graph);
+      if (passive.ok) return passive;
+      const diode = validateDiodeAuthoringGraph(graph);
+      return diode.ok ? diode : validateTransistorAuthoringGraph(graph);
     },
   }),
   [RP2040_PROFILE]: Object.freeze({
@@ -13105,6 +13114,9 @@ function candidateComponentPrefix(type) {
       [SILICON_DIODE_TYPE]: 'diode',
       [SCHOTTKY_DIODE_TYPE]: 'schottky',
       [ZENER_DIODE_TYPE]: 'zener',
+      [NPN_BJT_TYPE]: 'npn',
+      [PNP_BJT_TYPE]: 'pnp',
+      [N_CHANNEL_MOSFET_TYPE]: 'nmos',
   }[type] ?? null;
 }
 
@@ -13184,6 +13196,9 @@ function addComponent(type, point = null) {
       [SILICON_DIODE_TYPE]: { x: 0.56, y: 0.14 },
       [SCHOTTKY_DIODE_TYPE]: { x: 0.7, y: 0.14 },
       [ZENER_DIODE_TYPE]: { x: 0.84, y: 0.14 },
+      [NPN_BJT_TYPE]: { x: 0.56, y: 0.08 },
+      [PNP_BJT_TYPE]: { x: 0.7, y: 0.08 },
+      [N_CHANNEL_MOSFET_TYPE]: { x: 0.84, y: 0.08 },
     }[type];
     const sameTypeCount = currentProject().circuit.components.filter((item) => item.type === type).length;
     const slot = index % 16;

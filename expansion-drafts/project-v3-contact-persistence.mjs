@@ -110,6 +110,11 @@ import {
   validateDiodeComponent,
 } from './diode-components-v1.mjs';
 import {
+  TRANSISTOR_COMPONENT_DEFINITIONS,
+  validateTransistorAuthoringGraph,
+  validateTransistorComponent,
+} from './transistor-components-v1.mjs';
+import {
   DIGITAL_LIGHT_THRESHOLD_DEFINITION,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
   projectDigitalLightThresholdModules,
@@ -269,6 +274,9 @@ function pinIds(component) {
   if (DIODE_COMPONENT_DEFINITIONS[component.type]) {
     return DIODE_COMPONENT_DEFINITIONS[component.type].pins.map(({ id }) => id);
   }
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) {
+    return TRANSISTOR_COMPONENT_DEFINITIONS[component.type].pins.map(({ id }) => id);
+  }
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return ['VCC', 'GND', 'DOUT'];
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
@@ -306,6 +314,7 @@ function componentPins(component) {
   if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) return RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type].pins;
   if (PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]) return PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type].pins;
   if (DIODE_COMPONENT_DEFINITIONS[component.type]) return DIODE_COMPONENT_DEFINITIONS[component.type].pins;
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) return TRANSISTOR_COMPONENT_DEFINITIONS[component.type].pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type].pins;
@@ -393,6 +402,8 @@ function validateCandidateComponent(component) {
     }
   } else if (DIODE_COMPONENT_DEFINITIONS[component.type]) {
     if (!validateDiodeComponent(component)) fail('PROJECT_CONTACT_DIODE_STATE', [component.id]);
+  } else if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) {
+    if (!validateTransistorComponent(component)) fail('PROJECT_CONTACT_TRANSISTOR_STATE', [component.id]);
   } else if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     if (!validateDigitalLightThresholdComponent(component)) {
       fail('PROJECT_CONTACT_DIGITAL_LIGHT_THRESHOLD_STATE', [component.id]);
@@ -480,6 +491,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
         ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
         ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
+        ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
@@ -537,16 +549,20 @@ export function validateCandidateCircuitGraph(value, {
         PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]);
       const diodeComponents = graph.components.filter((component) =>
         DIODE_COMPONENT_DEFINITIONS[component.type]);
-      if (!passiveComponents.length && !diodeComponents.length) return admission;
+      const transistorComponents = graph.components.filter((component) =>
+        TRANSISTOR_COMPONENT_DEFINITIONS[component.type]);
+      if (!passiveComponents.length && !diodeComponents.length && !transistorComponents.length) return admission;
       const authoringResults = [];
       if (passiveComponents.length) authoringResults.push(validatePassiveEnergyStorageAuthoringGraph(graph));
       if (diodeComponents.length) authoringResults.push(validateDiodeAuthoringGraph(graph));
+      if (transistorComponents.length) authoringResults.push(validateTransistorAuthoringGraph(graph));
       const rejected = authoringResults.find((result) => !result.ok);
       if (rejected) return rejected;
       const filtered = { ...graph,
         components: graph.components.filter((component) =>
           !PASSIVE_ENERGY_STORAGE_DEFINITIONS[component.type]
-          && !DIODE_COMPONENT_DEFINITIONS[component.type]) };
+          && !DIODE_COMPONENT_DEFINITIONS[component.type]
+          && !TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) };
       const retainedAdmission = validateProjectModelLibrary(modelLibraryLock, BOARD_TYPE,
         { candidateCircuit: filtered });
       if (!retainedAdmission.ok) return retainedAdmission;
@@ -804,6 +820,11 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   }
   const diodeOnly = graph.components.filter((component) => DIODE_COMPONENT_DEFINITIONS[component.type]);
   if (diodeOnly.length) fail('DIODE_NONLINEAR_MODEL_UNAVAILABLE', diodeOnly.map(({ id }) => id).sort());
+  const transistorOnly = graph.components.filter((component) =>
+    TRANSISTOR_COMPONENT_DEFINITIONS[component.type]);
+  if (transistorOnly.length) {
+    fail('TRANSISTOR_SWITCHING_MODEL_UNAVAILABLE', transistorOnly.map(({ id }) => id).sort());
+  }
   const netClasses = deriveNetClasses(graph);
   const contacts = [];
   for (const component of graph.components) {
@@ -1301,6 +1322,11 @@ function draftContacts(graph) {
         state: { properties: clone(component.properties), execution: 'authoring-only' },
         runtimeProjection: null }];
     }
+    if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) {
+      return [{ componentId: component.id, type: component.type,
+        state: { properties: clone(component.properties), execution: 'authoring-only' },
+        runtimeProjection: null }];
+    }
     if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
       return [{
         componentId: component.id,
@@ -1500,6 +1526,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       ...Object.keys(DIGITAL_PULSE_SENSOR_DEFINITIONS),
       ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
       ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
+      ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
       ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,

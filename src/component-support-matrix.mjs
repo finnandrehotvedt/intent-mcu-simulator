@@ -9,6 +9,7 @@ import { STM32_PUBLIC_COMPONENT_CATALOG } from './stm32-public-circuit.mjs';
 import { BOUNDED_3V3_UI_COMPONENTS } from './bounded-3v3-authoring-contracts.mjs';
 import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
 import { DIODE_COMPONENT_DEFINITIONS } from '../expansion-drafts/diode-components-v1.mjs';
+import { TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
 
 export const COMPONENT_SUPPORT_MATRIX_SCHEMA = 'intent-mcu-component-support-matrix@1';
 
@@ -63,6 +64,7 @@ const AVR_BASE_TYPES = new Set(avrBase.map((definition) => definition.type));
 const AVR_CANDIDATE_TYPES = new Set(avrCandidate.map((definition) => definition.type));
 const ALL_PROFILE_AUTHORING_TYPES = new Set([
   ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS), ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
+  ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
 ]);
 const NARROW_BOARDS = new Map([[PICO, PICO], [C3, C3], [STM32, STM32]]);
 const NARROW_AUTHORING_TYPES = new Set(Object.keys(BOUNDED_3V3_UI_COMPONENTS));
@@ -161,9 +163,13 @@ function availability(profile, type) {
 function unavailableReason(profile, type) {
   if (type.startsWith('board.')) return 'A controller board belongs only to its exact profile.';
   if (ALL_PROFILE_AUTHORING_TYPES.has(type)) {
-    return DIODE_COMPONENT_DEFINITIONS[type]
-      ? 'Authoring-only raw diode; no nonlinear I-V/reverse-breakdown model or runtime adapter is available.'
-      : 'Authoring-only raw passive component; no transient/frequency solver or runtime adapter is available.';
+    if (DIODE_COMPONENT_DEFINITIONS[type]) {
+      return 'Authoring-only raw diode; no nonlinear I-V/reverse-breakdown model or runtime adapter is available.';
+    }
+    if (TRANSISTOR_COMPONENT_DEFINITIONS[type]) {
+      return 'Authoring-only raw transistor; no bias/switching/current model or runtime adapter is available.';
+    }
+    return 'Authoring-only raw passive component; no transient/frequency solver or runtime adapter is available.';
   }
   if (profile !== AVR && NARROW_AUTHORING_TYPES.has(type)) return 'Authoring-only on this 3.3 V profile; no runtime adapter is available.';
   if (profile !== AVR) return 'This public profile does not yet admit this component model.';

@@ -60,6 +60,7 @@ import { ANALOGUE_TEMPERATURE_IC_DEFINITIONS, LM35_TEMPERATURE_TYPE,
 import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS } from './resistive-divider-sensors-v1.mjs';
 import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from './passive-energy-storage-components-v1.mjs';
 import { DIODE_COMPONENT_DEFINITIONS } from './diode-components-v1.mjs';
+import { TRANSISTOR_COMPONENT_DEFINITIONS } from './transistor-components-v1.mjs';
 import { CONTACT_SENSOR_DEFINITIONS } from './contact-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
@@ -88,6 +89,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   ...Object.keys(RESISTIVE_DIVIDER_SENSOR_DEFINITIONS),
   ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS),
   ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
+  ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS),
   ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
 ]);
 
@@ -698,6 +700,17 @@ export class CandidateEditorSession {
             if (!contract || !Number.isFinite(command.value)
                 || command.value < contract.minimum || command.value > contract.maximum) {
               return failure('PROJECT_CONTACT_DIODE_STATE', this.revision);
+            }
+            component.properties[command.key] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type]) {
+            const definition = TRANSISTOR_COMPONENT_DEFINITIONS[component.type];
+            const contract = definition.propertySchema[command.key];
+            if (!contract || !Number.isFinite(command.value)
+                || command.value < contract.minimum || command.value > contract.maximum) {
+              return failure('PROJECT_CONTACT_TRANSISTOR_STATE', this.revision);
             }
             component.properties[command.key] = command.value;
             runtimeDirty = true;

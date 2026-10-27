@@ -10,6 +10,8 @@ import { ELECTROLYTIC_CAPACITOR_TYPE, FIXED_INDUCTOR_TYPE, NONPOLAR_CAPACITOR_TY
   PASSIVE_ENERGY_STORAGE_DEFINITIONS } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
 import { DIODE_COMPONENT_DEFINITIONS, SCHOTTKY_DIODE_TYPE,
   SILICON_DIODE_TYPE, ZENER_DIODE_TYPE } from '../expansion-drafts/diode-components-v1.mjs';
+import { NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
+  TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
 
 const clone = (value) => structuredClone(value);
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
@@ -24,7 +26,8 @@ const COMPONENT_ID_STEMS = Object.freeze({ [BOUNDED_RESISTOR_TYPE]: 'resistor', 
   [TOGGLE_SWITCH_3V3_TYPE]: 'switch', [POTENTIOMETER_3V3_TYPE]: 'potentiometer',
   [NONPOLAR_CAPACITOR_TYPE]: 'capacitor', [ELECTROLYTIC_CAPACITOR_TYPE]: 'electrolytic',
   [FIXED_INDUCTOR_TYPE]: 'inductor', [SILICON_DIODE_TYPE]: 'diode',
-  [SCHOTTKY_DIODE_TYPE]: 'schottky', [ZENER_DIODE_TYPE]: 'zener' });
+  [SCHOTTKY_DIODE_TYPE]: 'schottky', [ZENER_DIODE_TYPE]: 'zener',
+  [NPN_BJT_TYPE]: 'npn', [PNP_BJT_TYPE]: 'pnp', [N_CHANNEL_MOSFET_TYPE]: 'nmos' });
 const COMPONENT_ID_COUNTER_KEYS = Object.freeze([...new Set(Object.values(COMPONENT_ID_STEMS))].sort());
 
 export function normalizeBoundedIdCounters(value, components) {
@@ -152,6 +155,17 @@ export function createSeriesLedComponentPolicy({
         pins: definition.pins.map(({ id }) => id),
         limitation: definition.support.limitations.join(' '),
       })),
+      ...Object.values(TRANSISTOR_COMPONENT_DEFINITIONS).map((definition, index) => part({
+        id: `${COMPONENT_ID_STEMS[definition.type]}-1`, type: definition.type,
+        displayName: definition.displayName, label: definition.displayName,
+        properties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, definition.propertySchema[key].default])),
+        position: { x: 0.48 + index * 0.14, y: 0.78, rotation: 0 },
+        supportedProperties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, { ...definition.propertySchema[key] }])),
+        pins: definition.pins.map(({ id }) => id),
+        limitation: definition.support.limitations.join(' '),
+      })),
     ]),
   });
 }
@@ -197,7 +211,8 @@ export function createSeriesLedConnectionPolicy({
     }
     const authoringOnly = new Set([GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE,
       TOGGLE_SWITCH_3V3_TYPE, POTENTIOMETER_3V3_TYPE,
-      ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS), ...Object.keys(DIODE_COMPONENT_DEFINITIONS)]);
+      ...Object.keys(PASSIVE_ENERGY_STORAGE_DEFINITIONS), ...Object.keys(DIODE_COMPONENT_DEFINITIONS),
+      ...Object.keys(TRANSISTOR_COMPONENT_DEFINITIONS)]);
     if (authoringOnly.has(endpointType(draft, left)) || authoringOnly.has(endpointType(draft, right))) {
       return `net-${[endpointKey(left), endpointKey(right)].sort().join('-').replaceAll('.', '-')}`.toLowerCase().slice(0, 48);
     }
@@ -639,6 +654,9 @@ export class NamedSeriesLedCircuitEditor {
       target.label = PASSIVE_ENERGY_STORAGE_DEFINITIONS[target.type].displayName;
     }
     if (DIODE_COMPONENT_DEFINITIONS[target.type]) target.label = DIODE_COMPONENT_DEFINITIONS[target.type].displayName;
+    if (TRANSISTOR_COMPONENT_DEFINITIONS[target.type]) {
+      target.label = TRANSISTOR_COMPONENT_DEFINITIONS[target.type].displayName;
+    }
     const electrical = this.validatePropertyPair(next);
     if (!electrical.ok) {
       return this.fail('COMPONENT_PROPERTY_ELECTRICAL_LIMIT', {

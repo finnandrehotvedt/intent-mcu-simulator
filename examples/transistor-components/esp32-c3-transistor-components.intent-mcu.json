@@ -1,0 +1,212 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.esp32-c3-devmodule-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "b075bedefb91daca0697f76a37684a516c67ca29a7cbb60b1d3ed6b132580f2e",
+    "implementationSha256": "2e35bfd80cc390362a5db6246fea09ff0b02702442e25411f8469b944e0ff168"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-esp32c3-public-project@1",
+    "name": "esp32-c3 raw transistor authoring",
+    "profile": "board.esp32-c3-devmodule-v1",
+    "source": "// Copyright 2026 IntentForce\n// SPDX-License-Identifier: Apache-2.0\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(2, OUTPUT);\n  digitalWrite(2, HIGH);\n  Serial.println(\"C3_PUBLIC\");\n}\n\nvoid loop() {\n  delay(1000);\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-esp32c3-public-circuit@1",
+      "boardProfile": "board.esp32-c3-devmodule-v1",
+      "components": [
+        {
+          "id": "c3-1",
+          "type": "board.esp32-c3-devmodule-v1",
+          "label": "ESP32-C3 GPIO2 profile",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "nmos-1",
+          "type": "transistor.mosfet-n-channel-v1",
+          "label": "N-channel MOSFET",
+          "properties": {
+            "nominalGateThresholdVoltageVolts": 2,
+            "maxDrainSourceVoltageVolts": 60,
+            "maxDrainCurrentAmps": 10
+          },
+          "controls": {}
+        },
+        {
+          "id": "npn-1",
+          "type": "transistor.bjt-npn-v1",
+          "label": "NPN bipolar transistor",
+          "properties": {
+            "nominalCurrentGain": 100,
+            "maxCollectorEmitterVoltageVolts": 40,
+            "maxCollectorCurrentAmps": 0.6
+          },
+          "controls": {}
+        },
+        {
+          "id": "pnp-1",
+          "type": "transistor.bjt-pnp-v1",
+          "label": "PNP bipolar transistor",
+          "properties": {
+            "nominalCurrentGain": 100,
+            "maxCollectorEmitterVoltageVolts": 40,
+            "maxCollectorCurrentAmps": 0.6
+          },
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-c3-1-gnd8-npn-1-emitter",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GND8"
+            },
+            {
+              "component": "nmos-1",
+              "pin": "SOURCE"
+            },
+            {
+              "component": "npn-1",
+              "pin": "EMITTER"
+            }
+          ]
+        },
+        {
+          "id": "net-c3-1-gpio0-pnp-1-base",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GPIO0"
+            },
+            {
+              "component": "pnp-1",
+              "pin": "BASE"
+            }
+          ]
+        },
+        {
+          "id": "net-c3-1-gpio1-nmos-1-gate",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GPIO1"
+            },
+            {
+              "component": "nmos-1",
+              "pin": "GATE"
+            }
+          ]
+        },
+        {
+          "id": "net-c3-1-gpio3-npn-1-base",
+          "endpoints": [
+            {
+              "component": "c3-1",
+              "pin": "GPIO3"
+            },
+            {
+              "component": "npn-1",
+              "pin": "BASE"
+            }
+          ]
+        },
+        {
+          "id": "net-nmos-1-drain-pnp-1-emitter",
+          "endpoints": [
+            {
+              "component": "nmos-1",
+              "pin": "DRAIN"
+            },
+            {
+              "component": "pnp-1",
+              "pin": "EMITTER"
+            }
+          ]
+        },
+        {
+          "id": "net-npn-1-collector-pnp-1-collector",
+          "endpoints": [
+            {
+              "component": "npn-1",
+              "pin": "COLLECTOR"
+            },
+            {
+              "component": "pnp-1",
+              "pin": "COLLECTOR"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "c3-1": {
+            "x": 0.2,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "nmos-1": {
+            "x": 0.76,
+            "y": 0.78,
+            "rotation": 0
+          },
+          "npn-1": {
+            "x": 0.48,
+            "y": 0.78,
+            "rotation": 0
+          },
+          "pnp-1": {
+            "x": 0.62,
+            "y": 0.78,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-c3-1-gnd8-npn-1-emitter": "#39dff2",
+          "net-c3-1-gpio0-pnp-1-base": "#39dff2",
+          "net-c3-1-gpio1-nmos-1-gate": "#39dff2",
+          "net-c3-1-gpio3-npn-1-base": "#39dff2",
+          "net-nmos-1-drain-pnp-1-emitter": "#39dff2",
+          "net-npn-1-collector-pnp-1-collector": "#39dff2"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        },
+        "idCounters": {
+          "button": 0,
+          "capacitor": 0,
+          "diode": 0,
+          "electrolytic": 0,
+          "ground": 0,
+          "inductor": 0,
+          "led": 1,
+          "nmos": 1,
+          "npn": 1,
+          "pnp": 1,
+          "potentiometer": 0,
+          "resistor": 1,
+          "schottky": 0,
+          "switch": 0,
+          "zener": 0
+        }
+      }
+    }
+  }
+}

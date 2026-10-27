@@ -6,6 +6,8 @@ import { PASSIVE_ENERGY_STORAGE_DEFINITIONS } from '../expansion-drafts/passive-
 import { createPassiveEnergyStorageArtwork } from '../expansion-drafts/passive-energy-storage-components-artwork-v1.mjs';
 import { DIODE_COMPONENT_DEFINITIONS } from '../expansion-drafts/diode-components-v1.mjs';
 import { createDiodeArtwork } from '../expansion-drafts/diode-components-artwork-v1.mjs';
+import { TRANSISTOR_COMPONENT_DEFINITIONS } from '../expansion-drafts/transistor-components-v1.mjs';
+import { createTransistorArtwork } from '../expansion-drafts/transistor-components-artwork-v1.mjs';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -279,6 +281,11 @@ export function createComponentArtwork(definition, component, options = {}) {
   }
   if (DIODE_COMPONENT_DEFINITIONS[component?.type]) {
     const svg = createDiodeArtwork(document, definition, component);
+    if (options.thumbnail) svg.classList.add('catalog-thumbnail');
+    return svg;
+  }
+  if (TRANSISTOR_COMPONENT_DEFINITIONS[component?.type]) {
+    const svg = createTransistorArtwork(document, definition, component);
     if (options.thumbnail) svg.classList.add('catalog-thumbnail');
     return svg;
   }

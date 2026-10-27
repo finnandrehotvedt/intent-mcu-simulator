@@ -5,6 +5,8 @@ import { PASSIVE_ENERGY_STORAGE_DEFINITIONS,
   validatePassiveEnergyStorageComponent } from '../expansion-drafts/passive-energy-storage-components-v1.mjs';
 import { DIODE_COMPONENT_DEFINITIONS,
   validateDiodeComponent } from '../expansion-drafts/diode-components-v1.mjs';
+import { TRANSISTOR_COMPONENT_DEFINITIONS,
+  validateTransistorComponent } from '../expansion-drafts/transistor-components-v1.mjs';
 
 export const BOUNDED_3V3_AUTHORING_SCHEMA = 'intent-mcu-bounded-3v3-authoring@1';
 export const GROUND_REFERENCE_3V3_TYPE = 'ground.reference-3v3-v1';
@@ -60,6 +62,13 @@ export const BOUNDED_3V3_AUTHORING_CONTRACTS = Object.freeze({
         properties: Object.fromEntries(definition.propertyKeys.map((key) =>
           [key, definition.propertySchema[key].default])),
       })])),
+    ...Object.fromEntries(Object.values(TRANSISTOR_COMPONENT_DEFINITIONS).map((definition) =>
+      [definition.type, contract({ type: definition.type, version: definition.version,
+        displayName: definition.displayName,
+        pins: definition.pins.map(({ id }) => ({ id, role: 'passive', voltageMin: 0, voltageMax: 3.3 })),
+        properties: Object.fromEntries(definition.propertyKeys.map((key) =>
+          [key, definition.propertySchema[key].default])),
+      })])),
   }),
 });
 
@@ -103,6 +112,7 @@ export const BOUNDED_3V3_UI_COMPONENTS = Object.freeze({
   }),
   ...PASSIVE_ENERGY_STORAGE_DEFINITIONS,
   ...DIODE_COMPONENT_DEFINITIONS,
+  ...TRANSISTOR_COMPONENT_DEFINITIONS,
 });
 
 const key = ({ component, pin }) => `${component}.${pin}`;
@@ -139,6 +149,9 @@ export function validateBounded3v3AuthoringGraph({ board, components, nets }) {
     }
     if (DIODE_COMPONENT_DEFINITIONS[component.type] && !validateDiodeComponent(component)) {
       return failure('AUTHORING_DIODE_PROPERTIES_UNSUPPORTED', { componentId: component.id });
+    }
+    if (TRANSISTOR_COMPONENT_DEFINITIONS[component.type] && !validateTransistorComponent(component)) {
+      return failure('AUTHORING_TRANSISTOR_PROPERTIES_UNSUPPORTED', { componentId: component.id });
     }
     instances.set(component.id, definition);
   }

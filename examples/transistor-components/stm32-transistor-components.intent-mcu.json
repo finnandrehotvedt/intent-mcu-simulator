@@ -1,0 +1,212 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.stm32f429zi-nucleo144-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "b075bedefb91daca0697f76a37684a516c67ca29a7cbb60b1d3ed6b132580f2e",
+    "implementationSha256": "2e35bfd80cc390362a5db6246fea09ff0b02702442e25411f8469b944e0ff168"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-stm32-public-project@2",
+    "name": "stm32 raw transistor authoring",
+    "profile": "board.stm32f429zi-nucleo144-v1",
+    "source": "/* Intent MCU Simulator public STM32F429 source v1 */\nint main(void)\n{\n  intent_pb0_output(1u);\n  intent_usart3_text(\"STM32 PUBLIC\");\n  intent_halt();\n}\n",
+    "circuit": {
+      "schema": "intent-mcu-stm32-public-circuit@1",
+      "boardProfile": "board.stm32f429zi-nucleo144-v1",
+      "components": [
+        {
+          "id": "nmos-1",
+          "type": "transistor.mosfet-n-channel-v1",
+          "label": "N-channel MOSFET",
+          "properties": {
+            "nominalGateThresholdVoltageVolts": 2,
+            "maxDrainSourceVoltageVolts": 60,
+            "maxDrainCurrentAmps": 10
+          },
+          "controls": {}
+        },
+        {
+          "id": "npn-1",
+          "type": "transistor.bjt-npn-v1",
+          "label": "NPN bipolar transistor",
+          "properties": {
+            "nominalCurrentGain": 100,
+            "maxCollectorEmitterVoltageVolts": 40,
+            "maxCollectorCurrentAmps": 0.6
+          },
+          "controls": {}
+        },
+        {
+          "id": "pnp-1",
+          "type": "transistor.bjt-pnp-v1",
+          "label": "PNP bipolar transistor",
+          "properties": {
+            "nominalCurrentGain": 100,
+            "maxCollectorEmitterVoltageVolts": 40,
+            "maxCollectorCurrentAmps": 0.6
+          },
+          "controls": {}
+        },
+        {
+          "id": "stm32-1",
+          "type": "board.stm32f429zi-nucleo144-v1",
+          "label": "STM32F429ZI PB0 profile",
+          "properties": {},
+          "controls": {}
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-nmos-1-drain-pnp-1-emitter",
+          "endpoints": [
+            {
+              "component": "nmos-1",
+              "pin": "DRAIN"
+            },
+            {
+              "component": "pnp-1",
+              "pin": "EMITTER"
+            }
+          ]
+        },
+        {
+          "id": "net-nmos-1-gate-stm32-1-pb0",
+          "endpoints": [
+            {
+              "component": "nmos-1",
+              "pin": "GATE"
+            },
+            {
+              "component": "stm32-1",
+              "pin": "PB0"
+            }
+          ]
+        },
+        {
+          "id": "net-npn-1-base-stm32-1-pb1",
+          "endpoints": [
+            {
+              "component": "npn-1",
+              "pin": "BASE"
+            },
+            {
+              "component": "stm32-1",
+              "pin": "PB1"
+            }
+          ]
+        },
+        {
+          "id": "net-npn-1-collector-pnp-1-collector",
+          "endpoints": [
+            {
+              "component": "npn-1",
+              "pin": "COLLECTOR"
+            },
+            {
+              "component": "pnp-1",
+              "pin": "COLLECTOR"
+            }
+          ]
+        },
+        {
+          "id": "net-npn-1-emitter-stm32-1-gnd20",
+          "endpoints": [
+            {
+              "component": "nmos-1",
+              "pin": "SOURCE"
+            },
+            {
+              "component": "npn-1",
+              "pin": "EMITTER"
+            },
+            {
+              "component": "stm32-1",
+              "pin": "GND20"
+            }
+          ]
+        },
+        {
+          "id": "net-pnp-1-base-stm32-1-pb7",
+          "endpoints": [
+            {
+              "component": "pnp-1",
+              "pin": "BASE"
+            },
+            {
+              "component": "stm32-1",
+              "pin": "PB7"
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "positions": {
+          "nmos-1": {
+            "x": 0.76,
+            "y": 0.78,
+            "rotation": 0
+          },
+          "npn-1": {
+            "x": 0.48,
+            "y": 0.78,
+            "rotation": 0
+          },
+          "pnp-1": {
+            "x": 0.62,
+            "y": 0.78,
+            "rotation": 0
+          },
+          "stm32-1": {
+            "x": 0.2,
+            "y": 0.52,
+            "rotation": 0
+          }
+        },
+        "wireStyles": {
+          "net-nmos-1-drain-pnp-1-emitter": "#39dff2",
+          "net-nmos-1-gate-stm32-1-pb0": "#39dff2",
+          "net-npn-1-base-stm32-1-pb1": "#39dff2",
+          "net-npn-1-collector-pnp-1-collector": "#39dff2",
+          "net-npn-1-emitter-stm32-1-gnd20": "#39dff2",
+          "net-pnp-1-base-stm32-1-pb7": "#39dff2"
+        },
+        "wireRoutes": {},
+        "componentAppearance": {
+          "schema": "intent-mcu-component-appearance@1",
+          "components": {}
+        },
+        "idCounters": {
+          "button": 0,
+          "capacitor": 0,
+          "diode": 0,
+          "electrolytic": 0,
+          "ground": 0,
+          "inductor": 0,
+          "led": 1,
+          "nmos": 1,
+          "npn": 1,
+          "pnp": 1,
+          "potentiometer": 0,
+          "resistor": 1,
+          "schottky": 0,
+          "switch": 0,
+          "zener": 0
+        }
+      }
+    }
+  }
+}
