@@ -258,6 +258,8 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/analogue-direction-field-sensors-artwork-v1.mjs',
   '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs',
   '../expansion-drafts/analogue-temperature-ic-sensors-artwork-v1.mjs',
+  '../expansion-drafts/resistive-divider-sensors-v1.mjs',
+  '../expansion-drafts/resistive-divider-sensors-artwork-v1.mjs',
   '../expansion-drafts/contact-sensors-v1.mjs',
   '../expansion-drafts/contact-sensors-artwork-v1.mjs',
   '../expansion-drafts/ground-reference-integration-v1.mjs',

@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "03ce956a972eefde66007290a7a7bb3dc437e85d0681bc62534a0e75ee150117",
-    "implementationSha256": "50507b1dc456306ed7caeaeebdd920c17bd8033ec32d43d879472200f16b21e4"
+    "manifestSha256": "bd3a4ab02b66f52159bb1965fcce74fbbaae93e17a2c06d0b9f61959be1aeb78",
+    "implementationSha256": "af535ef1567a4def2732070158756a4caed02595fefded49e5d46643387734fd"
   },
   "entries": [
     {
@@ -17,7 +17,7 @@
         "CMP-104"
       ],
       "file": "avr-analogue-moisture-level-sensors.intent-mcu.json",
-      "projectSha256": "6b8253266b6409a0643347b6d01036d9299b42e9fb441acca178afcdae2f2831",
+      "projectSha256": "4a9cc180525eec3d5c2623cd6e84f90e1d34a05fb7d1af49b1fa5074da3e7400",
       "sourceSha256": "a8fedc513e2dd6fc646a52699e9cc3d6170881cf82ea2129d0c3b2e54c296732",
       "expectedBehavior": "A2, A3 and A4 report independent idealized 0–5 V resistive moisture, capacitive moisture and water-level signals.",
       "namedPins": {

@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "03ce956a972eefde66007290a7a7bb3dc437e85d0681bc62534a0e75ee150117",
-    "implementationSha256": "50507b1dc456306ed7caeaeebdd920c17bd8033ec32d43d879472200f16b21e4"
+    "manifestSha256": "bd3a4ab02b66f52159bb1965fcce74fbbaae93e17a2c06d0b9f61959be1aeb78",
+    "implementationSha256": "af535ef1567a4def2732070158756a4caed02595fefded49e5d46643387734fd"
   },
   "entries": [
     {
@@ -16,7 +16,7 @@
         "CMP-125"
       ],
       "file": "avr-analogue-direction-field-sensors.intent-mcu.json",
-      "projectSha256": "0979f95b5835d5cbbd51bb93981455b7ebd074548c3cd82c7f3dd927f1b3026e",
+      "projectSha256": "7d71835fc9a5f42ad2cbc91e4a45231166e4a90528bf5eef5a1a852143dae939",
       "sourceSha256": "3be553a7828b933d745a3d8a26b1bf529e72634bffbbb4b27ae8af2d682837b9",
       "expectedBehavior": "A0 reports an ideal 0–360 degree direction signal and A1 reports an ideal signed bipolar Hall field ratio, each as 0–5 V.",
       "namedPins": {

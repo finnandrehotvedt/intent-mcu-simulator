@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
+import './generate-resistive-divider-sensor-examples.mjs';
+
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createEditableContactDraft } from '../expansion-drafts/contact-persistence-fixture-v1.mjs';

@@ -94,6 +94,12 @@ import {
   validateAnalogueTemperatureIcSensor,
 } from './analogue-temperature-ic-sensors-v1.mjs';
 import {
+  RESISTIVE_DIVIDER_SENSOR_DEFINITIONS,
+  projectResistiveDividerSensors,
+  resistiveDividerSensorValue,
+  validateResistiveDividerSensor,
+} from './resistive-divider-sensors-v1.mjs';
+import {
   DIGITAL_LIGHT_THRESHOLD_DEFINITION,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
   projectDigitalLightThresholdModules,
@@ -246,6 +252,7 @@ function pinIds(component) {
   if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
+  if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return ['VCC', 'GND', 'DOUT'];
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
@@ -280,6 +287,7 @@ function componentPins(component) {
   if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) return ANALOGUE_DETECTION_DEFINITIONS[component.type].pins;
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type]) return ANALOGUE_DIRECTION_FIELD_DEFINITIONS[component.type].pins;
   if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) return ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type].pins;
+  if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) return RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type].pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type].pins;
@@ -356,6 +364,10 @@ function validateCandidateComponent(component) {
   } else if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component.type]) {
     if (!validateAnalogueTemperatureIcSensor(component)) {
       fail('PROJECT_CONTACT_ANALOGUE_TEMPERATURE_IC_SENSOR_STATE', [component.id]);
+    }
+  } else if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) {
+    if (!validateResistiveDividerSensor(component)) {
+      fail('PROJECT_CONTACT_RESISTIVE_DIVIDER_SENSOR_STATE', [component.id]);
     }
   } else if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     if (!validateDigitalLightThresholdComponent(component)) {
@@ -910,7 +922,25 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
     }
   }
-  const thresholdProjection = projectDigitalLightThresholdModules(temperatureIcProjection.runtimeGraph);
+  const resistiveDividerProjection = projectResistiveDividerSensors(temperatureIcProjection.runtimeGraph);
+  if (!resistiveDividerProjection.ok) {
+    fail(`PROJECT_CONTACT_${resistiveDividerProjection.code}`, resistiveDividerProjection.details);
+  }
+  contacts.push(...resistiveDividerProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId, type: sensor.type,
+    state: { [sensor.controlKey]: sensor.controlValue, resistanceOhms: sensor.resistanceOhms,
+      voltage: sensor.voltage }, runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of resistiveDividerProjection.sensors) {
+    const expected = production(implementation, sensor.type,
+      { [sensor.controlKey]: sensor.controlValue }, [sensor.componentId]);
+    if (expected[sensor.controlKey] !== sensor.controlValue
+        || expected.resistanceOhms !== sensor.resistanceOhms
+        || expected.outputVolts !== sensor.voltage) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const thresholdProjection = projectDigitalLightThresholdModules(resistiveDividerProjection.runtimeGraph);
   if (!thresholdProjection.ok) {
     fail(`PROJECT_CONTACT_${thresholdProjection.code}`, thresholdProjection.details);
   }
@@ -1200,6 +1230,11 @@ function draftContacts(graph) {
         state: { temperatureC: analogueTemperatureIcValue(component) },
         runtimeProjection: null,
       }];
+    }
+    if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) {
+      const key = RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+      return [{ componentId: component.id, type: component.type,
+        state: { [key]: resistiveDividerSensorValue(component) }, runtimeProjection: null }];
     }
     if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
       return [{

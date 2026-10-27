@@ -137,6 +137,18 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     temperatureC: { kind: 'number', minimum: 0, maximum: 150, default: 25,
       unit: '°C', mutability: 'authored' },
   },
+  'sensor.ldr-divider-v1': {
+    lightLevel: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
+      unit: 'ratio', mutability: 'authored' },
+  },
+  'sensor.ntc-10k-divider-v1': {
+    temperatureC: { kind: 'number', minimum: -40, maximum: 125, default: 25,
+      unit: '°C', mutability: 'authored' },
+  },
+  'sensor.flex-divider-v1': {
+    bendRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0,
+      unit: 'ratio', mutability: 'authored' },
+  },
   'sensor.light-threshold-digital-v1': {
     lightLevelPercent: { kind: 'number', minimum: 0, maximum: 100, default: 40,
       unit: '%', mutability: 'authored' },

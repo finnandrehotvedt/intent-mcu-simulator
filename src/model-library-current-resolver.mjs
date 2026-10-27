@@ -14,6 +14,8 @@ import { createPcf8574LcdDecoder } from '../expansion-drafts/pcf8574-lcd-backpac
 import {
   nextRotaryEncoderDetent, rotaryEncoderDigitalSequence,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
+import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, resistiveDividerSensorResistance,
+  resistiveDividerSensorVoltage } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
 import { observeRp2040PicoCircuit, validateRp2040PicoCircuit } from './rp2040-pico-circuit.mjs';
 import { esp32C3RuntimeCircuit, validateEsp32C3Circuit } from './esp32c3-public-circuit.mjs';
 import { validateStm32Circuit } from './stm32-public-circuit.mjs';
@@ -232,6 +234,17 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       }
       return { ok: true, code: 'OK', result: { temperatureC: input.temperatureC,
         outputVolts: (tmp36 ? 0.5 : 0) + input.temperatureC * 0.01 } };
+    }
+    if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[componentType]) {
+      const definition = RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[componentType];
+      const key = definition.controlKeys[0]; const value = input?.[key];
+      if (!exactInput(input, [key]) || !Number.isFinite(value)
+          || value < definition.control.minimum || value > definition.control.maximum) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { [key]: value,
+        resistanceOhms: resistiveDividerSensorResistance(componentType, value),
+        outputVolts: resistiveDividerSensorVoltage(componentType, value) } };
     }
     if (componentType === 'sensor.light-threshold-digital-v1') {
       const { lightLevelPercent, thresholdPercent, hysteresisPercentagePoints, currentActive } = input ?? {};

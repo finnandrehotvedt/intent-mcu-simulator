@@ -73,6 +73,7 @@ import { ANALOGUE_DIRECTION_FIELD_DEFINITIONS, HALL_MAGNETIC_ANALOGUE_TYPE,
 import { ANALOGUE_TEMPERATURE_IC_DEFINITIONS, LM35_TEMPERATURE_TYPE,
   TMP36_TEMPERATURE_TYPE,
 } from '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs';
+import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
 import { CONTACT_SENSOR_DEFINITIONS } from '../expansion-drafts/contact-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
@@ -104,6 +105,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   MQ_GAS_ANALOGUE_TYPE, CO2_ANALOGUE_TYPE, UV_ANALOGUE_TYPE,
   WIND_DIRECTION_ANALOGUE_TYPE, HALL_MAGNETIC_ANALOGUE_TYPE,
   TMP36_TEMPERATURE_TYPE, LM35_TEMPERATURE_TYPE,
+  ...Object.keys(RESISTIVE_DIVIDER_SENSOR_DEFINITIONS),
   ...Object.keys(CONTACT_SENSOR_DEFINITIONS),
 ]);
 
@@ -237,6 +239,8 @@ function contactSupport(result) {
             ? 'potentiometer.linear-v1-ideal-analogue-sensor-adapter'
           : ANALOGUE_TEMPERATURE_IC_DEFINITIONS[contact.type]
             ? 'potentiometer.linear-v1-ideal-analogue-sensor-adapter'
+          : RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[contact.type]
+            ? 'potentiometer.linear-v1-integrated-resistive-divider-adapter'
           : contact.type === DIGITAL_LIGHT_THRESHOLD_TYPE
             ? 'button.momentary-v1'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
@@ -306,6 +310,8 @@ function contactSupport(result) {
         ? 'Ideal linear 0–5 V direction or signed field response only; no physical vane, compass, tesla/gauss, geometry, calibration, saturation, timing or electrical accuracy is modelled.'
         : ANALOGUE_TEMPERATURE_IC_DEFINITIONS[contact.type]
         ? 'Ideal TMP36 or nonnegative single-supply LM35 transfer only; no physical tolerance, calibration, thermal response, loading, noise or package-pin guidance is modelled.'
+        : RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[contact.type]
+        ? 'Ideal integrated 5 V sensor-plus-10 kΩ divider only; no arbitrary two-terminal network, physical calibration, tolerance, loading, hysteresis or dynamics is modelled.'
         : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
         ? 'Ideal linear 0–5 V module signal only; no lux accuracy or physical LDR response is modelled.'
         : contact.type === SPDT_CONTACT_TYPE
@@ -1046,6 +1052,20 @@ export class CandidateEditorSession {
             const evaluated = this.evaluateModel(component.type, { temperatureC: command.value });
             if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
             component.controls.temperatureC = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) {
+            const definition = RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type];
+            const expectedKey = definition.controlKeys[0];
+            if (command.key !== expectedKey || !Number.isFinite(command.value)
+                || command.value < definition.control.minimum
+                || command.value > definition.control.maximum) {
+              return failure('PROJECT_CONTACT_RESISTIVE_DIVIDER_SENSOR_STATE', this.revision);
+            }
+            const evaluated = this.evaluateModel(component.type, { [expectedKey]: command.value });
+            if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
+            component.controls[expectedKey] = command.value;
             runtimeDirty = true;
             break;
           }

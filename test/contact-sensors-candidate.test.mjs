@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
+import './resistive-divider-sensors-candidate.test.mjs';
+import './resistive-divider-sensor-example-artifacts.test.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';

@@ -154,6 +154,9 @@ import {
   createAnalogueTemperatureIcSensor,
 } from '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs';
 import { createAnalogueTemperatureIcArtwork } from '../expansion-drafts/analogue-temperature-ic-sensors-artwork-v1.mjs';
+import { RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, createResistiveDividerSensor,
+  resistiveDividerSensorVoltage } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
+import { createResistiveDividerSensorArtwork } from '../expansion-drafts/resistive-divider-sensors-artwork-v1.mjs';
 import { CONTACT_SENSOR_DEFINITIONS, createContactSensor } from '../expansion-drafts/contact-sensors-v1.mjs';
 import { createContactSensorArtwork } from '../expansion-drafts/contact-sensors-artwork-v1.mjs';
 
@@ -225,6 +228,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   ...ANALOGUE_DETECTION_DEFINITIONS,
   ...ANALOGUE_DIRECTION_FIELD_DEFINITIONS,
   ...ANALOGUE_TEMPERATURE_IC_DEFINITIONS,
+  ...RESISTIVE_DIVIDER_SENSOR_DEFINITIONS,
   ...CONTACT_SENSOR_DEFINITIONS,
 });
 
@@ -309,6 +313,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[component?.type]) {
     return createAnalogueTemperatureIcArtwork(documentObject, definition, component, options);
   }
+  if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component?.type]) {
+    return createResistiveDividerSensorArtwork(documentObject, definition, component, options);
+  }
   if (CONTACT_SENSOR_DEFINITIONS[component?.type]) {
     return createContactSensorArtwork(documentObject, definition, component, options);
   }
@@ -348,6 +355,7 @@ export function createCandidateUiComponent(type, id) {
   if (ANALOGUE_DETECTION_DEFINITIONS[type]) return createAnalogueDetectionSensor(type, id);
   if (ANALOGUE_DIRECTION_FIELD_DEFINITIONS[type]) return createAnalogueDirectionFieldSensor(type, id);
   if (ANALOGUE_TEMPERATURE_IC_DEFINITIONS[type]) return createAnalogueTemperatureIcSensor(type, id);
+  if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[type]) return createResistiveDividerSensor(type, id);
   if (CONTACT_SENSOR_DEFINITIONS[type]) return createContactSensor(type, id);
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');
 }
@@ -550,6 +558,18 @@ export function candidateContactControl(session, componentId, key, value) {
       worker: { command: 'control', componentId, key: 'position',
         value: analogueTemperatureIcVoltage(component.type, value) / 5 },
     };
+  }
+  if (RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) {
+    const definition = RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type];
+    const controlKey = definition.controlKeys[0];
+    if (key !== controlKey || !Number.isFinite(value)
+        || value < definition.control.minimum || value > definition.control.maximum) {
+      return failure('PROJECT_CONTACT_RESISTIVE_DIVIDER_SENSOR_STATE', [componentId]);
+    }
+    return { ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'position',
+        value: resistiveDividerSensorVoltage(component.type, value) / 5 } };
   }
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     try {

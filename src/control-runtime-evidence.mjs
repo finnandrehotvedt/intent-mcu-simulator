@@ -42,6 +42,9 @@ const rows = [
   ['sensor.hall-magnetic-analogue-v1', 'magneticFieldRatio', 'control · normalized bipolar position', 'A1 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.tmp36-temperature-analogue-v1', 'temperatureC', 'control · TMP36 transfer position', 'A0 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.lm35-temperature-analogue-v1', 'temperatureC', 'control · LM35 transfer position', 'A1 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.ldr-divider-v1', 'lightLevel', 'control · LDR divider transfer position', 'A0 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.ntc-10k-divider-v1', 'temperatureC', 'control · B3950 divider transfer position', 'A1 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.flex-divider-v1', 'bendRatio', 'control · flex divider transfer position', 'A2 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'lightLevelPercent', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'thresholdPercent', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'hysteresisPercentagePoints', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
@@ -67,7 +70,10 @@ const rows = [
   workerEvent,
   observable,
   evidence,
-  evidenceSource: model === 'sensor.tmp36-temperature-analogue-v1'
+  evidenceSource: ['sensor.ldr-divider-v1', 'sensor.ntc-10k-divider-v1',
+    'sensor.flex-divider-v1'].includes(model)
+    ? 'test/resistive-divider-sensors-browser.cjs'
+    : model === 'sensor.tmp36-temperature-analogue-v1'
       || model === 'sensor.lm35-temperature-analogue-v1'
     ? 'test/analogue-temperature-ic-sensors-browser.cjs'
     : ['directionDegrees', 'magneticFieldRatio'].includes(field)

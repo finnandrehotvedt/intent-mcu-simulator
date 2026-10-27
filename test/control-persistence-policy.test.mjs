@@ -62,6 +62,9 @@ const expected = {
   'sensor.hall-magnetic-analogue-v1': ['magneticFieldRatio'],
   'sensor.tmp36-temperature-analogue-v1': ['temperatureC'],
   'sensor.lm35-temperature-analogue-v1': ['temperatureC'],
+  'sensor.ldr-divider-v1': ['lightLevel'],
+  'sensor.ntc-10k-divider-v1': ['temperatureC'],
+  'sensor.flex-divider-v1': ['bendRatio'],
   'input.rotary-encoder-quadrature-v1': ['detent'],
 };
 
@@ -85,10 +88,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 64 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 67 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 248, available: 64, unavailable: 184,
-    controlBearing: 43, controlsEmpty: 21, controls: 52,
+    profiles: 4, cells: 260, available: 67, unavailable: 193,
+    controlBearing: 46, controlsEmpty: 21, controls: 55,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

@@ -150523,6 +150523,93 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "d300bae821f765305a91866456a28587b9eaf36fa3991fa6f0b7b4424b56540f",
+      "componentType": "sensor.flex-divider-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.flex-divider-v1-ideal",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.flex-divider-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 106,
+        "cssWidth": 132,
+        "renderer": "sensor-flex-divider",
+        "thumbnail": "sensor-flex-divider",
+        "viewBox": [
+          0,
+          0,
+          132,
+          106
+        ]
+      },
+      "rendererContractSha256": "21e3e1810e60aa133ad53331240ed9578788ec0a71a3955f38159b276de8ee1e",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "bendRatio": {
+            "default": 0,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.flex-divider-v1-ideal",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal integrated divider: a high-side flex resistor rises linearly from 10 kΩ flat to 40 kΩ at maximum authored bend, above a fixed 10 kΩ low side.",
+            "No bend angle, direction, hysteresis, fatigue, tolerance, response time or physical force accuracy is modelled.",
+            "This is a three-terminal integrated divider model, not a general two-terminal resistor or arbitrary analogue-network solver.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "7260822a53ad71d247b2aca8d44efb153c68d8fb8e7badbc06d79ac153dab04d",
+      "supportStatus": "simulated"
+    },
+    {
       "behaviorContractSha256": "c0d4da35fb7ee4fcba7a71a408f7cc5a156696e7d1b0eb2a227cf062abbce723",
       "componentType": "sensor.flow-pulse-digital-v1",
       "componentVersion": 1,
@@ -150856,6 +150943,93 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         }
       },
       "semanticSha256": "6a110eab5c56ebe60f49d981ceade8ad97864ea072fee1f3cd02374ba8168773",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "14a0754610ac12c5d73467f92c5867b9f13922368b1325fe209045fc5f5a834d",
+      "componentType": "sensor.ldr-divider-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.ldr-divider-v1-ideal",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.ldr-divider-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 106,
+        "cssWidth": 132,
+        "renderer": "sensor-ldr-divider",
+        "thumbnail": "sensor-ldr-divider",
+        "viewBox": [
+          0,
+          0,
+          132,
+          106
+        ]
+      },
+      "rendererContractSha256": "76340bea6ba1569495081bea4c4b5f2f31202768c7e0b152b29b9298061a9776",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "lightLevel": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.ldr-divider-v1-ideal",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal integrated divider: an LDR high side and fixed 10 kΩ low side drive AOUT from a fixed 5 V supply.",
+            "The teaching curve interpolates LDR resistance logarithmically from 1 MΩ dark to 1 kΩ bright; it is not a lux calibration or a specific physical part curve.",
+            "This is a three-terminal integrated divider model, not a general two-terminal resistor or arbitrary analogue-network solver.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "b9aa85a2ee927fe917fb47f9cf303468afcce7a3991f290727286a455ff4733d",
       "supportStatus": "simulated"
     },
     {
@@ -151306,6 +151480,93 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         }
       },
       "semanticSha256": "4b48feaab256355286a6426c771f25c77d863cbc3ad0c066cbc5090751d663a2",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "6614128c7e2a7b7c167719055d073c89cf06ed87f9421a5be8a5ff371be9dd8a",
+      "componentType": "sensor.ntc-10k-divider-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.ntc-10k-divider-v1-ideal",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.ntc-10k-divider-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 106,
+        "cssWidth": 132,
+        "renderer": "sensor-ntc-divider",
+        "thumbnail": "sensor-ntc-divider",
+        "viewBox": [
+          0,
+          0,
+          132,
+          106
+        ]
+      },
+      "rendererContractSha256": "4e88ded80ccdb2c08046ba233ed2f34a2b070d8d03edb9eac82199f1a1a9c5e5",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "temperatureC": {
+            "default": 25,
+            "kind": "number",
+            "maximum": 125,
+            "minimum": -40,
+            "mutability": "authored",
+            "unit": "°C"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.ntc-10k-divider-v1-ideal",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal integrated divider: a 10 kΩ at 25 °C, B3950 NTC high side and fixed 10 kΩ low side drive AOUT from 5 V.",
+            "No tolerance, self-heating, thermal lag, dissipation factor, calibration error or physical package behavior is modelled.",
+            "This is a three-terminal integrated divider model, not a general two-terminal resistor or arbitrary analogue-network solver.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "51537fe1e9a6023dd29d60676b23fa64dcf3393abe7b0319b963a9979f6b9012",
       "supportStatus": "simulated"
     },
     {
@@ -154094,7 +154355,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "06221de555f4ef0809736a09647ed2c53d693499428b70c8ae190313d8f716b1"
+      "sha256": "89a772c421865c76526144e7b235a6b58169a6b229b6d47d80846865d9bf3035"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -154102,7 +154363,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "864e1612ce2f0c75afe681c98b4bcbe1e319421e6246f753e673e3401224414c"
+      "sha256": "15531eb548d6d864a4904ab5d653819e9987cb2722259315e8c14ae59a301393"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -154134,7 +154395,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "b70624532a18de82a697a4b2e324a465d6c8dafa776bd6fd757c95fdb083aa39"
+      "sha256": "b708dc5a5dea0906305fe4ee865fa0d48da5cea0c1dadda9bb123066f90b0888"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -154142,7 +154403,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "13152a787aee81f6047b243fd3e60459ba54ba767006835230266bc572259981"
+      "sha256": "86d1c0b7621768efe47860f8bff9199303f2cbb2586ca29de98a3dadee958586"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -154190,7 +154451,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "e35b3a58fe945af45c4095f7cc9f0cd3084d1d3472099054e250aa9cece15670"
+      "sha256": "8945e9bea081d2c1b91c1e2cba7b7a1c0ea5c7f0bc223b83b796ac3bc43eec83"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -154255,6 +154516,14 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     {
       "path": "expansion-drafts/analogue-temperature-ic-sensors-artwork-v1.mjs",
       "sha256": "8ad072a43c8291be1c9639ef361531cacc5462e4315853d4c8597dac2d6b70c3"
+    },
+    {
+      "path": "expansion-drafts/resistive-divider-sensors-v1.mjs",
+      "sha256": "ff707d3940506997619f9cb371cd61ba6ac4bd83b863e48e095cb6e3fe09a62a"
+    },
+    {
+      "path": "expansion-drafts/resistive-divider-sensors-artwork-v1.mjs",
+      "sha256": "2f6c17bd76adf0ab20ca5289c74b6019ad0fbf502d6b837d8e0a2378ee09d1f3"
     },
     {
       "path": "expansion-drafts/contact-sensors-v1.mjs",
@@ -154334,10 +154603,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "f0c5eb628ce92c819ff6dce4bd7c07d12815ccd44896beec594e2b3183e9dfa7"
+      "sha256": "3f119c9e65934ae57ed8044e5a3a9a975c5bfa560717802d47e2db23b595d102"
     }
   ],
-  "implementationSha256": "50507b1dc456306ed7caeaeebdd920c17bd8033ec32d43d879472200f16b21e4",
+  "implementationSha256": "af535ef1567a4def2732070158756a4caed02595fefded49e5d46643387734fd",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -154347,7 +154616,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "03ce956a972eefde66007290a7a7bb3dc437e85d0681bc62534a0e75ee150117",
+  "manifestSha256": "bd3a4ab02b66f52159bb1965fcce74fbbaae93e17a2c06d0b9f61959be1aeb78",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

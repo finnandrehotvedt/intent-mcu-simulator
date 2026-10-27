@@ -509,6 +509,10 @@ import {
   analogueTemperatureIcVoltage,
 } from '../expansion-drafts/analogue-temperature-ic-sensors-v1.mjs';
 import {
+  FLEX_DIVIDER_TYPE, LDR_DIVIDER_TYPE, NTC_DIVIDER_TYPE,
+  RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, resistiveDividerSensorVoltage,
+} from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
+import {
   ROTARY_ENCODER_TYPE,
   nextRotaryEncoderDetent,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
@@ -13055,6 +13059,9 @@ function candidateComponentPrefix(type) {
       [HALL_MAGNETIC_ANALOGUE_TYPE]: 'hall-field',
       [TMP36_TEMPERATURE_TYPE]: 'tmp36-temperature',
       [LM35_TEMPERATURE_TYPE]: 'lm35-temperature',
+      [LDR_DIVIDER_TYPE]: 'ldr-divider',
+      [NTC_DIVIDER_TYPE]: 'ntc-divider',
+      [FLEX_DIVIDER_TYPE]: 'flex-divider',
       [COMMON_CATHODE_RGB_LED_TYPE]: 'rgb-led',
       [RGB_COMMON_ANODE_TYPE]: 'rgb-led-ca',
       [LED_BAR_GRAPH_TYPE]: 'led-bar',
@@ -13126,6 +13133,9 @@ function addComponent(type, point = null) {
       [HALL_MAGNETIC_ANALOGUE_TYPE]: { x: 0.72, y: 0.38 },
       [TMP36_TEMPERATURE_TYPE]: { x: 0.58, y: 0.32 },
       [LM35_TEMPERATURE_TYPE]: { x: 0.72, y: 0.32 },
+      [LDR_DIVIDER_TYPE]: { x: 0.56, y: 0.26 },
+      [NTC_DIVIDER_TYPE]: { x: 0.7, y: 0.26 },
+      [FLEX_DIVIDER_TYPE]: { x: 0.84, y: 0.26 },
       [COMMON_CATHODE_RGB_LED_TYPE]: { x: 0.78, y: 0.7 },
       [RGB_COMMON_ANODE_TYPE]: { x: 0.78, y: 0.7 },
       [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },
@@ -13856,6 +13866,26 @@ function renderRuntimeControls() {
           return;
         }
         const result = applyEditor(prepared.command, `${component.label} idealized temperature ${input.value} °C`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, input); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('label');
+      const definition = RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[component.type];
+      const key = definition.controlKeys[0]; const value = component.controls[key];
+      label.textContent = `${component.label} · ${definition.control.label} ${value} · ${resistiveDividerSensorVoltage(component.type, value).toFixed(2)} V`;
+      const input = document.createElement('input'); input.type = 'range';
+      input.min = String(definition.control.minimum); input.max = String(definition.control.maximum);
+      input.step = String(definition.control.step); input.value = String(value);
+      input.dataset.control = `${component.id}.${key}`; input.id = `control-${component.id}-${key}`;
+      label.htmlFor = input.id; input.setAttribute('aria-label', `${component.label} ${definition.control.label}`);
+      input.addEventListener('input', () => {
+        const prepared = selectedCandidateContactControl(component.id, key, Number(input.value));
+        if (!prepared.ok) {
+          showActionableError(elements.projectmessage, prepared.code, 'Resistive divider sensor control rejected.'); return;
+        }
+        const result = applyEditor(prepared.command, `${component.label} ${definition.control.label} ${input.value}`);
         if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
       });
       row.append(label, input); return [row];
