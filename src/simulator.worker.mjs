@@ -331,6 +331,7 @@ async function handleMessage(data) {
           ...(data.x47RuntimeAuthority ? { x47RuntimeAuthority: data.x47RuntimeAuthority } : {}),
           ...(data.i2cDevices ? { i2cDevices: data.i2cDevices } : {}),
           ...(data.dht11Devices ? { dht11Devices: data.dht11Devices } : {}),
+          ...(data.dht22Devices ? { dht22Devices: data.dht22Devices } : {}),
           ...(data.ds18b20Devices ? { ds18b20Devices: data.ds18b20Devices } : {}),
         });
         kernel = candidate;
@@ -457,6 +458,10 @@ async function handleMessage(data) {
       if (isRp2040()) throw new Error('DHT11_PROFILE_UNAVAILABLE');
       kernel.adapter.setDht11Environment(data.componentId, data.key, data.value);
       status('dht11-control');
+    } else if (data.command === 'dht22-control') {
+      if (isRp2040()) throw new Error('DHT22_PROFILE_UNAVAILABLE');
+      kernel.adapter.setDht22Environment(data.componentId, data.key, data.value);
+      status('dht22-control');
     } else if (data.command === 'ds18b20-control') {
       if (isRp2040()) throw new Error('DS18B20_PROFILE_UNAVAILABLE');
       kernel.adapter.setDs18b20Temperature(data.componentId, data.value);

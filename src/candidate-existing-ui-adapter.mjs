@@ -150,6 +150,17 @@ import {
 } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
 import { createDht11Artwork } from '../expansion-drafts/dht11-temperature-humidity-artwork-v1.mjs';
 import {
+  DHT22_DEFINITION,
+  DHT22_HUMIDITY_MAX_PERCENT,
+  DHT22_HUMIDITY_MIN_PERCENT,
+  DHT22_TEMPERATURE_MAX_C,
+  DHT22_TEMPERATURE_MIN_C,
+  DHT22_TYPE,
+  createDht22Component,
+  validDht22Value,
+} from '../expansion-drafts/dht22-temperature-humidity-v1.mjs';
+import { createDht22Artwork } from '../expansion-drafts/dht22-temperature-humidity-artwork-v1.mjs';
+import {
   DS18B20_DEFINITION,
   DS18B20_TYPE,
   createDs18b20Component,
@@ -274,6 +285,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   ...DIGITAL_PULSE_SENSOR_DEFINITIONS,
   ...DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
   [DHT11_TYPE]: DHT11_DEFINITION,
+  [DHT22_TYPE]: DHT22_DEFINITION,
   [DS18B20_TYPE]: DS18B20_DEFINITION,
   ...ANALOGUE_MOISTURE_LEVEL_DEFINITIONS,
   ...ANALOGUE_DETECTION_DEFINITIONS,
@@ -367,6 +379,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (component?.type === DHT11_TYPE) {
     return createDht11Artwork(documentObject, definition, component, options);
   }
+  if (component?.type === DHT22_TYPE) {
+    return createDht22Artwork(documentObject, definition, component, options);
+  }
   if (component?.type === DS18B20_TYPE) {
     return createDs18b20Artwork(documentObject, definition, component, options);
   }
@@ -441,6 +456,7 @@ export function createCandidateUiComponent(type, id) {
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[type]) return createDigitalPulseSensor(type, id);
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[type]) return createDigitalReflectiveSensor(type, id);
   if (type === DHT11_TYPE) return createDht11Component(id);
+  if (type === DHT22_TYPE) return createDht22Component(id);
   if (type === DS18B20_TYPE) return createDs18b20Component(id);
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[type]) return createAnalogueMoistureLevelSensor(type, id);
   if (ANALOGUE_DETECTION_DEFINITIONS[type]) return createAnalogueDetectionSensor(type, id);
@@ -602,6 +618,19 @@ export function candidateContactControl(session, componentId, key, value) {
         ok: true,
         command: { type: 'component.control.set', componentId, key, value },
         worker: { command: 'dht11-control', componentId, key, value },
+      };
+    }
+  }
+  if (component.type === DHT22_TYPE) {
+    const accepted = key === 'temperatureC'
+      ? validDht22Value(value, DHT22_TEMPERATURE_MIN_C, DHT22_TEMPERATURE_MAX_C)
+      : key === 'humidityPercent'
+        && validDht22Value(value, DHT22_HUMIDITY_MIN_PERCENT, DHT22_HUMIDITY_MAX_PERCENT);
+    if (accepted) {
+      return {
+        ok: true,
+        command: { type: 'component.control.set', componentId, key, value },
+        worker: { command: 'dht22-control', componentId, key, value },
       };
     }
   }

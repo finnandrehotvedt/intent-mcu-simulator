@@ -36,12 +36,28 @@ const UNSUPPORTED_LIMIT = 256;
 const X47_TRANSITION_LIMIT = 64;
 const DHT11_TRANSACTION_LIMIT = 64;
 const DHT11_START_MIN_CYCLES = 18 * 16_000;
+const DHT22_TRANSACTION_LIMIT = 64;
+const DHT22_START_MIN_CYCLES = 1_000 * 16;
 const DS18B20_TRANSACTION_LIMIT = 64;
 const DS18B20_RESET_MIN_CYCLES = 400 * 16;
 const DS18B20_WRITE_ZERO_MIN_CYCLES = 40 * 16;
 const microsToCycles = (microseconds) => microseconds * 16;
 const validDs18b20RuntimeTemperature = (value) => Number.isFinite(value)
   && value >= -55 && value <= 125 && Number.isInteger(value / 0.0625);
+const validDht22RuntimeValue = (value, minimum, maximum) => Number.isFinite(value)
+  && value >= minimum && value <= maximum
+  && Math.abs(value * 10 - Math.round(value * 10)) < Number.EPSILON * 64;
+const dht22RuntimePayload = (temperatureC, humidityPercent) => {
+  const humidityRaw = Math.round(humidityPercent * 10);
+  const temperatureMagnitude = Math.round(Math.abs(temperatureC) * 10);
+  const bytes = [
+    (humidityRaw >> 8) & 0xff,
+    humidityRaw & 0xff,
+    ((temperatureMagnitude >> 8) & 0x7f) | (temperatureC < 0 ? 0x80 : 0),
+    temperatureMagnitude & 0xff,
+  ];
+  return [...bytes, bytes.reduce((sum, value) => (sum + value) & 0xff, 0)];
+};
 const ds18b20RuntimeCrc8 = (bytes) => {
   let crc = 0;
   for (const value of bytes) {
@@ -133,6 +149,19 @@ export class Atmega328PAdapter {
       componentId: item.componentId, pin: item.pin, temperatureC: item.temperatureC,
       humidityPercent: item.humidityPercent, lowStartCycle: null, busyUntilCycle: 0,
     }]));
+    const dht22Devices = options.dht22Devices ?? [];
+    if (!Array.isArray(dht22Devices) || dht22Devices.length > 1
+        || dht22Devices.some((item) => !item || item.type !== 'dht22'
+          || typeof item.componentId !== 'string' || !/^[a-z][a-z0-9-]{0,47}$/u.test(item.componentId)
+          || !Number.isInteger(item.pin) || item.pin < 2 || item.pin > 12
+          || !validDht22RuntimeValue(item.temperatureC, -40, 80)
+          || !validDht22RuntimeValue(item.humidityPercent, 0, 100))) {
+      throw new TypeError('DHT22_DEVICE_CONFIGURATION');
+    }
+    this.dht22Devices = new Map(dht22Devices.map((item) => [item.componentId, {
+      componentId: item.componentId, pin: item.pin, temperatureC: item.temperatureC,
+      humidityPercent: item.humidityPercent, lowStartCycle: null, busyUntilCycle: 0,
+    }]));
     const ds18b20Devices = options.ds18b20Devices ?? [];
     if (!Array.isArray(ds18b20Devices) || ds18b20Devices.length > 1
         || ds18b20Devices.some((item) => !item || item.type !== 'ds18b20'
@@ -188,6 +217,7 @@ export class Atmega328PAdapter {
     this.serial = [];
     this.i2c = [];
     this.dht11 = [];
+    this.dht22 = [];
     this.ds18b20 = [];
     this.usartRxSequence = 0;
     this.activeUsartRx = null;
@@ -216,6 +246,11 @@ export class Atmega328PAdapter {
     this.#attachUnsupportedModeMonitors();
     for (const [pin, level] of this.inputLevels) this.#setDigitalPinNow(pin, level, false);
     for (const device of this.dht11Devices.values()) {
+      device.lowStartCycle = null;
+      device.busyUntilCycle = 0;
+      this.#setDigitalPinNow(device.pin, true, false);
+    }
+    for (const device of this.dht22Devices.values()) {
       device.lowStartCycle = null;
       device.busyUntilCycle = 0;
       this.#setDigitalPinNow(device.pin, true, false);
@@ -470,6 +505,7 @@ export class Atmega328PAdapter {
       }
       if (event.type === 'analogue') this.setAnalogChannel(event.channel, event.voltage);
       if (event.type === 'dht11') this.#setDigitalPinNow(event.pin, event.level);
+      if (event.type === 'dht22') this.#setDigitalPinNow(event.pin, event.level);
       if (event.type === 'ds18b20') this.#setDigitalPinNow(event.pin, event.level);
       if (event.type === 'fault-digital-drive') {
         this.inputLevels.set(event.pin, event.level);
@@ -606,6 +642,65 @@ export class Atmega328PAdapter {
       if (startPulseCycles >= DHT11_START_MIN_CYCLES
           && this.cpu.cycles >= device.busyUntilCycle) {
         this.#scheduleDht11Response(device, this.cpu.cycles, startPulseCycles);
+      }
+    }
+  }
+
+  setDht22Environment(componentId, key, value) {
+    const device = this.dht22Devices.get(componentId);
+    const valid = key === 'temperatureC'
+      ? validDht22RuntimeValue(value, -40, 80)
+      : key === 'humidityPercent' && validDht22RuntimeValue(value, 0, 100);
+    if (!device || !valid) throw new TypeError('DHT22_CONTROL');
+    device[key] = value;
+  }
+
+  #scheduleDht22Response(device, releaseCycle, startPulseCycles) {
+    const bytes = dht22RuntimePayload(device.temperatureC, device.humidityPercent);
+    const bits = bytes.flatMap((value) => Array.from({ length: 8 }, (_, index) =>
+      Boolean(value & (1 << (7 - index)))));
+    let cycle = releaseCycle + microsToCycles(20);
+    this.#schedule({ type: 'dht22', cycle, pin: device.pin, level: false });
+    cycle += microsToCycles(80);
+    this.#schedule({ type: 'dht22', cycle, pin: device.pin, level: true });
+    cycle += microsToCycles(80);
+    this.#schedule({ type: 'dht22', cycle, pin: device.pin, level: false });
+    for (const bit of bits) {
+      cycle += microsToCycles(50);
+      this.#schedule({ type: 'dht22', cycle, pin: device.pin, level: true });
+      cycle += microsToCycles(bit ? 70 : 28);
+      this.#schedule({ type: 'dht22', cycle, pin: device.pin, level: false });
+    }
+    cycle += microsToCycles(50);
+    this.#schedule({ type: 'dht22', cycle, pin: device.pin, level: true });
+    device.busyUntilCycle = cycle;
+    boundedPush(this.dht22, {
+      componentId: device.componentId, pin: device.pin, releaseCycle, startPulseCycles,
+      responseStartCycle: releaseCycle + microsToCycles(20), responseEndCycle: cycle,
+      temperatureC: device.temperatureC, humidityPercent: device.humidityPercent,
+      payload: bytes,
+    }, DHT22_TRANSACTION_LIMIT);
+  }
+
+  #monitorDht22() {
+    for (const device of this.dht22Devices.values()) {
+      const [port, bit] = PIN_MAP[device.pin];
+      const config = { B: portBConfig, C: portCConfig, D: portDConfig }[port];
+      const mask = 1 << bit;
+      const hostDrivingLow = Boolean(this.cpu.data[config.DDR] & mask)
+        && !Boolean(this.cpu.data[config.PORT] & mask);
+      if (hostDrivingLow) {
+        if (device.lowStartCycle === null && this.cpu.cycles >= device.busyUntilCycle) {
+          device.lowStartCycle = this.cpu.cycles;
+        }
+        continue;
+      }
+      if (device.lowStartCycle === null) continue;
+      const startPulseCycles = this.cpu.cycles - device.lowStartCycle;
+      device.lowStartCycle = null;
+      if (startPulseCycles >= DHT22_START_MIN_CYCLES
+          && this.cpu.cycles >= device.busyUntilCycle) {
+        this.#scheduleDht22Response(device, this.cpu.cycles, startPulseCycles);
       }
     }
   }
@@ -873,6 +968,7 @@ export class Atmega328PAdapter {
     const traceAfterInstruction = this.trace.length;
     this.cpu.tick();
     this.#monitorDht11();
+    this.#monitorDht22();
     this.#monitorDs18b20();
     const portAfterTick = this.cpu.data[portBConfig.PORT];
     const traceAfterTick = this.trace.length;
@@ -1021,6 +1117,7 @@ export class Atmega328PAdapter {
       serial: this.serial.slice(),
       i2c: this.i2c.map((entry) => ({ ...entry })),
       dht11: this.dht11.map((entry) => ({ ...entry, payload: [...entry.payload] })),
+      dht22: this.dht22.map((entry) => ({ ...entry, payload: [...entry.payload] })),
       ds18b20: this.ds18b20.map((entry) => ({ ...entry,
         ...(entry.scratchpad ? { scratchpad: [...entry.scratchpad] } : {}) })),
       adcReads: this.adcReads.map((entry) => ({ ...entry })),

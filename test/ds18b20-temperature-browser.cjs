@@ -25,6 +25,13 @@ async function discardIfRequired(page) {
   }
 }
 
+async function openInspector(page) {
+  if (!(await page.locator('#toggle-inspector').isVisible())) {
+    await page.locator('#workbench-more > summary').click();
+  }
+  await page.click('#toggle-inspector');
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -94,7 +101,7 @@ async function discardIfRequired(page) {
       assert.equal(await card.locator(`[data-terminal-pin="${pin}"]`).count(), 1, pin);
     }
     await card.click({ force: true });
-    await page.click('#toggle-inspector');
+    await openInspector(page);
     const temperature = page.locator('[data-control="ds18b20-1.temperatureC"]');
     assert.deepEqual(await temperature.evaluate((node) => ({
       min: node.min, max: node.max, step: node.step, value: node.value,
@@ -112,7 +119,7 @@ async function discardIfRequired(page) {
     await page.waitForFunction(() => /TEMP_C=23\.5000 CRC=OK/u.test(
       document.querySelector('#serial-output').textContent), null, { timeout: 20_000 });
 
-    await page.click('#toggle-inspector');
+    await openInspector(page);
     await temperature.evaluate((node) => {
       node.value = '-10.125'; node.dispatchEvent(new Event('input', { bubbles: true }));
     });

@@ -487,6 +487,11 @@ import {
   DHT11_TEMPERATURE_MAX_C, DHT11_TEMPERATURE_MIN_C, DHT11_TYPE,
 } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
 import {
+  DHT22_HUMIDITY_MAX_PERCENT, DHT22_HUMIDITY_MIN_PERCENT,
+  DHT22_TEMPERATURE_MAX_C, DHT22_TEMPERATURE_MIN_C, DHT22_TYPE,
+  DHT22_VALUE_STEP,
+} from '../expansion-drafts/dht22-temperature-humidity-v1.mjs';
+import {
   DS18B20_TEMPERATURE_MAX_C,
   DS18B20_TEMPERATURE_MIN_C,
   DS18B20_TEMPERATURE_STEP_C,
@@ -620,7 +625,7 @@ const elements = Object.fromEntries([
   'counterexample-reduce', 'counterexample-reduction-summary',
   'fault-suite-load', 'fault-suite-replay', 'fault-suite-summary',
   'starter-examples', 'starter-gallery', 'quick-controls', 'workbench-workspace', 'project-bar',
-  'beginner-primary', 'beginner-run', 'beginner-runtime-toggle', 'beginner-dht11', 'beginner-examples', 'beginner-scratch', 'beginner-source', 'beginner-status', 'workbench-more',
+  'beginner-primary', 'beginner-run', 'beginner-runtime-toggle', 'beginner-dht11', 'beginner-dht22', 'beginner-examples', 'beginner-scratch', 'beginner-source', 'beginner-status', 'workbench-more',
   'build-list-export', 'build-list-status', 'accessible-svg-export', 'accessible-svg-status',
   'project-navigation', 'project-navigation-query', 'project-navigation-status', 'project-navigation-results',
   'family-select', 'board-select', 'controller-status', 'toolchain-boundary',
@@ -13106,7 +13111,7 @@ function renderComponentSupportMatrix() {
   const summary = componentSupportSummary(profile.id);
   elements.componentsupportsummary.textContent = `${summary.available} of ${summary.total} models available · ${summary.simulated} Simulated · ${summary.partial} Partial · ${summary.unavailable} Unavailable`;
   elements.componentsupportmode.textContent = profile.id === AVR_PROFILE
-    ? 'Ordinary AVR project-v2 exposes 6 executable models. Candidate-v3 exposes all 64 executable AVR models—40 Simulated and 24 Partial—plus 15 Visual authoring-only models.'
+    ? 'Ordinary AVR project-v2 exposes 6 executable models. Candidate-v3 exposes all 65 executable AVR models—41 Simulated and 24 Partial—plus 15 Visual authoring-only models.'
     : 'This bounded profile exposes exactly 3 available entries: its fixed Partial controller, plus the Simulated resistor and LED. Other models are unavailable and are never silently substituted.';
   const cells = COMPONENT_SUPPORT_CELLS.filter((cell) => cell.profile === profile.id);
   const rows = COMPONENT_SUPPORT_MODELS.map((model) => {
@@ -13273,6 +13278,7 @@ function candidateComponentPrefix(type) {
       [CHARACTER_LCD_20X4_TYPE]: 'character-lcd-20x4',
       [PCF8574_LCD_TYPE]: 'pcf8574-lcd',
       [DHT11_TYPE]: 'dht11',
+      [DHT22_TYPE]: 'dht22',
       [DS18B20_TYPE]: 'ds18b20',
       [ROTARY_ENCODER_TYPE]: 'rotary-encoder',
       [NONPOLAR_CAPACITOR_TYPE]: 'capacitor',
@@ -13365,6 +13371,7 @@ function addComponent(type, point = null) {
       [CHARACTER_LCD_20X4_TYPE]: { x: 0.7, y: 0.62 },
       [ROTARY_ENCODER_TYPE]: { x: 0.72, y: 0.64 },
       [DHT11_TYPE]: { x: 0.75, y: 0.7 },
+      [DHT22_TYPE]: { x: 0.75, y: 0.7 },
       [DS18B20_TYPE]: { x: 0.74, y: 0.7 },
       [NONPOLAR_CAPACITOR_TYPE]: { x: 0.56, y: 0.2 },
       [ELECTROLYTIC_CAPACITOR_TYPE]: { x: 0.7, y: 0.2 },
@@ -14036,6 +14043,38 @@ function renderRuntimeControls() {
           }
           const result = applyEditor(prepared.command,
             `${component.label} ${control.label.toLocaleLowerCase()} ${value} ${control.unit}`);
+          if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+        });
+        row.append(label, input); return row;
+      });
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === DHT22_TYPE) {
+      const definitions = [
+        { key: 'temperatureC', label: 'Temperature', unit: '°C',
+          min: DHT22_TEMPERATURE_MIN_C, max: DHT22_TEMPERATURE_MAX_C,
+          aria: 'simulated DHT22 temperature in degrees Celsius' },
+        { key: 'humidityPercent', label: 'Humidity', unit: '% RH',
+          min: DHT22_HUMIDITY_MIN_PERCENT, max: DHT22_HUMIDITY_MAX_PERCENT,
+          aria: 'simulated DHT22 relative humidity percent' },
+      ];
+      return definitions.map((control) => {
+        const row = document.createElement('div'); const label = document.createElement('label');
+        label.textContent = `${component.label} · ${control.label} ${component.controls[control.key].toFixed(1)} ${control.unit}`;
+        const input = document.createElement('input'); input.type = 'range';
+        input.step = String(DHT22_VALUE_STEP);
+        input.min = String(control.min); input.max = String(control.max);
+        input.value = String(component.controls[control.key]);
+        input.dataset.control = `${component.id}.${control.key}`;
+        input.id = `control-${component.id}-${control.key}`; label.htmlFor = input.id;
+        input.setAttribute('aria-label', `${component.label} ${control.aria}, ${control.min} to ${control.max}`);
+        input.addEventListener('input', () => {
+          const value = Number(input.value);
+          const prepared = selectedCandidateContactControl(component.id, control.key, value);
+          if (!prepared.ok) {
+            showActionableError(elements.projectmessage, prepared.code, 'DHT22 control rejected.'); return;
+          }
+          const result = applyEditor(prepared.command,
+            `${component.label} ${control.label.toLocaleLowerCase()} ${value.toFixed(1)} ${control.unit}`);
           if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
         });
         row.append(label, input); return row;
@@ -14828,6 +14867,13 @@ async function loadArtifact(hex, artifactIdentity, {
         temperatureC: item.runtimeProjection.temperatureC,
         humidityPercent: item.runtimeProjection.humidityPercent,
       })) : [],
+    dht22Devices: editor.kind === 'candidate-project-v3'
+      ? editor.runtimeSupport.filter((item) => item.type === DHT22_TYPE).map((item) => ({
+        type: 'dht22', componentId: item.componentId,
+        pin: item.runtimeProjection.boardPinNumber,
+        temperatureC: item.runtimeProjection.temperatureC,
+        humidityPercent: item.runtimeProjection.humidityPercent,
+      })) : [],
     ds18b20Devices: editor.kind === 'candidate-project-v3'
       ? editor.runtimeSupport.filter((item) => item.type === DS18B20_TYPE).map((item) => ({
         type: 'ds18b20', componentId: item.componentId,
@@ -15110,6 +15156,7 @@ async function loadArtifact(hex, artifactIdentity, {
     digitalInputs: frozen.digitalInputs,
     i2cDevices: frozen.i2cDevices,
     dht11Devices: frozen.dht11Devices,
+    dht22Devices: frozen.dht22Devices,
     ds18b20Devices: frozen.ds18b20Devices,
     instruments: {
       logicChannels: frozen.instruments.logicChannels,
@@ -16331,16 +16378,18 @@ function loadExampleProject(exampleId, reason = 'project.demo', { firmwareVarian
 
 function renderStarterExamples() {
   const availableExamples = [...exampleCatalog(), TEMPERATURE_LCD_THRESHOLD_CARD, PCF8574_LCD_HELLO_CARD, THERMOSTAT_EXPERIMENT_CARD, ...avrReferenceStarterCatalog()];
+  const dht22Example = availableExamples.find((example) => example.id === 'avr-dht22-temperature-humidity');
   const dht11Example = availableExamples.find((example) => example.id === 'avr-dht11-temperature-humidity');
   const ds18b20Example = availableExamples.find((example) => example.id === 'avr-ds18b20-temperature');
   const trafficLightExample = availableExamples.find((example) => example.id === 'avr-traffic-light');
   const examples = [
     availableExamples.find((example) => example.id === 'blink'),
+    dht22Example,
     dht11Example,
     ds18b20Example,
     trafficLightExample,
     ...availableExamples.filter((example) => ![
-      'blink', 'avr-dht11-temperature-humidity', 'avr-ds18b20-temperature', 'avr-traffic-light',
+      'blink', 'avr-dht22-temperature-humidity', 'avr-dht11-temperature-humidity', 'avr-ds18b20-temperature', 'avr-traffic-light',
     ].includes(example.id)),
   ].filter(Boolean);
   const cards = examples.map((example) => {
@@ -16349,8 +16398,10 @@ function renderStarterExamples() {
     const meta = document.createElement('span'); meta.className = 'starter-meta';
     const focus = document.createElement('span'); focus.className = 'starter-focus'; focus.textContent = example.focus;
     const difficulty = document.createElement('span'); difficulty.className = 'starter-difficulty';
-    difficulty.textContent = example.id === 'avr-dht11-temperature-humidity'
+    difficulty.textContent = example.id === 'avr-dht22-temperature-humidity'
       ? 'New digital sensor'
+      : example.id === 'avr-dht11-temperature-humidity'
+        ? 'Digital sensor'
       : example.id === 'avr-ds18b20-temperature'
         ? 'Next digital sensor'
       : ['blink', 'button', 'adc'].includes(example.id) ? 'Beginner' : 'Next step';
@@ -16459,6 +16510,23 @@ function startDht11FromSimpleView() {
   })) return;
   install();
 }
+function startDht22FromSimpleView() {
+  if (selectedCompilerProfile !== AVR_PROFILE) {
+    elements.beginnerstatus.textContent = 'DHT22 is currently executable on AVR. Select ATmega328P, then choose New: DHT22 sensor.';
+    return;
+  }
+  const install = () => {
+    const result = loadExampleProject('avr-dht22-temperature-humidity', 'project.beginner-dht22');
+    if (result?.ok) {
+      elements.beginnerstatus.textContent = 'DHT22 loaded · choose Run project, then adjust decimal temperature and humidity in Inspector.';
+      document.querySelector('#active-canvas-stage')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+  if (requestUnsavedChangeGuard({
+    profile: AVR_PROFILE, actionLabel: 'loading DHT22 decimal temperature and humidity', continueAction: install,
+  })) return;
+  install();
+}
 const MINIMAL_LED_SOURCE = `void setup() {
   pinMode(13, OUTPUT);
 }
@@ -16523,6 +16591,7 @@ async function runBeginnerProject() {
   }
 }
 elements.beginnerdht11.addEventListener('click', startDht11FromSimpleView);
+elements.beginnerdht22.addEventListener('click', startDht22FromSimpleView);
 elements.beginnerexamples.addEventListener('click', openExamplePicker);
 elements.beginnerruntimetoggle.addEventListener('click', () => {
   if (elements.beginnerruntimetoggle.dataset.state === 'paused') elements.quickrun.click();

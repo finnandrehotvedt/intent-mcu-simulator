@@ -5,7 +5,7 @@
 Canonical application: https://lab.teachthecompany.com/
 Source and setup: https://github.com/finnandrehotvedt/intent-mcu-simulator
 Licence: Apache-2.0 for project-owned source; third-party components keep their own terms.
-Current source release: 1.1.0-rc.145
+Current source release: 1.1.0-rc.146
 Machine-readable release changes: /release-changes.json (strict static
 intent-mcu-release-changes@1 metadata; no Apply, Build, Run, replay or verdict authority).
 Offline support matrix: /offline-support-matrix.json (strict static
@@ -25,17 +25,17 @@ ADC, PWM, UART, timer, interrupt, language, header and library boundaries.
 Current trustworthy build diagnostics can navigate to source; stale or unknown
 locations remain readable and inert.
 
-Component support: /components.html contains the exact 86-model by 4-profile
+Component support: /components.html contains the exact 87-model by 4-profile
 matrix. It distinguishes Simulated, Partial, authoring-only and Unavailable
 cells, retains the AVR project-v2 versus candidate-v3 boundary, and never
 treats one controller's board or parts as interchangeable with another profile.
 
 ## Supported public workflow
 
-- Start with an empty project, one of twenty-two ready-made AVR examples, or either paired UART/LED example on each bounded Pico, ESP32-C3 and STM32 profile.
+- Start with an empty project, one of twenty-three ready-made AVR examples, or either paired UART/LED example on each bounded Pico, ESP32-C3 and STM32 profile.
 - The thermostat starter compiles the visible source and runs four reset-isolated virtual-time scenarios: below, equal, above and disabled. Pass requires executed D13, matching UART and complete ordered input evidence; its known-bad equality variant must fail exactly at 30 C.
 - The partial X49 instrument compares only the exact AVR thermostat baseline 0 with candidate +1 C through one explicit temporary same-origin build and two fresh dedicated workers. Other offsets are calculated previews only. Accepted evidence is transient and retires on authority drift; physical evidence is absent.
-- In the general AVR editor, choose among 64 executable models plus 15 authoring-only symbols and connect compatible named pin anchors manually. The DHT11 timed protocol sensor and DS18B20 OneWire temperature sensor are executable only on AVR.
+- In the general AVR editor, choose among 65 executable models plus 15 authoring-only symbols and connect compatible named pin anchors manually. The DHT11 and DHT22 timed protocol sensors and DS18B20 OneWire temperature sensor are executable only on AVR.
 - Representable named-rail shorts, known output contention, supply-role mismatch, ground, polarity, resistance and bounded ideal-current faults fail closed with corrective actions. Arbitrary circuit solving and physical-safety claims are excluded.
 - Edit source and compile it through the isolated, fixed AVR toolchain.
 - Load and run the accepted artifact in the deterministic virtual MCU worker.

@@ -2,6 +2,19 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.146 — 2026-10-27
+
+- Adds an AVR-only DHT22 component with original VCC/DATA/GND artwork and
+  independent signed decimal temperature and relative-humidity controls.
+- Executes the timed five-byte DHT22 response and checksum through compiled
+  AVR firmware on D5, including negative temperature values.
+- Makes the DHT22 lesson directly visible in the ordinary Simple view and
+  first page of examples while keeping the cross-profile DHT11 drawer feature.
+- Preserves canonical Save/Open behavior and clears stale runtime authority.
+- Keeps DHT22 unavailable on Pico, ESP32-C3 and STM32 until those profiles own
+  tested runtimes, while preserving the same AVR-style Parts drawer.
+- This is a source candidate only; no public deployment is part of this change.
+
 ## 1.1.0-rc.145 — 2026-10-27
 
 - Shows the same DHT11 feature artwork and Open example action in the shared

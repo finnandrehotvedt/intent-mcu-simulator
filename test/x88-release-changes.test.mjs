@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 binds the DHT11 cross-profile Open example repair to coherent rc145 bytes', async () => {
+test('X88 binds the AVR DHT22 source candidate to coherent rc146 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.145');
+  assert.equal(release.version, '1.1.0-rc.146');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,12 +38,12 @@ test('X88 binds the DHT11 cross-profile Open example repair to coherent rc145 by
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.144', current: '1.1.0-rc.145' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.145', current: '1.1.0-rc.146' });
   assert.deepEqual(value.changes, [
     {
       id: 'X72', classification: 'additive', capabilities: ['intent-mcu-example-progression@1'],
       contracts: ['x72-example-progression-v1'],
-      summary: 'Restores the DHT11 Open example action in the shared Parts drawer for AVR, Pico, ESP32-C3 and STM32, switches safely to AVR, and preserves parked profile drafts and the unsaved AVR guard.',
+      summary: 'Adds a directly discoverable AVR DHT22 lesson with original artwork, independent signed decimal temperature and humidity controls, timed five-byte protocol execution, checksum-validated Serial output, and canonical Save/Open.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -106,7 +106,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.145');
+  assert.equal(discovery.identity.version, '1.1.0-rc.146');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);

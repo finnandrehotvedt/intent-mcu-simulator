@@ -1022,7 +1022,8 @@ button:disabled, select:disabled { opacity: .42; }
 .catalog-release-feature-artwork { display: grid; grid-row: 1 / span 2; place-items: center; width: 62px; height: 68px; overflow: hidden; border: 1px solid #456d2d; border-radius: 8px; background: #091b29; }
 .catalog-release-feature-artwork .component-artwork,
 .catalog-release-feature-artwork .traffic-light-artwork,
-.catalog-release-feature-artwork .dht11-artwork { width: 58px; height: 64px; object-fit: contain; }
+.catalog-release-feature-artwork .dht11-artwork,
+.catalog-release-feature-artwork .dht22-artwork { width: 58px; height: 64px; object-fit: contain; }
 .catalog-release-feature-copy { display: grid; min-width: 0; gap: 2px; }
 .catalog-release-feature-copy strong { font-size: .8rem; }
 .catalog-release-feature-copy small { color: var(--muted); font-size: .64rem; line-height: 1.35; }
