@@ -43,7 +43,7 @@ async function geometry(page, viewport, profile) {
     const primaryControls = [
       '#family-select', '#board-select', '#beginner-run', '#beginner-examples',
       '#beginner-scratch', '#toggle-catalog', '#quick-build', '#quick-run',
-      '#quick-pause', '#quick-reset', '#quick-stop', '#runtime-shortcuts',
+      '#quick-pause', '#quick-reset', '#quick-stop', '#quick-shortcuts', '#runtime-shortcuts',
     ].map((selector) => {
       const rect = document.querySelector(selector).getBoundingClientRect();
       return { selector, ...intersection(rect), top: rect.top, bottom: rect.bottom };

@@ -618,7 +618,7 @@ const elements = Object.fromEntries([
   'editor-title', 'source-file', 'source-file-name', 'source-file-add', 'source-file-remove',
   'lifecycle-state', 'technical-error', 'technical-error-detail', 'delete-branch',
   'example-select', 'example-picker-dialog', 'example-picker-close', 'example-picker-search', 'example-picker-status',
-  'walkthrough-open', 'top-get-started', 'help-get-started', 'walkthrough', 'recovery-export', 'quick-state', 'quick-build', 'quick-run', 'quick-pause', 'quick-reset', 'quick-stop',
+  'walkthrough-open', 'top-get-started', 'help-get-started', 'walkthrough', 'recovery-export', 'quick-state', 'quick-build', 'quick-run', 'quick-pause', 'quick-reset', 'quick-stop', 'quick-shortcuts',
   'unsaved-change-dialog', 'unsaved-change-title', 'unsaved-change-description', 'unsaved-change-status',
   'unsaved-keep', 'unsaved-download', 'unsaved-discard',
   'toggle-catalog', 'toggle-inspector', 'catalog-resizer', 'inspector-resizer', 'show-pin-labels', 'focus-canvas', 'fullscreen-canvas',
@@ -16077,6 +16077,7 @@ function openKeyboardShortcutEditor() {
 }
 
 elements.shortcutsettingsopen.addEventListener('click', openKeyboardShortcutEditor);
+elements.quickshortcuts.addEventListener('click', openKeyboardShortcutEditor);
 elements.shortcutsettingsclose.addEventListener('click', () => elements.shortcutsettingsdialog.close());
 elements.shortcutsettingsdialog.addEventListener('cancel', (event) => {
   event.preventDefault(); elements.shortcutsettingsdialog.close();

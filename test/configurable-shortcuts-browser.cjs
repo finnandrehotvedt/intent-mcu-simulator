@@ -80,10 +80,11 @@ function staticServer() {
       await page.locator('#walkthrough button').last().click();
     }
     assert.equal(await page.locator('#shortcut-settings-open').isVisible(), true);
+    assert.equal(await page.locator('#quick-shortcuts').isVisible(), true);
     assert.equal(await page.locator('#quick-build').getAttribute('data-shortcut'), 'B');
     assert.equal(await page.locator('#quick-run').getAttribute('data-shortcut'), 'F5');
 
-    await page.click('#shortcut-settings-open');
+    await page.click('#quick-shortcuts');
     assert.equal(await page.locator('#shortcut-settings-dialog').evaluate((dialog) => dialog.open), true);
     assert.equal(await page.locator('#shortcut-command-search-count').textContent(), '6 of 6 commands shown');
     await page.fill('#shortcut-command-search', 'stop');
