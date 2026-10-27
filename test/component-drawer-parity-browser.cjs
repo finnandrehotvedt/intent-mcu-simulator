@@ -15,7 +15,7 @@ const output = process.env.COMPONENT_DRAWER_OUTPUT || '/tmp/component-drawer-par
   const browser = await chromium.launch({ headless: true });
   const errors = []; const builds = []; const outside = [];
   try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const page = await browser.newPage({ viewport: { width: 1024, height: 768 } });
     page.setDefaultTimeout(60_000);
     await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
     await page.route('**/api/page-views', (route) => route.fulfill({
@@ -36,6 +36,8 @@ const output = process.env.COMPONENT_DRAWER_OUTPUT || '/tmp/component-drawer-par
     await page.waitForFunction(() => window.__M11_READY__ === true);
 
     assert.equal(await page.locator('#simple-parts-drawer').getAttribute('aria-hidden'), 'true');
+    assert.equal(await page.locator('#simple-parts-drawer').getAttribute('role'), 'dialog');
+    assert.equal(await page.locator('#simple-parts-drawer').getAttribute('aria-modal'), 'false');
     assert.equal(await page.locator('#toggle-catalog').isVisible(), true);
     await page.click('#toggle-catalog');
     await page.waitForSelector('#simple-parts-drawer.is-open');
@@ -90,6 +92,8 @@ const output = process.env.COMPONENT_DRAWER_OUTPUT || '/tmp/component-drawer-par
       if (!avrRowStyle) avrRowStyle = rowStyle; else assert.deepEqual(rowStyle, avrRowStyle, `${profile}: card style drifted from AVR`);
       assert.equal(rowStyle.display, 'grid'); assert(rowStyle.height >= 68, profile);
       assert.equal(await picker.locator('.catalog-favourite').isVisible(), true, profile);
+      const drawerBox = await page.locator('#simple-parts-drawer').boundingBox();
+      assert(drawerBox && drawerBox.x >= 0 && drawerBox.width <= 1024, `${profile}: drawer exceeds 1024 px viewport`);
 
       await picker.locator('[data-picker-role="search"]').fill('definitely-no-component');
       assert.equal(await picker.locator('[data-picker-role="empty"]').isVisible(), true, profile);
@@ -97,13 +101,19 @@ const output = process.env.COMPONENT_DRAWER_OUTPUT || '/tmp/component-drawer-par
       assert.equal(await picker.locator('[data-picker-role="search"]').inputValue(), '', profile);
     }
 
+    await page.locator('#simple-parts-drawer').press('Escape');
+    await page.waitForFunction(() => document.querySelector('#simple-parts-drawer').getAttribute('aria-hidden') === 'true');
+    assert.equal(await page.locator('#toggle-catalog').getAttribute('aria-expanded'), 'false');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'toggle-catalog');
+
     fs.mkdirSync(path.dirname(output), { recursive: true });
     await page.screenshot({ path: output, fullPage: false });
     assert.deepEqual(errors, []);
     assert.deepEqual(builds, []);
     assert.deepEqual(outside, []);
     process.stdout.write(`${JSON.stringify({ ok: true, profiles: 4, dht11Feature: true,
-      contract: 'intent-mcu-avr-catalog-picker@1', structureParity: true, cardStyleParity: true, screenshot: output })}\n`);
+      contract: 'intent-mcu-avr-catalog-picker@1', structureParity: true, cardStyleParity: true,
+      viewportWidth: 1024, nonModalDialog: true, escapeFocusReturn: true, screenshot: output })}\n`);
   } finally {
     await browser.close();
   }
