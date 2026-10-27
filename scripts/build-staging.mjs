@@ -42,6 +42,7 @@ await mkdir(new URL('api/session/v1/', dist), { recursive: true });
 await Promise.all([
   cp(new URL('../staging/index.html', import.meta.url), new URL('index.html', dist)),
   cp(new URL('../staging/styles.css', import.meta.url), new URL('styles.css', dist)),
+  cp(new URL('../staging/shortcut-command-search.mjs', import.meta.url), new URL('shortcut-command-search.js', dist)),
   cp(new URL('../staging/icon.svg', import.meta.url), new URL('icon.svg', dist)),
   cp(new URL('../staging/social-card.png', import.meta.url), new URL('social-card.png', dist)),
   cp(new URL('../staging/robots.txt', import.meta.url), new URL('robots.txt', dist)),

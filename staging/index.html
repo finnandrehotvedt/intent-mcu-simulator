@@ -1104,14 +1104,15 @@
   <dialog id="shortcut-settings-dialog" class="shortcut-settings-dialog" aria-labelledby="shortcut-settings-title">
     <header><div><p class="eyebrow">LOCAL KEYBOARD CONTROLS</p><h2 id="shortcut-settings-title" tabindex="-1">Customize shortcuts</h2></div><button id="shortcut-settings-close" type="button">Close</button></header>
     <p>Choose one letter, number, F5, or the same key with Shift. Shortcuts never run while you type in source, search, Serial, or a value field.</p>
+    <div class="shortcut-command-search"><label for="shortcut-command-search">Find a command or key</label><div><input id="shortcut-command-search" type="search" autocomplete="off" placeholder="Try Build, Stop, F5 or sequence"><button id="shortcut-command-search-clear" type="button" hidden>Clear</button></div><span id="shortcut-command-search-count" role="status">6 of 6 commands shown</span></div>
     <div class="shortcut-binding-list">
-      <label>Build <input id="shortcut-key-build" data-shortcut-action="build" type="text" readonly autocomplete="off" value="B"><small>Visible Build button</small></label>
-      <label>Run <input id="shortcut-key-run" data-shortcut-action="run" type="text" readonly autocomplete="off" value="F5"><small>Visible Run button</small></label>
-      <label>Pause / resume <input id="shortcut-key-pause" data-shortcut-action="pause" type="text" readonly autocomplete="off" value="P"><small>Only when available</small></label>
-      <label>Reset <input id="shortcut-key-reset" data-shortcut-action="reset" type="text" readonly autocomplete="off" value="Not assigned"><small>Only when available</small></label>
-      <label>Stop <input id="shortcut-key-stop" data-shortcut-action="stop" type="text" readonly autocomplete="off" value="Shift+F5"><small>Also cancels a sequence</small></label>
+      <label data-command-search="Build compile firmware B">Build <input id="shortcut-key-build" data-shortcut-action="build" type="text" readonly autocomplete="off" value="B"><small>Visible Build button</small></label>
+      <label data-command-search="Run start interact F5">Run <input id="shortcut-key-run" data-shortcut-action="run" type="text" readonly autocomplete="off" value="F5"><small>Visible Run button</small></label>
+      <label data-command-search="Pause resume continue P">Pause / resume <input id="shortcut-key-pause" data-shortcut-action="pause" type="text" readonly autocomplete="off" value="P"><small>Only when available</small></label>
+      <label data-command-search="Reset restart not assigned">Reset <input id="shortcut-key-reset" data-shortcut-action="reset" type="text" readonly autocomplete="off" value="Not assigned"><small>Only when available</small></label>
+      <label data-command-search="Stop end cancel Shift F5">Stop <input id="shortcut-key-stop" data-shortcut-action="stop" type="text" readonly autocomplete="off" value="Shift+F5"><small>Also cancels a sequence</small></label>
     </div>
-    <section class="shortcut-sequence-editor" aria-labelledby="shortcut-sequence-title">
+    <section class="shortcut-sequence-editor" data-command-search="Sequence Build Run automation wait success" aria-labelledby="shortcut-sequence-title">
       <h3 id="shortcut-sequence-title">Bounded sequence</h3>
       <label class="shortcut-sequence-enabled"><input id="shortcut-sequence-enabled" type="checkbox"> Enable <strong>Build → wait for success → Run</strong></label>
       <label>Sequence key <input id="shortcut-key-sequence" data-shortcut-action="sequence" type="text" readonly autocomplete="off" value="Not assigned"></label>
@@ -1305,6 +1306,7 @@
     <p><button id="x81-assessment-save" type="button" disabled>Save assessment</button> <button id="x81-assessment-clear" type="button">Clear assessment</button></p>
   </dialog>
   <script type="module" src="./browser-session-owner.js"></script>
+  <script type="module" src="./shortcut-command-search.js"></script>
   <script type="module" src="./main.js"></script>
 </body>
 </html>

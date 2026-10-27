@@ -85,6 +85,14 @@ function staticServer() {
 
     await page.click('#shortcut-settings-open');
     assert.equal(await page.locator('#shortcut-settings-dialog').evaluate((dialog) => dialog.open), true);
+    assert.equal(await page.locator('#shortcut-command-search-count').textContent(), '6 of 6 commands shown');
+    await page.fill('#shortcut-command-search', 'stop');
+    assert.equal(await page.locator('[data-command-search]:visible').count(), 1);
+    assert.equal(await page.locator('#shortcut-key-stop').isVisible(), true);
+    assert.equal(await page.locator('#quick-build').isVisible(), true);
+    assert.equal(await page.locator('#quick-run').isVisible(), true);
+    await page.click('#shortcut-command-search-clear');
+    assert.equal(await page.locator('[data-command-search]:visible').count(), 6);
     await page.locator('#shortcut-key-build').focus(); await page.keyboard.press('k');
     await page.locator('#shortcut-key-run').focus(); await page.keyboard.press('k');
     assert.match(await page.locator('#shortcut-settings-status').textContent(), /conflicts between build and run/iu);
@@ -207,6 +215,7 @@ function staticServer() {
     assert.deepEqual(errors, []);
     process.stdout.write(`${JSON.stringify({ result: 'pass', configurableActions: 5,
       conflictRejected: true, textInputSuppressed: true, localPersistence: true,
+      searchableCommands: true, primaryControlsRemainVisible: true,
       exactSchemaExport: true, rejectedImportUnchanged: true, importedDraftInactive: true,
       oversizedImportRejected: true,
       sequenceBuildThenRun: true, escapeCancellation: true, resetDefaults: true,
