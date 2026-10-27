@@ -43,7 +43,7 @@ test('X88 binds the configurable-shortcut source candidate to coherent rc149 byt
     {
       id: 'X59', classification: 'changed', capabilities: ['intent-mcu-shared-workbench-view@1'],
       contracts: ['x59-four-profile-simple-advanced-view-v1'],
-      summary: 'Keeps Build, Run, Pause, Reset and Stop visible; Run enters locked Interact automatically; selected AVR controls expose value bounds plus fixed keyboard operation; Stop returns to Edit.',
+      summary: 'Adds visible local shortcut customization for Build, Run, Pause, Reset and Stop with conflict control, active key labels, default reset and one bounded Build-to-Run sequence that cancels on Stop, Esc, failure or timeout.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -114,7 +114,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   assert.equal('releaseChanges' in discovery, false);
   const baselineProjection = clone(discovery);
   baselineProjection.identity.version = '1.1.0-rc.81';
-  assert.equal(sha256(JSON.stringify(baselineProjection)), '4540dc88dd055e9a7c2c828f27e995f4dea251c876dbc0cb80f937bbaa9ad728');
+  assert.equal(sha256(JSON.stringify(baselineProjection)), '29103c028162dbbb23e7afe5267e63ea63990e04fec698205d8941e15f6babd1');
 });
 
 test('HTML, llms and Support discover the same static file without adding a public API', async () => {
