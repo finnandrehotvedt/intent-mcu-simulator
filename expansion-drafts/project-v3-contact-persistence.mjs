@@ -74,6 +74,12 @@ import {
   validateAnalogueMoistureLevelSensor,
 } from './analogue-moisture-level-sensors-v1.mjs';
 import {
+  ANALOGUE_DETECTION_DEFINITIONS,
+  analogueDetectionRatio,
+  projectAnalogueDetectionSensors,
+  validateAnalogueDetectionSensor,
+} from './analogue-detection-sensors-v1.mjs';
+import {
   DIGITAL_LIGHT_THRESHOLD_DEFINITION,
   DIGITAL_LIGHT_THRESHOLD_TYPE,
   projectDigitalLightThresholdModules,
@@ -216,6 +222,7 @@ function pinIds(component) {
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
+  if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) return ['VCC', 'GND', 'AOUT'];
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return ['VCC', 'GND', 'DOUT'];
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
@@ -245,6 +252,7 @@ function componentPins(component) {
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE) return LIGHT_ANALOGUE_SENSOR_DEFINITION.pins;
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.pins;
   if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) return ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type].pins;
+  if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) return ANALOGUE_DETECTION_DEFINITIONS[component.type].pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].pins;
@@ -306,6 +314,10 @@ function validateCandidateComponent(component) {
   } else if (ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type]) {
     if (!validateAnalogueMoistureLevelSensor(component)) {
       fail('PROJECT_CONTACT_ANALOGUE_MOISTURE_LEVEL_SENSOR_STATE', [component.id]);
+    }
+  } else if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) {
+    if (!validateAnalogueDetectionSensor(component)) {
+      fail('PROJECT_CONTACT_ANALOGUE_DETECTION_SENSOR_STATE', [component.id]);
     }
   } else if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
     if (!validateDigitalLightThresholdComponent(component)) {
@@ -793,7 +805,23 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
     }
   }
-  const thresholdProjection = projectDigitalLightThresholdModules(moistureLevelProjection.runtimeGraph);
+  const detectionProjection = projectAnalogueDetectionSensors(moistureLevelProjection.runtimeGraph);
+  if (!detectionProjection.ok) {
+    fail(`PROJECT_CONTACT_${detectionProjection.code}`, detectionProjection.details);
+  }
+  contacts.push(...detectionProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { ratio: sensor.ratio, voltage: sensor.voltage },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of detectionProjection.sensors) {
+    const expected = production(implementation, sensor.type, { ratio: sensor.ratio }, [sensor.componentId]);
+    if (expected.ratio !== sensor.ratio || expected.outputVolts !== sensor.voltage) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const thresholdProjection = projectDigitalLightThresholdModules(detectionProjection.runtimeGraph);
   if (!thresholdProjection.ok) {
     fail(`PROJECT_CONTACT_${thresholdProjection.code}`, thresholdProjection.details);
   }
@@ -1036,6 +1064,14 @@ function draftContacts(graph) {
         componentId: component.id,
         type: component.type,
         state: { ratio: analogueMoistureLevelRatio(component) },
+        runtimeProjection: null,
+      }];
+    }
+    if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { ratio: analogueDetectionRatio(component) },
         runtimeProjection: null,
       }];
     }

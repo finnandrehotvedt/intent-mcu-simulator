@@ -88,6 +88,18 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     waterLevelRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
       unit: 'ratio', mutability: 'authored' },
   },
+  'sensor.rain-analogue-v1': {
+    wetnessRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
+      unit: 'ratio', mutability: 'authored' },
+  },
+  'sensor.sound-level-analogue-v1': {
+    soundLevelRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
+      unit: 'ratio', mutability: 'authored' },
+  },
+  'sensor.flame-analogue-v1': {
+    flameIntensityRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0.5,
+      unit: 'ratio', mutability: 'authored' },
+  },
   'sensor.light-threshold-digital-v1': {
     lightLevelPercent: { kind: 'number', minimum: 0, maximum: 100, default: 40,
       unit: '%', mutability: 'authored' },

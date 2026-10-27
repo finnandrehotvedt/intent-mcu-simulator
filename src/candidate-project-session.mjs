@@ -63,6 +63,9 @@ import { DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS, IR_OBSTACLE_SENSOR_TYPE,
 import { ANALOGUE_MOISTURE_LEVEL_DEFINITIONS, ANALOGUE_WATER_LEVEL_TYPE,
   CAPACITIVE_SOIL_MOISTURE_TYPE, RESISTIVE_SOIL_MOISTURE_TYPE,
 } from '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs';
+import { ANALOGUE_DETECTION_DEFINITIONS, FLAME_ANALOGUE_TYPE, RAIN_ANALOGUE_TYPE,
+  SOUND_LEVEL_ANALOGUE_TYPE,
+} from '../expansion-drafts/analogue-detection-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
 export const CANDIDATE_EDITOR_HISTORY_LIMIT = 64;
@@ -88,6 +91,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
   IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
   RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
+  RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
 ]);
 
 function validPoint(value) {
@@ -212,6 +216,8 @@ function contactSupport(result) {
             ? 'potentiometer.linear-v1'
           : ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[contact.type]
             ? 'potentiometer.linear-v1-ideal-analogue-sensor-adapter'
+          : ANALOGUE_DETECTION_DEFINITIONS[contact.type]
+            ? 'potentiometer.linear-v1-ideal-analogue-sensor-adapter'
           : contact.type === DIGITAL_LIGHT_THRESHOLD_TYPE
             ? 'button.momentary-v1'
         : contact.type === COMMON_CATHODE_RGB_LED_TYPE
@@ -271,6 +277,8 @@ function contactSupport(result) {
         ? 'Ideal linear -50 to 150 °C module signal only; no physical-sensor accuracy or thermal response is modelled.'
         : ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[contact.type]
         ? 'Ideal linear 0–5 V environment-module signal only; no calibrated soil, liquid, geometry, material or response-time accuracy is modelled.'
+        : ANALOGUE_DETECTION_DEFINITIONS[contact.type]
+        ? 'Ideal linear 0–5 V detector-module signal only; no rainfall, sound-pressure, flame-safety, geometry, spectral or response-time accuracy is modelled.'
         : contact.type === LIGHT_ANALOGUE_SENSOR_TYPE
         ? 'Ideal linear 0–5 V module signal only; no lux accuracy or physical LDR response is modelled.'
         : contact.type === SPDT_CONTACT_TYPE
@@ -947,6 +955,18 @@ export class CandidateEditorSession {
             if (command.key !== expectedKey || !Number.isFinite(command.value)
                 || command.value < 0 || command.value > 1) {
               return failure('PROJECT_CONTACT_ANALOGUE_MOISTURE_LEVEL_SENSOR_STATE', this.revision);
+            }
+            const evaluated = this.evaluateModel(component.type, { ratio: command.value });
+            if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);
+            component.controls[expectedKey] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) {
+            const expectedKey = ANALOGUE_DETECTION_DEFINITIONS[component.type].controlKeys[0];
+            if (command.key !== expectedKey || !Number.isFinite(command.value)
+                || command.value < 0 || command.value > 1) {
+              return failure('PROJECT_CONTACT_ANALOGUE_DETECTION_SENSOR_STATE', this.revision);
             }
             const evaluated = this.evaluateModel(component.type, { ratio: command.value });
             if (!evaluated.ok) return failure(evaluated.code, this.revision, [component.id]);

@@ -108,8 +108,8 @@ test('common-cathode RGB LED is an original private four-terminal contract', () 
   assert(!Object.hasOwn(COMPONENT_CATALOG, COMMON_CATHODE_RGB_LED_TYPE));
   assert.equal(Object.values(COMPONENT_CATALOG).length, 6);
   assert.equal(Object.values(COMPONENT_CATALOG).filter((definition) => definition.selectable).length, 5);
-  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 36);
-  assert.equal(5 + Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 41);
+  assert.equal(Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 39);
+  assert.equal(5 + Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable).length, 44);
   assert.deepEqual(createCandidateUiComponent(COMMON_CATHODE_RGB_LED_TYPE, 'rgb-led-2'), {
     id: 'rgb-led-2', type: COMMON_CATHODE_RGB_LED_TYPE,
     label: 'Common-cathode RGB LED', properties: {}, controls: {},

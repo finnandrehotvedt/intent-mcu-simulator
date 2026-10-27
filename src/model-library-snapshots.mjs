@@ -150278,6 +150278,92 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "7ea5e837d194970a12517bdbffe4446005e71379c59d5758aca5ecd25540ef8e",
+      "componentType": "sensor.flame-analogue-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.flame-analogue-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.flame-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-flame-analogue",
+        "thumbnail": "sensor-flame-analogue",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "10124dcdb9fba32bddb4b99f544261edac12c0e9fcd5e362ff6bcc3d4dc7d14c",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "flameIntensityRatio": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.flame-analogue-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Idealized module signal only: 0 no response to 1 maximum ideal response maps linearly to 0–5 V on AOUT.",
+            "No flame detection or safety capability, distance, spectrum, angle, ambient-light rejection, source geometry, loading, tolerance, noise or response time is modelled.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "5f4b0174588ffd8fe90c5fedb72dae83d21c616617c28d4b271f14fa226583a1",
+      "supportStatus": "simulated"
+    },
+    {
       "behaviorContractSha256": "46abdec866bac0c9d55a901a438bdc2b24f1ce692a1f686c02cdd6e1437ad9f1",
       "componentType": "sensor.hall-switch-digital-v1",
       "componentVersion": 1,
@@ -150804,6 +150890,92 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "2718bee8dbc9deff5114ab498cb0da2e27c64b6b5e7d5b073b5e3674b8dff1b9",
+      "componentType": "sensor.rain-analogue-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.rain-analogue-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.rain-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-rain-analogue",
+        "thumbnail": "sensor-rain-analogue",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "ea3e5e9c8f4c6a5411c9e73e3b2d7446d67c7e70409d550d632385879b2cd969",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "wetnessRatio": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.rain-analogue-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Idealized module signal only: 0 dry to 1 fully wet maps linearly to 0–5 V on AOUT.",
+            "No rainfall rate or depth calibration, droplet geometry, conductivity, contamination, drying, corrosion, temperature, loading, tolerance, noise or response time is modelled.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "5a5ea4f7c80588fe921df71244c9a26b55da25179eb1de844e10ef3a0a45d66c",
+      "supportStatus": "simulated"
+    },
+    {
       "behaviorContractSha256": "f24f95a142e6708e1449fc0ce73747a7b51fae120fa84b93faecb1b84f4aca1f",
       "componentType": "sensor.soil-moisture-capacitive-analogue-v1",
       "componentVersion": 1,
@@ -150973,6 +151145,92 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         }
       },
       "semanticSha256": "36090ed1a8be45bc00e531fa526c89cdb1d93b420b3dcc78941c57851caacc15",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "e7a32a4a00ba6d3332c7944f9859804f315fc1c073b55893ed969bdc47371049",
+      "componentType": "sensor.sound-level-analogue-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.sound-level-analogue-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.sound-level-analogue-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-sound-level-analogue",
+        "thumbnail": "sensor-sound-level-analogue",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "79ecdbc774eff1187e33fe9a352989c77d5566fd0de10e755c973de7040b2664",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "soundLevelRatio": {
+            "default": 0.5,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.sound-level-analogue-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Idealized module signal only: 0 quiet to 1 maximum ideal level maps linearly to 0–5 V on AOUT.",
+            "No dB or SPL calibration, frequency response, waveform, microphone directivity, clipping, automatic gain, loading, tolerance, noise or response time is modelled.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "81ea2c77e46044f1ae7d9c97e849080c1a59073f22e2f185691ab202b2b11263",
       "supportStatus": "simulated"
     },
     {
@@ -152845,7 +153103,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "c633a319fefc4380c8afb0f871d0ace7ce260053333107ebff5605bb1eeb3c7a"
+      "sha256": "6daf715f752865d700edd8b78fb588d951f76d5c44c417ea5b59227c85bdc1de"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -152853,7 +153111,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "f8c7d2cade7d6270612a01333631aeb0df6b11cfd0907a8439da46d396c14f67"
+      "sha256": "ec51d80b278cd19d0232bcfef1fd88cbe4b8eff73508b15d9ec1cf6f40b5aff6"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -152885,7 +153143,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "4f469109922695ef13af43162354e7d42252fe9bf75b304422c33be24591acfa"
+      "sha256": "4eb8336a12d5ea8c9d9e655a63054c0718fe31f8bebd37ebb4ad397fa65d3f33"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -152893,7 +153151,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "c8549df0344d52328d8ed31ec1f1d1debdc17e3aa3616b47b09518741b128704"
+      "sha256": "cbf634c5149bb4cb89b4805d4442c6b0fe8aec7c36752156d5f2ae38e410303b"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -152941,7 +153199,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "ca68b899c4e1031aa6adc5a21885bea50bf0dba8d9b8dd42281669ac3abfae9c"
+      "sha256": "109812ae4bcf3c7390e7191cbcb1de20e290078e25f7cfb999d7d10f1b6ad386"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -152974,6 +153232,14 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     {
       "path": "expansion-drafts/analogue-moisture-level-sensors-artwork-v1.mjs",
       "sha256": "4b8a212b66ee01ec69d4cbb979c1c7f6fcec8e5ed42d192da5cdcb697c7ad1a3"
+    },
+    {
+      "path": "expansion-drafts/analogue-detection-sensors-v1.mjs",
+      "sha256": "bb0ac1788f327475dfb437612911d07154e2f91bed6346f025184e995fae1de2"
+    },
+    {
+      "path": "expansion-drafts/analogue-detection-sensors-artwork-v1.mjs",
+      "sha256": "42a04851dc04a162f5071d0685e509622e985bb177df1f4a2c93a69f384adfbf"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -153045,10 +153311,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "48d43a1841218230279433afd3d401feaf8b8ab0f90c19064debf84da1da3fdd"
+      "sha256": "d69aff0fb5e79bf262f8f9f17ee361552edbc109836517e08d8db20191bc76db"
     }
   ],
-  "implementationSha256": "d9481966effdccd6cd93c308bf5153576ac3e6500ce645eb59ff0ac5283283d9",
+  "implementationSha256": "78f7bc8b7f3732dedda2e6e71a4aac0266da2dbc74eb12fc875d08d8b8cf6f61",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -153058,7 +153324,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "4d52c129e124edabebfe5e9d5ede6d250f4097fca05eae9b5230eef6eb87d5f6",
+  "manifestSha256": "b22f61f56d281bfddcdc2d8d9cd5d727220386619f3bc3d8e00d2eba0fd7d90a",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

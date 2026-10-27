@@ -47,6 +47,9 @@ import { DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS, IR_OBSTACLE_SENSOR_TYPE,
 import { ANALOGUE_MOISTURE_LEVEL_DEFINITIONS, ANALOGUE_WATER_LEVEL_TYPE,
   CAPACITIVE_SOIL_MOISTURE_TYPE, RESISTIVE_SOIL_MOISTURE_TYPE,
 } from './analogue-moisture-level-sensors-v1.mjs';
+import { ANALOGUE_DETECTION_DEFINITIONS, FLAME_ANALOGUE_TYPE, RAIN_ANALOGUE_TYPE,
+  SOUND_LEVEL_ANALOGUE_TYPE,
+} from './analogue-detection-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
 export const CANDIDATE_EDITOR_HISTORY_LIMIT = 64;
@@ -66,6 +69,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
   IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
   RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
+  RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
 ]);
 
 function validPoint(value) {
@@ -589,6 +593,16 @@ export class CandidateEditorSession {
             if (command.key !== expectedKey || !Number.isFinite(command.value)
                 || command.value < 0 || command.value > 1) {
               return failure('PROJECT_CONTACT_ANALOGUE_MOISTURE_LEVEL_SENSOR_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (ANALOGUE_DETECTION_DEFINITIONS[component.type]) {
+            const expectedKey = ANALOGUE_DETECTION_DEFINITIONS[component.type].controlKeys[0];
+            if (command.key !== expectedKey || !Number.isFinite(command.value)
+                || command.value < 0 || command.value > 1) {
+              return failure('PROJECT_CONTACT_ANALOGUE_DETECTION_SENSOR_STATE', this.revision);
             }
             component.controls[expectedKey] = command.value;
             runtimeDirty = true;

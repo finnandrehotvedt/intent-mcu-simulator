@@ -29,6 +29,9 @@ const rows = [
   ['sensor.soil-moisture-resistive-analogue-v1', 'moistureRatio', 'control · normalized position', 'A2 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.soil-moisture-capacitive-analogue-v1', 'moistureRatio', 'control · normalized position', 'A3 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.water-level-analogue-v1', 'waterLevelRatio', 'control · normalized position', 'A4 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.rain-analogue-v1', 'wetnessRatio', 'control · normalized position', 'A0 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.sound-level-analogue-v1', 'soundLevelRatio', 'control · normalized position', 'A1 ADC → executed firmware → USART', 'actual-executed'],
+  ['sensor.flame-analogue-v1', 'flameIntensityRatio', 'control · normalized position', 'A5 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'lightLevelPercent', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'thresholdPercent', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'hysteresisPercentagePoints', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
@@ -52,7 +55,9 @@ const rows = [
   workerEvent,
   observable,
   evidence,
-  evidenceSource: ['moistureRatio', 'waterLevelRatio'].includes(field)
+  evidenceSource: ['wetnessRatio', 'soundLevelRatio', 'flameIntensityRatio'].includes(field)
+    ? 'test/analogue-detection-sensors-browser.cjs'
+    : ['moistureRatio', 'waterLevelRatio'].includes(field)
     ? 'test/analogue-moisture-level-sensors-browser.cjs'
     : ['obstacleDetected', 'lineDetected'].includes(field)
     ? 'test/digital-reflective-sensors-browser.cjs'

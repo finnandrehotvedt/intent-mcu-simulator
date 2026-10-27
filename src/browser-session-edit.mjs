@@ -25,6 +25,9 @@ import { IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
 import { ANALOGUE_WATER_LEVEL_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE,
   RESISTIVE_SOIL_MOISTURE_TYPE, createAnalogueMoistureLevelSensor,
 } from '../expansion-drafts/analogue-moisture-level-sensors-v1.mjs';
+import { FLAME_ANALOGUE_TYPE, RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE,
+  createAnalogueDetectionSensor,
+} from '../expansion-drafts/analogue-detection-sensors-v1.mjs';
 
 const ID = /^[a-z][a-z0-9-]{0,47}$/u;
 const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.basic-v1',
@@ -39,6 +42,7 @@ const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.ba
   CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
   IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
   RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE, ANALOGUE_WATER_LEVEL_TYPE,
+  RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE,
   GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).sort().join('|') === [...keys].sort().join('|');
@@ -107,6 +111,9 @@ export function prepareApiBatch(project, operations) {
         : avr && [RESISTIVE_SOIL_MOISTURE_TYPE, CAPACITIVE_SOIL_MOISTURE_TYPE,
           ANALOGUE_WATER_LEVEL_TYPE].includes(operation.type)
           ? createAnalogueMoistureLevelSensor(operation.type, operation.id)
+        : avr && [RAIN_ANALOGUE_TYPE, SOUND_LEVEL_ANALOGUE_TYPE, FLAME_ANALOGUE_TYPE]
+          .includes(operation.type)
+          ? createAnalogueDetectionSensor(operation.type, operation.id)
         : avr ? createComponent(operation.id, operation.type) : { id: operation.id, type: operation.type };
       return { type: 'component.add', component,
         position: structuredClone(operation.position) };

@@ -58,9 +58,10 @@ test('every available matrix cell now resolves to a real starter id', () => {
     'avr-digital-presence-sensors',
     'avr-digital-reflective-sensors',
     'avr-analogue-moisture-level-sensors',
+    'avr-analogue-detection-sensors',
   ]);
   const inventory = componentReferenceInventory();
-  assert.equal(inventory.length, 49);
+  assert.equal(inventory.length, 52);
   for (const item of inventory) {
     assert.equal(item.hasPositiveReference, true, `${item.profile}:${item.model}`);
     assert(item.starters.every((id) => ids.has(id)), `${item.model}:${item.starters.join(',')}`);

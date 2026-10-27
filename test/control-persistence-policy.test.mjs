@@ -47,6 +47,9 @@ const expected = {
   'sensor.soil-moisture-resistive-analogue-v1': ['moistureRatio'],
   'sensor.soil-moisture-capacitive-analogue-v1': ['moistureRatio'],
   'sensor.water-level-analogue-v1': ['waterLevelRatio'],
+  'sensor.rain-analogue-v1': ['wetnessRatio'],
+  'sensor.sound-level-analogue-v1': ['soundLevelRatio'],
+  'sensor.flame-analogue-v1': ['flameIntensityRatio'],
   'input.rotary-encoder-quadrature-v1': ['detent'],
 };
 
@@ -70,10 +73,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 49 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 52 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 188, available: 49, unavailable: 139,
-    controlBearing: 28, controlsEmpty: 21, controls: 37,
+    profiles: 4, cells: 200, available: 52, unavailable: 148,
+    controlBearing: 31, controlsEmpty: 21, controls: 40,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

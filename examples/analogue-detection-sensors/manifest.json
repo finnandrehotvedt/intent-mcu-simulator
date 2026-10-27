@@ -1,0 +1,39 @@
+{
+  "schema": "intent-mcu-analogue-detection-sensor-example-manifest@1",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "b22f61f56d281bfddcdc2d8d9cd5d727220386619f3bc3d8e00d2eba0fd7d90a",
+    "implementationSha256": "78f7bc8b7f3732dedda2e6e71a4aac0266da2dbc74eb12fc875d08d8b8cf6f61"
+  },
+  "entries": [
+    {
+      "id": "avr-analogue-detection-sensors",
+      "requirementIds": [
+        "CMP-103",
+        "CMP-109",
+        "CMP-110"
+      ],
+      "file": "avr-analogue-detection-sensors.intent-mcu.json",
+      "projectSha256": "623c57bde33195cbed2c22313dd5ce2abf254a64cac6f13d975748a5a21c9166",
+      "sourceSha256": "1941be5bfa125daa7504fd5cee08444a758e002d3bf2025fd855500391af254f",
+      "expectedBehavior": "A0, A1 and A5 report independent idealized 0–5 V wetness, sound-level and flame-response signals.",
+      "namedPins": {
+        "supply": "VCC → 5V",
+        "ground": "GND → GND1",
+        "rain": "AOUT → A0",
+        "soundLevel": "AOUT → A1",
+        "flame": "AOUT → A5"
+      },
+      "profileBehavior": {
+        "board.atmega328p-16mhz-v1": "authoring and executable ideal analogue adapter available after a fresh isolated Build",
+        "board.rp2040-pico-v1": "unavailable",
+        "board.esp32-c3-devmodule-v1": "unavailable",
+        "board.stm32f429zi-nucleo144-v1": "unavailable"
+      },
+      "provenance": "Original project-owned contracts, SVG artwork, deterministic analogue projection, firmware source and canonical project envelope."
+    }
+  ]
+}

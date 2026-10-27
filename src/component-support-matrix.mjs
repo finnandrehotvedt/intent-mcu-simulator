@@ -104,6 +104,9 @@ const referenceBindings = deepFreeze({
     'sensor.soil-moisture-resistive-analogue-v1': { starters: ['avr-analogue-moisture-level-sensors'], tests: ['test/analogue-moisture-level-sensors-candidate.test.mjs', 'test/analogue-moisture-level-sensor-example-artifacts.test.mjs'] },
     'sensor.soil-moisture-capacitive-analogue-v1': { starters: ['avr-analogue-moisture-level-sensors'], tests: ['test/analogue-moisture-level-sensors-candidate.test.mjs', 'test/analogue-moisture-level-sensor-example-artifacts.test.mjs'] },
     'sensor.water-level-analogue-v1': { starters: ['avr-analogue-moisture-level-sensors'], tests: ['test/analogue-moisture-level-sensors-candidate.test.mjs', 'test/analogue-moisture-level-sensor-example-artifacts.test.mjs'] },
+    'sensor.rain-analogue-v1': { starters: ['avr-analogue-detection-sensors'], tests: ['test/analogue-detection-sensors-candidate.test.mjs', 'test/analogue-detection-sensor-example-artifacts.test.mjs'] },
+    'sensor.sound-level-analogue-v1': { starters: ['avr-analogue-detection-sensors'], tests: ['test/analogue-detection-sensors-candidate.test.mjs', 'test/analogue-detection-sensor-example-artifacts.test.mjs'] },
+    'sensor.flame-analogue-v1': { starters: ['avr-analogue-detection-sensors'], tests: ['test/analogue-detection-sensors-candidate.test.mjs', 'test/analogue-detection-sensor-example-artifacts.test.mjs'] },
   },
   [PICO]: {
     [PICO]: { starters: ['pico-led-on', 'pico-led-off'], tests: ['test/rp2040-pico-circuit.test.mjs', 'test/supported-example-pack-browser.cjs'] },
