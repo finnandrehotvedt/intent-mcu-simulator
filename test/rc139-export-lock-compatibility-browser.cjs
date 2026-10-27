@@ -23,6 +23,11 @@ const RC139_ACCEPTED_CURRENT_LOCK = Object.freeze({
   manifestSha256: 'f8deca034c208f06d58db4db9f945507f8f5300b4e649f6b33cc164d25280672',
   implementationSha256: 'd784cc9ea7ff0dd43163812d459ff23c81abce5f034a55fc4fb476e5b5fc8094',
 });
+const MIGRATED_COUNTER_PREFIXES = Object.freeze([
+  'breadboard', 'button', 'capacitor', 'diode', 'electrolytic', 'fuse', 'ground',
+  'inductor', 'led', 'nmos', 'npn', 'optocoupler', 'pmos', 'pnp',
+  'potentiometer', 'ptc', 'resistor', 'schottky', 'switch', 'terminal-block', 'zener',
+]);
 
 async function dismissUnsaved(page) {
   if (await page.locator('#unsaved-change-dialog').getAttribute('open') !== null) {
@@ -78,8 +83,9 @@ const activeMessageSelector = (profile) => profileUi(profile).message;
 const saveSelector = (profile) => profileUi(profile).save;
 function assertProjectPreserved(actual, original, label) {
   const comparable = structuredClone(actual);
-  if (original.circuit.layout?.idCounters === undefined && comparable.circuit.layout?.idCounters !== undefined) {
-    const expectedCounters = { button: 0, ground: 0, led: 0, resistor: 0, switch: 0 };
+  if (comparable.circuit.layout?.idCounters !== undefined) {
+    const expectedCounters = Object.fromEntries(MIGRATED_COUNTER_PREFIXES.map((prefix) => [prefix, 0]));
+    Object.assign(expectedCounters, original.circuit.layout?.idCounters ?? {});
     for (const component of original.circuit.components) {
       for (const prefix of Object.keys(expectedCounters)) {
         const match = component.id.match(new RegExp(`^${prefix}-(\\d+)$`, 'u'));
@@ -88,7 +94,8 @@ function assertProjectPreserved(actual, original, label) {
     }
     assert.deepEqual(comparable.circuit.layout.idCounters, expectedCounters,
       `${label}: invalid migrated monotone ID counters`);
-    delete comparable.circuit.layout.idCounters;
+    if (original.circuit.layout?.idCounters === undefined) delete comparable.circuit.layout.idCounters;
+    else comparable.circuit.layout.idCounters = structuredClone(original.circuit.layout.idCounters);
   }
   assert.deepEqual(comparable, original, `${label}: authored project fields changed`);
 }
