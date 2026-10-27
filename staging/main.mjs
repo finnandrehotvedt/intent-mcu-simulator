@@ -562,6 +562,8 @@ import {
   RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, resistiveDividerSensorVoltage,
 } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
 import {
+  ROTARY_ENCODER_DETENT_MAX,
+  ROTARY_ENCODER_DETENT_MIN,
   ROTARY_ENCODER_TYPE,
   nextRotaryEncoderDetent,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
@@ -16248,14 +16250,29 @@ function selectedRuntimeDescriptor() {
   if (['A', 'B'].includes(component.controls?.selectedThrow)) {
     return { kind: 'switch', component, key: 'selectedThrow', momentary: false };
   }
+  if (component.type === ROTARY_ENCODER_TYPE && Number.isInteger(component.controls?.detent)) {
+    return { kind: 'number', component, key: 'detent', minimum: ROTARY_ENCODER_DETENT_MIN,
+      maximum: ROTARY_ENCODER_DETENT_MAX, step: 1, unit: 'detent', scale: 1 };
+  }
+  if (component.type === ROTARY_SELECTOR_TYPE && Number.isInteger(component.controls?.position)) {
+    return { kind: 'number', component, key: 'position', minimum: 1, maximum: 4,
+      step: 1, unit: 'position', scale: 1 };
+  }
+  const analogueDefinition = ANALOGUE_MOISTURE_LEVEL_DEFINITIONS[component.type];
+  const analogueKey = analogueDefinition?.controlKeys?.[0];
+  if (analogueKey && Number.isFinite(component.controls?.[analogueKey])) {
+    return { kind: 'number', component, key: analogueKey, minimum: 0, maximum: 100,
+      step: 1, unit: '%', scale: 100 };
+  }
   return null;
 }
 
 function renderSelectedRuntimeControl() {
   const descriptor = selectedRuntimeDescriptor();
   const interactive = canvasInteractionMode === 'interact' && runtimeInteractionLocked;
-  elements.selectedruntimevalue.hidden = descriptor?.kind !== 'potentiometer';
-  elements.selectedruntimevalue.closest('label').hidden = descriptor?.kind !== 'potentiometer';
+  const hasNumberValue = ['potentiometer', 'number'].includes(descriptor?.kind);
+  elements.selectedruntimevalue.hidden = !hasNumberValue;
+  elements.selectedruntimevalue.closest('label').hidden = !hasNumberValue;
   elements.selectedruntimeaction.hidden = descriptor?.kind !== 'switch';
   if (!descriptor) {
     elements.selectedruntimecontrol.dataset.kind = 'none';
@@ -16263,8 +16280,8 @@ function renderSelectedRuntimeControl() {
     elements.selectedruntimevalue.disabled = true;
     elements.selectedruntimeaction.disabled = true;
     elements.selectedruntimerange.textContent = interactive
-      ? 'Select a potentiometer or switch. Wiring and placement stay locked.'
-      : 'Run, then select a potentiometer or switch.';
+      ? 'Select an interactive component. Wiring and placement stay locked.'
+      : 'Run, then select an interactive component.';
     return;
   }
   elements.selectedruntimecontrol.dataset.kind = descriptor.kind;
@@ -16277,6 +16294,16 @@ function renderSelectedRuntimeControl() {
     elements.selectedruntimevalue.value = String(percent);
     elements.selectedruntimevalue.disabled = !interactive;
     elements.selectedruntimerange.textContent = `Min ${descriptor.minimum}% · max ${descriptor.maximum}% · step ${descriptor.step}% · use ↑/↓`;
+    return;
+  }
+  if (descriptor.kind === 'number') {
+    const value = descriptor.component.controls[descriptor.key] * descriptor.scale;
+    elements.selectedruntimevalue.min = String(descriptor.minimum);
+    elements.selectedruntimevalue.max = String(descriptor.maximum);
+    elements.selectedruntimevalue.step = String(descriptor.step);
+    elements.selectedruntimevalue.value = String(value);
+    elements.selectedruntimevalue.disabled = !interactive;
+    elements.selectedruntimerange.textContent = `Min ${descriptor.minimum} ${descriptor.unit} · max ${descriptor.maximum} ${descriptor.unit} · step ${descriptor.step} ${descriptor.unit} · use ↑/↓`;
     return;
   }
   elements.selectedruntimeaction.disabled = !interactive;
@@ -16301,6 +16328,23 @@ function setSelectedPotentiometerPercent(rawPercent, action = 'keyboard') {
   if (result.ok) worker?.postMessage({
     command: 'control', componentId: descriptor.component.id, key: descriptor.key, value: position,
   });
+  renderSelectedRuntimeControl();
+  return Boolean(result.ok);
+}
+
+function setSelectedNumberValue(rawValue, action = 'keyboard') {
+  const descriptor = selectedRuntimeDescriptor();
+  if (!runtimeInteractionLocked || descriptor?.kind !== 'number') return false;
+  const displayed = clamp(Number(rawValue), descriptor.minimum, descriptor.maximum);
+  if (!Number.isFinite(displayed) || Math.abs(displayed / descriptor.step - Math.round(displayed / descriptor.step)) > Number.EPSILON) return false;
+  const value = displayed / descriptor.scale;
+  const prepared = selectedCandidateContactControl(descriptor.component.id, descriptor.key, value);
+  if (!prepared.ok) {
+    showActionableError(elements.projectmessage, prepared.code, `${action}: ${descriptor.component.id}`);
+    return false;
+  }
+  const result = applyEditor(prepared.command, `${descriptor.component.label} ${displayed} ${descriptor.unit} through ${action}`);
+  if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
   renderSelectedRuntimeControl();
   return Boolean(result.ok);
 }
@@ -16382,7 +16426,12 @@ function setCanvasInteractionMode(mode, { force = false } = {}) {
 
 elements.selectedruntimevalue.addEventListener('input', () => {
   if (elements.selectedruntimevalue.value !== '') {
-    setSelectedPotentiometerPercent(Number(elements.selectedruntimevalue.value), 'value field');
+    const descriptor = selectedRuntimeDescriptor();
+    if (descriptor?.kind === 'potentiometer') {
+      setSelectedPotentiometerPercent(Number(elements.selectedruntimevalue.value), 'value field');
+    } else if (descriptor?.kind === 'number') {
+      setSelectedNumberValue(Number(elements.selectedruntimevalue.value), 'value field');
+    }
   }
 });
 elements.selectedruntimeaction.addEventListener('pointerdown', (event) => {
@@ -17661,6 +17710,12 @@ document.addEventListener('keydown', (event) => {
       event.preventDefault();
       const current = Math.round(descriptor.component.controls.position * 100);
       setSelectedPotentiometerPercent(current + (event.key === 'ArrowUp' ? descriptor.step : -descriptor.step), 'keyboard arrow');
+      return;
+    }
+    if (descriptor?.kind === 'number' && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
+      event.preventDefault();
+      const current = descriptor.component.controls[descriptor.key] * descriptor.scale;
+      setSelectedNumberValue(current + (event.key === 'ArrowUp' ? descriptor.step : -descriptor.step), 'keyboard arrow');
       return;
     }
     if (descriptor?.kind === 'switch' && event.key === ' ' && !event.repeat) {
