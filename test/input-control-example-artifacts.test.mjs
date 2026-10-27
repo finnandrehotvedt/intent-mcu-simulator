@@ -81,3 +81,11 @@ test('combined mechanical example contains all three exact models', async () => 
   assert.deepEqual(['switch.slide-spdt-v1', 'button.momentary-nc-v1', 'switch.limit-spdt-v1']
     .map((type) => components.filter((component) => component.type === type).length), [1, 1, 1]);
 });
+
+test('CMP033/034/035 combined example is visibly discoverable without a safety claim', async () => {
+  const html = await readFile(new URL('../staging/examples.html', import.meta.url), 'utf8');
+  assert.match(html, /<h2>Reed, emergency-stop and foot-pedal inputs<\/h2>/u);
+  assert.match(html, /the emergency-stop model is not safety-rated/u);
+  assert.match(html, /no certification, force, bounce or resistance behavior/u);
+  assert.match(html, /Observe:<\/strong> D7–D9 and the three explicit ground returns/u);
+});
