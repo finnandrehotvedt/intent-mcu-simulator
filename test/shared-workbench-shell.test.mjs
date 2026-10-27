@@ -11,12 +11,29 @@ import {
   STM32F429ZI_PROFILE,
 } from '../src/compile-targets.mjs';
 import {
+  AVR_COMPONENT_PICKER_CONTRACT,
   SHARED_WORKBENCH_SCHEMA,
   SHARED_WORKBENCH_DIALOGS,
   SHARED_WORKBENCH_SURFACES,
   SHARED_WORKBENCH_VIEW_MODES,
   sharedWorkbenchAdapters,
 } from '../src/shared-workbench-shell.mjs';
+
+test('all controller profiles use the AVR component picker contract', async () => {
+  assert.equal(AVR_COMPONENT_PICKER_CONTRACT, 'intent-mcu-avr-catalog-picker@1');
+  const [html, shell] = await Promise.all([
+    readFile(new URL('../staging/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../src/shared-workbench-shell.mjs', import.meta.url), 'utf8'),
+  ]);
+  assert.match(html, /data-component-picker-contract="intent-mcu-avr-catalog-picker@1"/u);
+  assert.match(shell, /normalizeNarrowComponentPicker\(document, parts, adapter\)/u);
+  assert.match(shell, /parts\.dataset\.componentPickerContract = AVR_COMPONENT_PICKER_CONTRACT/u);
+  for (const role of ['search', 'count', 'feature', 'feature-artwork', 'feature-open', 'list', 'empty',
+    'clear', 'prev', 'page', 'next', 'category', 'interface', 'status', 'supply-voltage',
+    'pin-voltage', 'favorites', 'support-open']) {
+    assert.match(`${html}\n${shell}`, new RegExp(`pickerRole = '${role}'|data-picker-role="${role}"`, 'u'), role);
+  }
+});
 
 test('four real profiles declare the same shared workbench surfaces', () => {
   const adapters = sharedWorkbenchAdapters();

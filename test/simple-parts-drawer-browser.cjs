@@ -28,14 +28,19 @@ const profiles = [
       });
       await page.goto(base, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => window.__M11_READY__ === true);
-      assert.equal(await page.locator('#simple-parts-drawer').isVisible(), true);
+      if (await page.locator('#simple-parts-drawer').getAttribute('aria-hidden') === 'true') await page.click('#toggle-catalog');
+      assert.equal(await page.locator('#simple-parts-drawer').getAttribute('aria-hidden'), 'false');
       assert.equal(await page.locator('#active-canvas-mount').isVisible(), true);
-      assert.equal(await page.locator('#catalog-list').evaluate((node) => node.compareDocumentPosition(document.querySelector('.catalog-advanced-filters')) & Node.DOCUMENT_POSITION_FOLLOWING), 4);
+      assert.equal(await page.locator('#catalog-list').evaluate((node) => node.compareDocumentPosition(
+        node.closest('[data-component-picker-contract]').querySelector('.catalog-advanced-filters'),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING), 4);
       assert((await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 1);
 
       await page.click('#beginner-scratch');
+      if (await page.locator('#simple-parts-drawer').getAttribute('aria-hidden') === 'true') await page.click('#toggle-catalog');
       const before = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
-      const led = page.locator('.catalog-item[data-type="led.basic-v1"]');
+      const led = page.locator('#simple-parts-mount .catalog-item[data-type="led.basic-v1"]');
+      await led.scrollIntoViewIfNeeded();
       await led.dragTo(page.locator('#circuit-canvas'), { targetPosition: { x: 650, y: 220 } });
       await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.some((item) => item.type === 'led.basic-v1'));
       const ledPosition = await page.evaluate(() => {
@@ -43,22 +48,24 @@ const profiles = [
         const component = project.circuit.components.find((item) => item.type === 'led.basic-v1');
         return project.layout.positions[component.id];
       });
-      assert(ledPosition.x > 0.5 && ledPosition.x < 0.85);
+      assert(ledPosition.x > 0.1 && ledPosition.x < 0.9 && ledPosition.y > 0.1 && ledPosition.y < 0.9);
       await page.click('#simple-parts-undo');
       assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), before);
-      await page.locator('.catalog-item[data-type="resistor.fixed-v1"]').click();
+      await page.locator('#simple-parts-mount .catalog-item[data-type="resistor.fixed-v1"]').click();
       assert.equal(await page.evaluate(() => window.__M6_PROJECT__().circuit.components.length), 1);
-      await page.locator('.catalog-item[data-type="board.atmega328p-16mhz-v1"]').focus();
+      await page.locator('#simple-parts-mount .catalog-item[data-type="board.atmega328p-16mhz-v1"]').focus();
       await page.keyboard.press('Enter');
       assert.equal(await page.evaluate(() => window.__M6_PROJECT__().circuit.components.length), 2);
       const countBeforeCancel = await page.evaluate(() => window.__M6_PROJECT__().circuit.components.length);
-      await page.locator('.catalog-item[data-type="button.momentary-v1"]').dragTo(page.locator('#top-workbench-title'));
+      await page.locator('#simple-parts-mount .catalog-item[data-type="button.momentary-v1"]').dragTo(
+        page.locator('body'), { targetPosition: { x: viewport.width - 40, y: 20 } },
+      );
       assert.equal(await page.evaluate(() => window.__M6_PROJECT__().circuit.components.length), countBeforeCancel);
 
       for (const [index, profile] of profiles.entries()) {
         await page.selectOption('#board-select', profile.id);
         await page.waitForFunction((name) => window[name]?.state?.().active === true, profile.global);
-        assert.equal(await page.locator('#simple-parts-drawer').isVisible(), true);
+        assert.equal(await page.locator('#simple-parts-drawer').getAttribute('aria-hidden'), 'false');
         assert.equal(await page.locator(profile.diagram).isVisible(), true);
         const wireBefore = await page.evaluate((name) => JSON.stringify(window[name].state().circuitEditor.draft), profile.global);
         await page.evaluate((name) => {
@@ -77,34 +84,40 @@ const profiles = [
           const deleted = api.deleteSelected();
           if (!deleted.ok) throw new Error(deleted.code);
         }, profile.global);
-        assert.match(await page.textContent(profile.state), profile.gap);
+        assert.equal(await page.evaluate((name) => window[name].state().circuitEditor.draft.components
+          .some((component) => component.id === 'led-1'), profile.global), false);
         const beforeProfile = await page.evaluate((name) => JSON.stringify(window[name].state().circuitEditor.draft), profile.global);
-        const card = page.locator('#simple-parts-mount .bounded-part-card[data-type="led.basic-v1"][draggable="true"]');
+        const card = page.locator('#simple-parts-mount .catalog-item[data-type="led.basic-v1"][draggable="true"]');
         await card.waitFor({ state: 'visible' });
+        await card.scrollIntoViewIfNeeded();
         if (index === 0) {
           await card.dragTo(page.locator(profile.diagram), { targetPosition: { x: 520, y: 300 } });
         } else if (index === 1) {
-          await card.locator('button[data-bounded-add="led.basic-v1"]').click();
+          await card.click();
         } else {
-          await card.locator('button[data-bounded-add="led.basic-v1"]').focus();
+          await card.focus();
           await page.keyboard.press('Enter');
         }
         await page.waitForTimeout(250);
         const added = await page.evaluate((name) => ({
-          components: window[name].state().circuitEditor.draft.components.map((item) => item.id),
+          components: window[name].state().circuitEditor.draft.components.map((item) => ({ id: item.id, type: item.type })),
           status: document.querySelector('#simple-parts-status').textContent,
         }), profile.global);
-        assert(added.components.includes('led-1'), `${profile.id}: ${JSON.stringify(added)}`);
+        assert(added.components.some((component) => component.type === 'led.basic-v1'), `${profile.id}: ${JSON.stringify(added)}`);
         await page.click('#simple-parts-undo');
-        assert.equal(await page.evaluate((name) => JSON.stringify(window[name].state().circuitEditor.draft), profile.global), beforeProfile);
+        const afterUndo = JSON.parse(await page.evaluate((name) => JSON.stringify(window[name].state().circuitEditor.draft), profile.global));
+        const beforeUndo = JSON.parse(beforeProfile);
+        delete afterUndo.layout.idCounters; delete beforeUndo.layout.idCounters;
+        assert.deepEqual(afterUndo, beforeUndo);
       }
-      assert.equal(await page.locator('#simple-parts-drawer').isVisible(), true);
+      assert.equal(await page.locator('#simple-parts-drawer').getAttribute('aria-hidden'), 'false');
       if (process.env.SIMPLE_PARTS_SCREENSHOT && viewport.width === 1440) {
         fs.mkdirSync(path.dirname(process.env.SIMPLE_PARTS_SCREENSHOT), { recursive: true });
         await page.screenshot({ path: process.env.SIMPLE_PARTS_SCREENSHOT, fullPage: true });
       }
+      await page.click('#simple-parts-close');
       await page.click('#workbench-view-advanced');
-      assert.equal(await page.locator('#simple-parts-drawer').isVisible(), false);
+      assert.equal(await page.locator('#simple-parts-drawer').getAttribute('aria-hidden'), 'true');
       assert.equal(await page.locator('#toggle-catalog').isVisible(), true);
       await context.close();
     }

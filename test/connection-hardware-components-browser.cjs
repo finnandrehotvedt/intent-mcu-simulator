@@ -126,7 +126,7 @@ async function assertArtwork(page, layer = '#component-layer') {
       }, profile);
       const list = profile.id === 'board.rp2040-pico-v1' ? '#pico-parts-list'
         : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-parts-list' : '#stm32-parts-list';
-      assert.equal(await page.locator(list + ' .bounded-part-card').count(), 22);
+      assert.equal(await page.locator(list + ' .catalog-item').count(), 22);
       await assertArtwork(page, profile.layer);
       const state = await page.evaluate(({ api }) => {
         const value = window[api].state(); const graph = value.circuit ?? value.project.circuit;

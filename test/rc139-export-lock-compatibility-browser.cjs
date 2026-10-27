@@ -302,9 +302,9 @@ function assertProjectPreserved(actual, original, label) {
         `${name}: direct rc.139 page-start changed original storage bytes`);
       const artworkSelector = profile === 'board.atmega328p-16mhz-v1'
         ? '#catalog-list .catalog-thumbnail-slot svg[role="img"]'
-        : profile === 'board.rp2040-pico-v1' ? '#pico-parts-list .bounded-part-thumbnail svg[role="img"]'
-          : profile === 'board.esp32-c3-devmodule-v1' ? '#c3-parts-list .bounded-part-thumbnail svg[role="img"]'
-            : '#stm32-parts-list .bounded-part-thumbnail svg[role="img"]';
+        : profile === 'board.rp2040-pico-v1' ? '#pico-parts-list .catalog-thumbnail-slot svg[role="img"]'
+          : profile === 'board.esp32-c3-devmodule-v1' ? '#c3-parts-list .catalog-thumbnail-slot svg[role="img"]'
+            : '#stm32-parts-list .catalog-thumbnail-slot svg[role="img"]';
       const expectedArtwork = profile === 'board.atmega328p-16mhz-v1' ? 5 : 6;
       await page.waitForFunction(({ selector, expectedCount }) =>
         document.querySelectorAll(selector).length >= expectedCount,

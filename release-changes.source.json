@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.140",
-    "current": "1.1.0-rc.141"
+    "previous": "1.1.0-rc.141",
+    "current": "1.1.0-rc.142"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x59-four-profile-simple-advanced-view-v1"
       ],
-      "summary": "Replaces the permanent component column with one left-side sliding Parts drawer across all four controllers, aligns bounded profile cards with AVR, and features the traffic-light example without changing project semantics."
+      "summary": "Makes AVR, Pico, ESP32-C3 and STM32 use the same AVR catalogue structure, card design, search, filters, favourites and pagination inside the shared Parts drawer while preserving each controller's supported component set."
     }
   ],
   "migrationRequired": false,

@@ -957,6 +957,8 @@ let lastWorkerMessage = 0;
 let selectedSourceFile = 'main.ino';
 let catalogPreferences = loadCatalogPreferences();
 let catalogWindowStart = 0;
+const boundedCatalogWindowStarts = new Map();
+let componentSupportReturnFocus = null;
 let catalogFixtureRecords = null;
 let catalogBenchmarkSession = null;
 let catalogFixturePriorFilters = null;
@@ -1477,62 +1479,145 @@ function createComponentEditorSplit({ profile, component, modelPanel, drawingPan
   return root;
 }
 
+function openComponentSupportDialogFor(profile, opener) {
+  componentSupportReturnFocus = opener;
+  elements.componentsupportprofile.value = profile;
+  renderComponentSupportMatrix();
+  elements.componentsupportdialog.showModal();
+}
+
 function renderBoundedComponentCatalog(options) {
   const { profile, state, editCircuit, search, count, list, properties } = options;
   const { draft, selection, catalog } = state.circuitEditor;
-  search.oninput = () => renderBoundedComponentCatalog(options);
-  const query = search.value.trim().toLocaleLowerCase();
-  const matchedParts = catalog.parts.filter((part) => !query || [
-    part.displayName, part.type, part.id, part.limitation,
-  ].some((value) => String(value ?? '').toLocaleLowerCase().includes(query)));
-  count.textContent = query
-    ? `${matchedParts.length} of ${catalog.parts.length} parts`
-    : `${catalog.parts.length} parts`;
-  const rows = matchedParts.map((part) => {
+  const picker = search.closest('[data-component-picker-contract="intent-mcu-avr-catalog-picker@1"]');
+  if (!picker) throw new Error(`COMPONENT_PICKER_CONTRACT_MISSING:${profile}`);
+  const control = (role) => picker.querySelector(`[data-picker-role="${role}"]`);
+  const controls = {
+    category: control('category'), interface: control('interface'), status: control('status'),
+    supplyVoltage: control('supply-voltage'), pinVoltage: control('pin-voltage'), favorites: control('favorites'),
+    empty: control('empty'), clear: control('clear'), previous: control('prev'), page: control('page'), next: control('next'),
+    featureArtwork: control('feature-artwork'), featureTitle: control('feature-title'), featureDetail: control('feature-detail'),
+    featureOpen: control('feature-open'), supportOpen: control('support-open'),
+  };
+  if (Object.values(controls).some((node) => !node)) throw new Error(`COMPONENT_PICKER_CONTROL_MISSING:${profile}`);
+  if (controls.category.dataset.categoriesReady !== 'true') {
+    for (const category of CATALOG_CATEGORIES) controls.category.append(new Option(category.label, category.id));
+    controls.category.dataset.categoriesReady = 'true';
+  }
+  const rerender = ({ reset = false } = {}) => {
+    if (reset) boundedCatalogWindowStarts.set(profile, 0);
+    renderBoundedComponentCatalog(options);
+  };
+  search.oninput = () => rerender({ reset: true });
+  for (const node of [controls.category, controls.interface, controls.status, controls.supplyVoltage,
+    controls.pinVoltage, controls.favorites]) node.onchange = () => rerender({ reset: true });
+  controls.clear.onclick = () => {
+    search.value = ''; controls.category.value = 'all'; controls.interface.value = 'all';
+    controls.status.value = 'all'; controls.supplyVoltage.value = 'all'; controls.pinVoltage.value = 'all';
+    controls.favorites.checked = false; rerender({ reset: true }); search.focus();
+  };
+  controls.supportOpen.onclick = () => openComponentSupportDialogFor(profile, controls.supportOpen);
+  controls.featureOpen.onclick = () => openComponentSupportDialogFor(profile, controls.featureOpen);
+
+  const boardPart = catalog.parts.find((part) => part.type === profile) ?? catalog.parts[0];
+  const boardDefinition = uiComponentCatalog[boardPart?.type];
+  const boardComponent = draft.components.find((component) => component.type === boardPart?.type);
+  if (boardDefinition && controls.featureArtwork.dataset.type !== boardDefinition.type) {
+    const preview = boardComponent ?? {
+      id: `catalog-${boardDefinition.type.replace(/[^a-z0-9]+/giu, '-')}`, type: boardDefinition.type,
+      label: boardDefinition.displayName, properties: defaultProperties(boardDefinition.type), controls: {},
+    };
+    controls.featureArtwork.replaceChildren(createComponentArtwork(boardDefinition, preview, { thumbnail: true }));
+    controls.featureArtwork.dataset.type = boardDefinition.type;
+  }
+  controls.featureTitle.textContent = boardDefinition?.displayName ?? 'Profile component set';
+  controls.featureDetail.textContent = `${catalog.parts.length} entries supported by this exact controller project.`;
+
+  const favorites = new Set(catalogPreferences.favorites);
+  const recentRank = new Map(catalogPreferences.recent.map((type, index) => [type, index]));
+  const partByType = new Map(catalog.parts.map((part) => [part.type, part]));
+  const definitions = catalog.parts.map((part) => uiComponentCatalog[part.type]).filter(Boolean);
+  const matchedParts = filterCatalog(definitions, {
+    query: search.value, category: controls.category.value, interface: controls.interface.value,
+    status: controls.status.value, supplyVoltage: controls.supplyVoltage.value, pinVoltage: controls.pinVoltage.value,
+  }).filter((definition) => !controls.favorites.checked || favorites.has(definition.type))
+    .sort((a, b) => Number(favorites.has(b.type)) - Number(favorites.has(a.type))
+      || (recentRank.get(a.type) ?? 99) - (recentRank.get(b.type) ?? 99)
+      || a.displayName.localeCompare(b.displayName))
+    .map((definition) => ({ definition, part: partByType.get(definition.type) }));
+  const maximumStart = matchedParts.length
+    ? Math.floor((matchedParts.length - 1) / CATALOG_WINDOW_LIMIT) * CATALOG_WINDOW_LIMIT : 0;
+  const windowStart = Math.min(boundedCatalogWindowStarts.get(profile) ?? 0, maximumStart);
+  boundedCatalogWindowStarts.set(profile, windowStart);
+  const windowParts = matchedParts.slice(windowStart, windowStart + CATALOG_WINDOW_LIMIT);
+  count.textContent = `${matchedParts.length} ${matchedParts.length === 1 ? 'part' : 'parts'}`;
+  controls.empty.hidden = matchedParts.length > 0;
+  controls.page.textContent = matchedParts.length
+    ? `${windowStart + 1}–${Math.min(matchedParts.length, windowStart + windowParts.length)} of ${matchedParts.length}`
+    : 'No results';
+  controls.previous.disabled = windowStart === 0;
+  controls.next.disabled = windowStart + CATALOG_WINDOW_LIMIT >= matchedParts.length;
+  controls.previous.onclick = () => {
+    boundedCatalogWindowStarts.set(profile, Math.max(0, windowStart - CATALOG_WINDOW_LIMIT)); rerender();
+  };
+  controls.next.onclick = () => {
+    boundedCatalogWindowStarts.set(profile, windowStart + CATALOG_WINDOW_LIMIT); rerender();
+  };
+
+  const rows = windowParts.map(({ definition, part }) => {
     const component = draft.components.find((candidate) => candidate.type === part.type);
     const row = document.createElement('article');
-    row.className = 'bounded-part-card catalog-item'; row.dataset.type = part.type;
-    row.dataset.present = String(part.present); row.setAttribute('role', 'listitem');
-    row.draggable = part.addable || part.repeatable;
+    row.className = 'catalog-item'; row.dataset.type = part.type;
+    row.dataset.present = String(part.present);
+    const addable = Boolean(part.addable || part.repeatable);
+    row.setAttribute('role', addable ? 'button' : 'listitem'); row.tabIndex = addable ? 0 : -1;
+    row.draggable = addable;
+    row.setAttribute('aria-label', addable
+      ? `Add ${definition.displayName}, ${SUPPORT_STATUS[definition.support.status]}`
+      : `${definition.displayName} is fixed for this profile, ${SUPPORT_STATUS[definition.support.status]}`);
     const thumbnail = document.createElement('span');
-    thumbnail.className = 'bounded-part-thumbnail catalog-thumbnail-slot';
-    const definition = uiComponentCatalog[part.type];
+    thumbnail.className = 'catalog-thumbnail-slot';
     const previewComponent = component ?? {
       id: `catalog-${part.type.replace(/[^a-z0-9]+/giu, '-')}`,
       type: part.type,
-      label: part.displayName,
-      properties: definition?.propertyKeys?.length
+      label: definition.displayName,
+      properties: definition.propertyKeys?.length
         ? Object.fromEntries(definition.propertyKeys.map((key) => [key, definition.propertySchema[key].default]))
         : {},
       controls: {},
     };
-    if (definition) thumbnail.append(createComponentArtwork(definition, previewComponent, { thumbnail: true }));
-    const copy = document.createElement('span'); copy.className = 'bounded-part-copy catalog-item-copy';
-    const name = document.createElement('strong'); name.textContent = part.displayName;
+    thumbnail.append(createComponentArtwork(definition, previewComponent, { thumbnail: true }));
+    const copy = document.createElement('span'); copy.className = 'catalog-item-copy';
+    const name = document.createElement('strong'); name.textContent = definition.displayName;
     const summary = document.createElement('small');
-    summary.textContent = `${component?.id ?? part.id} · ${boundedPartSummary(part, component)}`;
+    summary.textContent = `${definition.partNumber} · ${definition.catalog.interfaces.join(', ')}`;
     const status = document.createElement('span');
-    const simulated = ['resistor.fixed-v1', 'led.basic-v1'].includes(part.type);
-    status.className = `support-badge${part.fixed ? ' partial' : simulated ? '' : ' visual'}`;
-    status.textContent = part.fixed ? 'Partial' : simulated ? 'Simulated' : 'Authoring only';
+    status.className = `support-badge ${definition.support.status}`;
+    status.textContent = SUPPORT_STATUS[definition.support.status];
     copy.append(name, summary, status);
-    const action = document.createElement('button'); action.type = 'button';
-    action.className = 'bounded-part-add';
-    action.dataset.boundedAdd = part.type;
-    action.textContent = part.fixed ? 'Fixed' : part.present ? 'Add another' : 'Add';
-    action.disabled = !(part.addable || part.repeatable);
-    action.setAttribute('aria-label', part.fixed
-      ? `${part.displayName} is fixed for this profile`
-      : `Add ${part.displayName}`);
-    if (part.addable || part.repeatable) {
-      action.addEventListener('click', () => editCircuit('addComponent', part.type));
+    const favorite = document.createElement('button'); favorite.type = 'button'; favorite.className = 'catalog-favourite';
+    favorite.textContent = favorites.has(definition.type) ? '★' : '☆';
+    favorite.setAttribute('aria-label', `${favorites.has(definition.type) ? 'Remove' : 'Add'} ${definition.displayName} ${favorites.has(definition.type) ? 'from' : 'to'} favourites`);
+    favorite.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const nextFavorites = new Set(catalogPreferences.favorites);
+      if (nextFavorites.has(definition.type)) nextFavorites.delete(definition.type); else nextFavorites.add(definition.type);
+      catalogPreferences.favorites = [...nextFavorites].sort(); saveCatalogPreferences(); rerender();
+      queueMicrotask(() => list.querySelector(`[data-type="${CSS.escape(definition.type)}"] .catalog-favourite`)?.focus());
+    });
+    if (addable) {
+      const add = () => { markRecentComponent(part.type); editCircuit('addComponent', part.type); };
+      row.addEventListener('click', (event) => { if (!event.target.closest('.catalog-favourite')) add(); });
+      row.addEventListener('keydown', (event) => {
+        if (event.target === row && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); add(); }
+      });
       row.addEventListener('dragstart', (event) => {
         event.dataTransfer.effectAllowed = 'copy';
         event.dataTransfer.setData('application/x-intent-component', JSON.stringify({ profile, type: part.type }));
       });
     }
     row.title = part.limitation;
-    row.append(thumbnail, copy, action);
+    row.append(thumbnail, copy, favorite);
     return row;
   });
   list.replaceChildren(...rows);
@@ -15161,12 +15246,12 @@ elements.catalogclear.addEventListener('click', () => {
   elements.catalogsearch.focus();
 });
 elements.catalogsupportopen.addEventListener('click', () => {
-  elements.componentsupportprofile.value = selectedCompilerProfile;
-  renderComponentSupportMatrix();
-  elements.componentsupportdialog.showModal();
+  openComponentSupportDialogFor(selectedCompilerProfile, elements.catalogsupportopen);
 });
 elements.componentsupportclose.addEventListener('click', () => elements.componentsupportdialog.close());
-elements.componentsupportdialog.addEventListener('close', () => elements.catalogsupportopen.focus());
+elements.componentsupportdialog.addEventListener('close', () => {
+  (componentSupportReturnFocus ?? elements.catalogsupportopen).focus(); componentSupportReturnFocus = null;
+});
 elements.componentsupportprofile.addEventListener('change', renderComponentSupportMatrix);
 elements.catalogprev.addEventListener('click', () => {
   catalogWindowStart = Math.max(0, catalogWindowStart - CATALOG_WINDOW_LIMIT); renderCatalog();

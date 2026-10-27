@@ -64,6 +64,7 @@ export const SHARED_WORKBENCH_DIALOGS = Object.freeze([
   'project', 'parts', 'inspector', 'firmware', 'brief', 'instruments', 'help',
 ]);
 export const SHARED_WORKBENCH_VIEW_MODES = Object.freeze(['simple', 'advanced']);
+export const AVR_COMPONENT_PICKER_CONTRACT = 'intent-mcu-avr-catalog-picker@1';
 
 const adapters = Object.freeze({
   [AVR_PROFILE]: Object.freeze({
@@ -203,6 +204,125 @@ function installCanvasFullscreen(document, root, canvas, prefix) {
   render();
 }
 
+function option(document, value, label, selected = false) {
+  const node = document.createElement('option');
+  node.value = value; node.textContent = label; node.selected = selected;
+  return node;
+}
+
+function labelledSelect(document, prefix, role, labelText, values) {
+  const label = document.createElement('label');
+  const select = document.createElement('select');
+  select.id = `${prefix}-catalog-${role}`;
+  select.dataset.pickerRole = role;
+  label.htmlFor = select.id; label.textContent = labelText;
+  select.append(...values.map(([value, text, selected]) => option(document, value, text, selected)));
+  return [label, select];
+}
+
+function normalizeNarrowComponentPicker(document, parts, adapter) {
+  const prefix = adapter.prefix;
+  const search = parts.querySelector(`#${prefix}-parts-search`);
+  const count = parts.querySelector(`#${prefix}-parts-count`);
+  const list = parts.querySelector(`#${prefix}-parts-list`);
+  if (!search || !count || !list) throw new Error(`SHARED_COMPONENT_PICKER_MISSING:${adapter.profile}`);
+
+  parts.classList.remove('bounded-parts-panel');
+  parts.classList.add('catalog', 'panel', 'profile-component-picker');
+  parts.dataset.componentPickerContract = AVR_COMPONENT_PICKER_CONTRACT;
+  parts.dataset.componentPickerProfile = adapter.profile;
+
+  const eyebrow = document.createElement('p');
+  eyebrow.className = 'eyebrow'; eyebrow.textContent = '1 · COMPONENTS';
+  const heading = document.createElement('h2');
+  heading.id = `${prefix}-parts-title`; heading.textContent = 'Add parts';
+  parts.setAttribute('aria-labelledby', heading.id);
+
+  const searchLabel = document.createElement('label');
+  searchLabel.htmlFor = search.id; searchLabel.textContent = 'Search name, alias, function or part number';
+  search.className = '';
+  search.placeholder = 'GPIO, sensor, indicator…';
+  search.dataset.pickerRole = 'search';
+  count.className = 'catalog-count'; count.dataset.pickerRole = 'count';
+
+  const feature = document.createElement('section');
+  feature.className = 'catalog-release-feature'; feature.dataset.pickerRole = 'feature';
+  feature.setAttribute('aria-labelledby', `${prefix}-catalog-feature-title`);
+  const featureArtwork = document.createElement('span');
+  featureArtwork.className = 'catalog-release-feature-artwork';
+  featureArtwork.dataset.pickerRole = 'feature-artwork'; featureArtwork.setAttribute('aria-hidden', 'true');
+  const featureCopy = document.createElement('span'); featureCopy.className = 'catalog-release-feature-copy';
+  const featureBadge = document.createElement('span'); featureBadge.className = 'support-badge'; featureBadge.textContent = 'PROFILE PARTS';
+  const featureTitle = document.createElement('strong');
+  featureTitle.id = `${prefix}-catalog-feature-title`; featureTitle.dataset.pickerRole = 'feature-title';
+  const featureDetail = document.createElement('small'); featureDetail.dataset.pickerRole = 'feature-detail';
+  featureCopy.append(featureBadge, featureTitle, featureDetail);
+  const featureOpen = document.createElement('button');
+  featureOpen.type = 'button'; featureOpen.textContent = 'View support'; featureOpen.dataset.pickerRole = 'feature-open';
+  feature.append(featureArtwork, featureCopy, featureOpen);
+
+  list.className = 'catalog-list'; list.dataset.pickerRole = 'list'; list.setAttribute('role', 'list');
+  const empty = document.createElement('div');
+  empty.className = 'catalog-empty'; empty.hidden = true; empty.dataset.pickerRole = 'empty';
+  const emptyTitle = document.createElement('strong'); emptyTitle.textContent = 'No parts match these filters.';
+  const emptyCopy = document.createElement('span');
+  emptyCopy.textContent = 'Clear the filters, or broaden supply, pin-limit, support, interface, or category choices.';
+  const clear = document.createElement('button');
+  clear.type = 'button'; clear.textContent = 'Clear catalogue filters'; clear.dataset.pickerRole = 'clear';
+  empty.append(emptyTitle, emptyCopy, clear);
+
+  const pagination = document.createElement('nav');
+  pagination.className = 'catalog-pagination'; pagination.setAttribute('aria-label', 'Catalogue result pages');
+  const previous = document.createElement('button');
+  previous.type = 'button'; previous.disabled = true; previous.textContent = 'Previous 80'; previous.dataset.pickerRole = 'prev';
+  const page = document.createElement('output');
+  page.textContent = 'No results'; page.dataset.pickerRole = 'page'; page.setAttribute('aria-live', 'polite');
+  const next = document.createElement('button');
+  next.type = 'button'; next.disabled = true; next.textContent = 'Next 80'; next.dataset.pickerRole = 'next';
+  pagination.append(previous, page, next);
+
+  const filters = document.createElement('details'); filters.className = 'catalog-advanced-filters';
+  const filtersSummary = document.createElement('summary'); filtersSummary.textContent = 'Advanced filters';
+  const filterGrid = document.createElement('div');
+  filterGrid.append(
+    ...labelledSelect(document, prefix, 'category', 'Category', [['all', 'All categories', true]]),
+    ...labelledSelect(document, prefix, 'interface', 'Interface', [
+      ['all', 'All interfaces', true], ['GPIO', 'GPIO'], ['analogue', 'analogue'], ['PWM', 'PWM'],
+      ['UART', 'UART'], ['I²C', 'I²C'], ['SPI', 'SPI'], ['passive', 'passive'],
+    ]),
+    ...labelledSelect(document, prefix, 'status', 'Simulation support', [
+      ['simulated', 'Simulated'], ['partial', 'Partial'], ['visual', 'Visual only'], ['all', 'All statuses', true],
+    ]),
+    ...labelledSelect(document, prefix, 'supply-voltage', 'Operating supply', [
+      ['all', 'Any declared supply', true], ['3.3', 'Supports 3.3 V'], ['5', 'Supports 5 V'],
+    ]),
+    ...labelledSelect(document, prefix, 'pin-voltage', 'Declared pin voltage limit', [
+      ['all', 'Any pin declaration', true], ['3.3', 'Accepts a 3.3 V pin signal'],
+      ['5', 'Accepts a 5 V pin signal'], ['undeclared', 'No declared pin voltage range'],
+    ]),
+  );
+  const favouritesLabel = document.createElement('label'); favouritesLabel.className = 'check-row';
+  const favourites = document.createElement('input');
+  favourites.type = 'checkbox'; favourites.id = `${prefix}-catalog-favorites`; favourites.dataset.pickerRole = 'favorites';
+  favouritesLabel.append(favourites, document.createTextNode(' Favourites only'));
+  filterGrid.append(favouritesLabel); filters.append(filtersSummary, filterGrid);
+
+  const support = document.createElement('section');
+  support.className = 'catalog-support-card'; support.setAttribute('aria-labelledby', `${prefix}-catalog-support-title`);
+  const supportEyebrow = document.createElement('p'); supportEyebrow.className = 'eyebrow'; supportEyebrow.textContent = 'EXACT COMPATIBILITY';
+  const supportTitle = document.createElement('h3'); supportTitle.id = `${prefix}-catalog-support-title`;
+  supportTitle.textContent = 'What works with each controller?';
+  const supportCopy = document.createElement('p');
+  supportCopy.textContent = 'Compare public models across AVR, Pico, ESP32-C3 and STM32, including project-mode limits and explicit unavailable reasons.';
+  const supportOpen = document.createElement('button');
+  supportOpen.type = 'button'; supportOpen.textContent = 'View support matrix'; supportOpen.dataset.pickerRole = 'support-open';
+  support.append(supportEyebrow, supportTitle, supportCopy, supportOpen);
+
+  const truth = document.createElement('p'); truth.className = 'truth';
+  truth.textContent = 'Click to add, or drag a part onto the canvas. IDs are allocated once and remain stable.';
+  parts.replaceChildren(eyebrow, heading, searchLabel, search, count, feature, list, empty, pagination, filters, support, truth);
+}
+
 function mountNarrowProfile(document, adapter) {
   const root = document.querySelector(adapter.root);
   const grid = root?.querySelector(adapter.grid);
@@ -222,6 +342,7 @@ function mountNarrowProfile(document, adapter) {
   if (!parts || !canvas || !source || !project || !runtime || !serial || !properties) {
     throw new Error(`SHARED_WORKBENCH_SURFACE_MISSING:${adapter.profile}`);
   }
+  normalizeNarrowComponentPicker(document, parts, adapter);
 
   const inspector = document.createElement('aside');
   inspector.id = `${adapter.prefix}-shared-inspector`;

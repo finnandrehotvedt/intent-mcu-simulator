@@ -2,6 +2,20 @@
 
 All notable public source changes are recorded here.
 
+## 1.1.0-rc.142 — 2026-10-27
+
+- Replaces the three reduced Pico, ESP32-C3 and STM32 part lists with the same
+  catalogue structure used by AVR: identical card geometry, search, advanced
+  filters, favourites, pagination, compatibility link and keyboard/drag use.
+- Keeps each controller's exact component policy and runtime limits; picker
+  parity does not imply that an unavailable component became executable.
+- Makes the sliding drawer body independently scrollable so the full chooser
+  remains usable at both 1366×768 and 1440×900.
+- Strengthens browser acceptance to compare the live DOM contract and computed
+  card styling across all four controller profiles.
+- Leaves actual public deployment state and rollback evidence in the separate
+  deployment checkpoint.
+
 ## 1.1.0-rc.141 — 2026-10-27
 
 - Replaces the permanent component column with one left-side Parts drawer that

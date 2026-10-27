@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-lcd-20x4-cgram.1-current",
-    "manifestSha256": "d44fb5e2e38e100a3f20ad6bac9bd3fd7fb3dbfe3b293ff5592516f109d2b656",
-    "implementationSha256": "68da8e3076517225632cbd8bae2c99c0f2845111d7a4f023b37d232f5cb16250"
+    "manifestSha256": "4d0e44325726cf6f1a33cbb8328b46da6dfbbce23bb0b2a14ce4b78e67e3d67f",
+    "implementationSha256": "c559fac09e04af127b96d8e18c60b9514c74c5e91ebe919f1a897415a7279fbd"
   },
   "entries": [
     {
@@ -39,7 +39,7 @@
         "board.stm32f429zi-nucleo144-v1": "unavailable"
       },
       "sourceSha256": "a45c454a3d400b2f489e17acb3aa35b5574bc689ecd09d5a1fc56f48f3db9350",
-      "projectSha256": "e9e34b1c14b9e83a5e7fbe56218869d9422ef89ed9ac5a24778e6eeebd3fdf11",
+      "projectSha256": "5ef40d90d56cc974861bd70254d80aeb042d73c73c58276ffd410ef66af9384c",
       "provenance": "Original project-owned contracts, SVG artwork, deterministic divider transfer models, firmware source and canonical project envelope."
     }
   ]

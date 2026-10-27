@@ -623,35 +623,35 @@
     </section>
 
     <section id="workbench-workspace" class="workspace" aria-label="Manual circuit editor">
-      <aside class="catalog panel" aria-labelledby="catalog-title">
+      <aside class="catalog panel" aria-labelledby="catalog-title" data-component-picker-contract="intent-mcu-avr-catalog-picker@1" data-component-picker-profile="board.atmega328p-16mhz-v1">
         <p class="eyebrow">1 · COMPONENTS</p><h2 id="catalog-title">Add parts</h2>
-        <label for="catalog-search">Search name, alias, function or part number</label><input id="catalog-search" type="search" autocomplete="off" placeholder="GPIO, 328P, indicator…">
-        <p id="catalog-count" class="catalog-count" aria-live="polite">0 parts</p>
-        <section id="catalog-release-feature" class="catalog-release-feature" aria-labelledby="catalog-release-feature-title">
-          <span id="catalog-release-feature-artwork" class="catalog-release-feature-artwork" aria-hidden="true"></span>
-          <span class="catalog-release-feature-copy"><span class="support-badge">NEW EXAMPLE</span><strong id="catalog-release-feature-title">Traffic light module</strong><small>Open the complete red, red+amber, green and amber AVR example.</small></span>
-          <button id="catalog-release-feature-open" type="button">Open example</button>
+        <label for="catalog-search">Search name, alias, function or part number</label><input id="catalog-search" data-picker-role="search" type="search" autocomplete="off" placeholder="GPIO, 328P, indicator…">
+        <p id="catalog-count" class="catalog-count" data-picker-role="count" aria-live="polite">0 parts</p>
+        <section id="catalog-release-feature" class="catalog-release-feature" data-picker-role="feature" aria-labelledby="catalog-release-feature-title">
+          <span id="catalog-release-feature-artwork" class="catalog-release-feature-artwork" data-picker-role="feature-artwork" aria-hidden="true"></span>
+          <span class="catalog-release-feature-copy"><span class="support-badge">NEW EXAMPLE</span><strong id="catalog-release-feature-title" data-picker-role="feature-title">Traffic light module</strong><small>Open the complete red, red+amber, green and amber AVR example.</small></span>
+          <button id="catalog-release-feature-open" data-picker-role="feature-open" type="button">Open example</button>
         </section>
-        <div id="catalog-list" class="catalog-list"></div>
-        <div id="catalog-empty" class="catalog-empty" hidden><strong>No parts match these filters.</strong><span>Clear the filters, or broaden supply, pin-limit, support, interface, or category choices.</span><button id="catalog-clear" type="button">Clear catalogue filters</button></div>
+        <div id="catalog-list" class="catalog-list" data-picker-role="list"></div>
+        <div id="catalog-empty" class="catalog-empty" data-picker-role="empty" hidden><strong>No parts match these filters.</strong><span>Clear the filters, or broaden supply, pin-limit, support, interface, or category choices.</span><button id="catalog-clear" data-picker-role="clear" type="button">Clear catalogue filters</button></div>
         <nav class="catalog-pagination" aria-label="Catalogue result pages">
-          <button id="catalog-prev" type="button" disabled>Previous 80</button>
-          <output id="catalog-page" aria-live="polite">No results</output>
-          <button id="catalog-next" type="button" disabled>Next 80</button>
+          <button id="catalog-prev" data-picker-role="prev" type="button" disabled>Previous 80</button>
+          <output id="catalog-page" data-picker-role="page" aria-live="polite">No results</output>
+          <button id="catalog-next" data-picker-role="next" type="button" disabled>Next 80</button>
         </nav>
         <details class="catalog-advanced-filters"><summary>Advanced filters</summary><div>
-          <label for="catalog-category">Category</label><select id="catalog-category"><option value="all">All categories</option></select>
-          <label for="catalog-interface">Interface</label><select id="catalog-interface"><option value="all">All interfaces</option><option>GPIO</option><option>analogue</option><option>PWM</option><option>UART</option><option>I²C</option><option>SPI</option><option>passive</option></select>
-          <label for="catalog-status">Simulation support</label><select id="catalog-status"><option value="simulated">Simulated</option><option value="partial">Partial</option><option value="visual">Visual only</option><option value="all">All statuses</option></select>
-          <label for="catalog-supply-voltage">Operating supply</label><select id="catalog-supply-voltage"><option value="all">Any declared supply</option><option value="3.3">Supports 3.3 V</option><option value="5">Supports 5 V</option></select>
-          <label for="catalog-pin-voltage">Declared pin voltage limit</label><select id="catalog-pin-voltage"><option value="all">Any pin declaration</option><option value="3.3">Accepts a 3.3 V pin signal</option><option value="5">Accepts a 5 V pin signal</option><option value="undeclared">No declared pin voltage range</option></select>
-          <label class="check-row"><input id="catalog-favorites" type="checkbox"> Favourites only</label>
+          <label for="catalog-category">Category</label><select id="catalog-category" data-picker-role="category"><option value="all">All categories</option></select>
+          <label for="catalog-interface">Interface</label><select id="catalog-interface" data-picker-role="interface"><option value="all">All interfaces</option><option>GPIO</option><option>analogue</option><option>PWM</option><option>UART</option><option>I²C</option><option>SPI</option><option>passive</option></select>
+          <label for="catalog-status">Simulation support</label><select id="catalog-status" data-picker-role="status"><option value="simulated">Simulated</option><option value="partial">Partial</option><option value="visual">Visual only</option><option value="all">All statuses</option></select>
+          <label for="catalog-supply-voltage">Operating supply</label><select id="catalog-supply-voltage" data-picker-role="supply-voltage"><option value="all">Any declared supply</option><option value="3.3">Supports 3.3 V</option><option value="5">Supports 5 V</option></select>
+          <label for="catalog-pin-voltage">Declared pin voltage limit</label><select id="catalog-pin-voltage" data-picker-role="pin-voltage"><option value="all">Any pin declaration</option><option value="3.3">Accepts a 3.3 V pin signal</option><option value="5">Accepts a 5 V pin signal</option><option value="undeclared">No declared pin voltage range</option></select>
+          <label class="check-row"><input id="catalog-favorites" data-picker-role="favorites" type="checkbox"> Favourites only</label>
         </div></details>
         <section class="catalog-support-card" aria-labelledby="catalog-support-title">
           <p class="eyebrow">EXACT COMPATIBILITY</p>
           <h3 id="catalog-support-title">What works with each controller?</h3>
           <p>See all 19 public models across AVR, Pico, ESP32-C3 and STM32, including project-mode limits and explicit unavailable reasons.</p>
-          <button id="catalog-support-open" type="button">View support matrix</button>
+          <button id="catalog-support-open" data-picker-role="support-open" type="button">View support matrix</button>
         </section>
         <p class="truth">Click to add, or drag a part onto the canvas. IDs are allocated once and remain stable.</p>
       </aside>

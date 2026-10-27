@@ -44,15 +44,15 @@ const profiles = [
       await page.selectOption('#board-select', profile.id);
       await page.waitForFunction(({ api }) => Boolean(window[api]?.state().active), profile);
       await page.waitForFunction(({ list }) => {
-        const cards = [...document.querySelectorAll(`${list} .bounded-part-card`)];
-        return cards.length === 20 && cards.every((card) => card.querySelector('.bounded-part-thumbnail svg[role="img"]'));
+        const cards = [...document.querySelectorAll(`${list} .catalog-item`)];
+        return cards.length === 20 && cards.every((card) => card.querySelector('.catalog-thumbnail-slot svg[role="img"]'));
       }, profile);
       const catalogueArtwork = await page.evaluate(({ list }) => ({
-        cards: document.querySelectorAll(`${list} .bounded-part-card`).length,
-        thumbnails: document.querySelectorAll(`${list} .bounded-part-thumbnail svg[role="img"]`).length,
-        empty: [...document.querySelectorAll(`${list} .bounded-part-thumbnail`)].filter((slot) => !slot.firstElementChild).length,
-        labels: [...document.querySelectorAll(`${list} .bounded-part-thumbnail svg`)].every((svg) => Boolean(svg.getAttribute('aria-label'))),
-        visible: [...document.querySelectorAll(`${list} .bounded-part-thumbnail svg`)].every((svg) => {
+        cards: document.querySelectorAll(`${list} .catalog-item`).length,
+        thumbnails: document.querySelectorAll(`${list} .catalog-thumbnail-slot svg[role="img"]`).length,
+        empty: [...document.querySelectorAll(`${list} .catalog-thumbnail-slot`)].filter((slot) => !slot.firstElementChild).length,
+        labels: [...document.querySelectorAll(`${list} .catalog-thumbnail-slot svg`)].every((svg) => Boolean(svg.getAttribute('aria-label'))),
+        visible: [...document.querySelectorAll(`${list} .catalog-thumbnail-slot svg`)].every((svg) => {
           const box = svg.getBoundingClientRect();
           return box.width >= 40 && box.height >= 40 && box.left >= 0 && box.right <= document.documentElement.clientWidth;
         }),
@@ -330,7 +330,7 @@ const profiles = [
       const narrowDesktop = await page.evaluate(() => {
         const workbench = document.querySelector('#top-workbench-shell');
         const stage = document.querySelector('#active-canvas-stage');
-        const graphics = [...document.querySelectorAll('#simple-parts-mount .bounded-part-thumbnail svg[role="img"]')];
+        const graphics = [...document.querySelectorAll('#simple-parts-mount .catalog-thumbnail-slot svg[role="img"]')];
         return { graphics: graphics.length,
           visible: graphics.every((svg) => { const box = svg.getBoundingClientRect(); return box.width >= 40 && box.height >= 40; }),
           stageWidth: stage.getBoundingClientRect().width,

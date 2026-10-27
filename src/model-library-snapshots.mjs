@@ -183210,7 +183210,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "abfb0a2ad4747d308b289985c5d3b8965a5158d5f9cdc1188af20aada87515e7"
+      "sha256": "59d70227c7d5751068049f310152f9b3359868ec2fd91b0bdd165e6e304cd777"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -183226,7 +183226,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/shared-workbench-shell.mjs",
-      "sha256": "4a38ec3c55a925f1c37c6d7d5da14a28d44dade8eaae55489f79dda3d34727c0"
+      "sha256": "505f77865b238cf2c73844534a3853ddc41612205377a9306f33d6ed54fa3650"
     },
     {
       "path": "src/rp2040-snapshot-pacer.mjs",
@@ -183525,7 +183525,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "d8a5622d2ab32e3661866fe25de4304550ddada18281eb88b752c504349bc3f3"
     }
   ],
-  "implementationSha256": "68da8e3076517225632cbd8bae2c99c0f2845111d7a4f023b37d232f5cb16250",
+  "implementationSha256": "c559fac09e04af127b96d8e18c60b9514c74c5e91ebe919f1a897415a7279fbd",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted CMP-041 head db730407 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -183535,7 +183535,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-lcd-20x4-cgram.1-current",
     "semanticDisposition": "adds the separate AVR-only twelve-terminal four-digit common-cathode multiplex display as a manifest-owned simulated model while retaining every prior component contract"
   },
-  "manifestSha256": "d44fb5e2e38e100a3f20ad6bac9bd3fd7fb3dbfe3b293ff5592516f109d2b656",
+  "manifestSha256": "4d0e44325726cf6f1a33cbb8328b46da6dfbbce23bb0b2a14ce4b78e67e3d67f",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

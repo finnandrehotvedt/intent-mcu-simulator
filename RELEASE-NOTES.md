@@ -1,4 +1,23 @@
-# Intent MCU Simulator 1.1.0-rc.141
+# Intent MCU Simulator 1.1.0-rc.142
+
+## AVR component picker parity across all controllers
+
+Rc.142 makes the picker itself—not only the surrounding drawer—the same on
+AVR, Pico, ESP32-C3 and STM32. Every profile now uses the AVR catalogue
+structure, card design, search, advanced filters, favourites, pagination,
+compatibility entry and click, keyboard and drag interactions.
+
+The component inventory remains profile-specific and truthful. A matching
+picker does not claim that every AVR component is executable on every
+controller. The drawer body now scrolls independently so the full chooser is
+usable at ordinary laptop and desktop heights.
+
+Actual public deployment state and rollback evidence remain owned by the
+separate deployment checkpoint.
+
+---
+
+## 1.1.0-rc.141
 
 ## Shared sliding component drawer
 
