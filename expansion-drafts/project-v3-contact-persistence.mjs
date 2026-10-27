@@ -125,6 +125,14 @@ import {
   projectDigitalPresenceSensors,
   validateDigitalPresenceSensor,
 } from './digital-presence-sensors-v1.mjs';
+import {
+  DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
+  IR_OBSTACLE_SENSOR_TYPE,
+  LINE_TRACKING_SENSOR_TYPE,
+  digitalReflectiveSensorActive,
+  projectDigitalReflectiveSensors,
+  validateDigitalReflectiveSensor,
+} from './digital-reflective-sensors-v1.mjs';
 
 export const CONTACT_PERSISTENCE_SCHEMA = 'intent-mcu-project-contact-persistence@1';
 export const COMPILED_FIXTURE_REFERENCE_SCHEMA = 'intent-mcu-compiled-fixture-ref@1';
@@ -200,6 +208,7 @@ function pinIds(component) {
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return ['VCC', 'GND', 'AOUT'];
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return ['VCC', 'GND', 'DOUT'];
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
+  if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return ['R', 'G', 'B', 'COM'];
   if (component.type === ACTIVE_BUZZER_TYPE) return ['VCC', 'GND', 'EN'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
@@ -227,6 +236,7 @@ function componentPins(component) {
   if (component.type === TEMPERATURE_ANALOGUE_SENSOR_TYPE) return TEMPERATURE_ANALOGUE_SENSOR_DEFINITION.pins;
   if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) return DIGITAL_LIGHT_THRESHOLD_DEFINITION.pins;
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].pins;
+  if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].pins;
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return COMMON_CATHODE_RGB_LED_DEFINITION.pins;
   if (component.type === ACTIVE_BUZZER_TYPE) return ACTIVE_BUZZER_DEFINITION.pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
@@ -289,6 +299,10 @@ function validateCandidateComponent(component) {
   } else if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) {
     if (!validateDigitalPresenceSensor(component)) {
       fail('PROJECT_CONTACT_DIGITAL_PRESENCE_SENSOR_STATE', [component.id]);
+    }
+  } else if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
+    if (!validateDigitalReflectiveSensor(component)) {
+      fail('PROJECT_CONTACT_DIGITAL_REFLECTIVE_SENSOR_STATE', [component.id]);
     }
   } else if (component.type === COMMON_CATHODE_RGB_LED_TYPE) {
     if (!validateCommonCathodeRgbLedComponent(component)) {
@@ -356,6 +370,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
         DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
         CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+        IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
       ].includes(component.type))) {
@@ -786,7 +801,23 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
     }
   }
-  const commonAnodeProjection = projectCommonAnodeRgbLeds(presenceProjection.runtimeGraph);
+  const reflectiveProjection = projectDigitalReflectiveSensors(presenceProjection.runtimeGraph);
+  if (!reflectiveProjection.ok) {
+    fail(`PROJECT_CONTACT_${reflectiveProjection.code}`, reflectiveProjection.details);
+  }
+  contacts.push(...reflectiveProjection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: sensor.type,
+    state: { active: sensor.active, outputLevel: sensor.outputLevel },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of reflectiveProjection.sensors) {
+    const expected = production(implementation, sensor.type, { active: sensor.active }, [sensor.componentId]);
+    if (expected.active !== sensor.active || expected.digitalLevel !== !sensor.active) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const commonAnodeProjection = projectCommonAnodeRgbLeds(reflectiveProjection.runtimeGraph);
   contacts.push(...commonAnodeProjection.outputs.map((output) => ({ componentId: output.componentId,
     type: RGB_COMMON_ANODE_TYPE, state: { commonPolarity: 'anode', activeLevel: 'LOW' },
     runtimeProjection: clone(output) })));
@@ -984,6 +1015,14 @@ function draftContacts(graph) {
         runtimeProjection: null,
       }];
     }
+    if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
+      return [{
+        componentId: component.id,
+        type: component.type,
+        state: { active: digitalReflectiveSensorActive(component) },
+        runtimeProjection: null,
+      }];
+    }
     if (component.type === COMMON_CATHODE_RGB_LED_TYPE) {
       return [{
         componentId: component.id,
@@ -1146,6 +1185,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
       DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
       CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+      IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
       ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,

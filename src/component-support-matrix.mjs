@@ -99,6 +99,8 @@ const referenceBindings = deepFreeze({
     'input.capacitive-touch-button-v1': { starters: ['avr-digital-presence-sensors'], tests: ['test/digital-presence-sensors-candidate.test.mjs', 'test/digital-presence-sensor-example-artifacts.test.mjs'] },
     'sensor.pir-motion-v1': { starters: ['avr-digital-presence-sensors'], tests: ['test/digital-presence-sensors-candidate.test.mjs', 'test/digital-presence-sensor-example-artifacts.test.mjs'] },
     'sensor.hall-switch-digital-v1': { starters: ['avr-digital-presence-sensors'], tests: ['test/digital-presence-sensors-candidate.test.mjs', 'test/digital-presence-sensor-example-artifacts.test.mjs'] },
+    'sensor.ir-obstacle-reflective-v1': { starters: ['avr-digital-reflective-sensors'], tests: ['test/digital-reflective-sensors-candidate.test.mjs', 'test/digital-reflective-sensor-example-artifacts.test.mjs'] },
+    'sensor.line-tracking-reflective-v1': { starters: ['avr-digital-reflective-sensors'], tests: ['test/digital-reflective-sensors-candidate.test.mjs', 'test/digital-reflective-sensor-example-artifacts.test.mjs'] },
   },
   [PICO]: {
     [PICO]: { starters: ['pico-led-on', 'pico-led-off'], tests: ['test/rp2040-pico-circuit.test.mjs', 'test/supported-example-pack-browser.cjs'] },

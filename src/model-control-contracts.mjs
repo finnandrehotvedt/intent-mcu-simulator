@@ -94,6 +94,12 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
   'sensor.hall-switch-digital-v1': {
     magnetPresent: { kind: 'boolean', default: false, mutability: 'authored' },
   },
+  'sensor.ir-obstacle-reflective-v1': {
+    obstacleDetected: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
+  'sensor.line-tracking-reflective-v1': {
+    lineDetected: { kind: 'boolean', default: false, mutability: 'authored' },
+  },
   'input.rotary-encoder-quadrature-v1': {
     detent: { kind: 'integer', minimum: -999, maximum: 999, default: 0,
       unit: 'detent', mutability: 'transition-only' },

@@ -118,6 +118,13 @@ import {
   createDigitalPresenceSensor,
 } from '../expansion-drafts/digital-presence-sensors-v1.mjs';
 import { createDigitalPresenceSensorArtwork } from '../expansion-drafts/digital-presence-sensors-artwork-v1.mjs';
+import {
+  DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
+  IR_OBSTACLE_SENSOR_TYPE,
+  LINE_TRACKING_SENSOR_TYPE,
+  createDigitalReflectiveSensor,
+} from '../expansion-drafts/digital-reflective-sensors-v1.mjs';
+import { createDigitalReflectiveSensorArtwork } from '../expansion-drafts/digital-reflective-sensors-artwork-v1.mjs';
 
 export const CANDIDATE_EXISTING_UI_ADAPTER_SCHEMA = 'intent-mcu-candidate-existing-ui@1';
 
@@ -181,6 +188,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [PCF8574_LCD_TYPE]: PCF8574_LCD_DEFINITION,
   [ROTARY_ENCODER_TYPE]: ROTARY_ENCODER_DEFINITION,
   ...DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
+  ...DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
 });
 
 export function candidateUiDefinition(type) {
@@ -246,6 +254,9 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component?.type]) {
     return createDigitalPresenceSensorArtwork(documentObject, definition, component, options);
   }
+  if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component?.type]) {
+    return createDigitalReflectiveSensorArtwork(documentObject, definition, component, options);
+  }
   throw new TypeError('CANDIDATE_UI_COMPONENT');
 }
 
@@ -276,6 +287,7 @@ export function createCandidateUiComponent(type, id) {
   if (type === PCF8574_LCD_TYPE) return createPcf8574LcdComponent(id);
   if (type === ROTARY_ENCODER_TYPE) return createRotaryEncoderComponent(id);
   if (DIGITAL_PRESENCE_SENSOR_DEFINITIONS[type]) return createDigitalPresenceSensor(type, id);
+  if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[type]) return createDigitalReflectiveSensor(type, id);
   throw new TypeError('CANDIDATE_UI_COMPONENT_TYPE');
 }
 
@@ -377,6 +389,15 @@ export function candidateContactControl(session, componentId, key, value) {
       ok: true,
       command: { type: 'component.control.set', componentId, key, value },
       worker: { command: 'control', componentId, key: 'pressed', value: !value },
+    };
+  }
+  if ([IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE].includes(component.type)
+      && key === DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].controlKeys[0]
+      && typeof value === 'boolean') {
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value },
     };
   }
   if (component.type === ANALOG_JOYSTICK_TYPE && ['x', 'y'].includes(key)

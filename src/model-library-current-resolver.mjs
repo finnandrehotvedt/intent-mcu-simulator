@@ -201,6 +201,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       }
       return { ok: true, code: 'OK', result: { active: input.active, digitalLevel: input.active } };
     }
+    if (['sensor.ir-obstacle-reflective-v1', 'sensor.line-tracking-reflective-v1']
+      .includes(componentType)) {
+      if (!exactInput(input, ['active']) || typeof input.active !== 'boolean') {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      return { ok: true, code: 'OK', result: { active: input.active, digitalLevel: !input.active } };
+    }
     if (componentType === 'output.rgb-led-common-cathode-v1') {
       const duties = input?.duties;
       if (!duties || ['R', 'G', 'B'].some((key) => !Number.isFinite(duties[key]))) {

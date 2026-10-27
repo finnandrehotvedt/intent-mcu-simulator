@@ -42,6 +42,8 @@ const expected = {
   'input.capacitive-touch-button-v1': ['touched'],
   'sensor.pir-motion-v1': ['motionDetected'],
   'sensor.hall-switch-digital-v1': ['magnetPresent'],
+  'sensor.ir-obstacle-reflective-v1': ['obstacleDetected'],
+  'sensor.line-tracking-reflective-v1': ['lineDetected'],
   'input.rotary-encoder-quadrature-v1': ['detent'],
 };
 
@@ -65,10 +67,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 44 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 46 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 168, available: 44, unavailable: 124,
-    controlBearing: 23, controlsEmpty: 21, controls: 32,
+    profiles: 4, cells: 176, available: 46, unavailable: 130,
+    controlBearing: 25, controlsEmpty: 21, controls: 34,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

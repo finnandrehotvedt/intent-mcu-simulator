@@ -39,6 +39,8 @@ const rows = [
   ['input.capacitive-touch-button-v1', 'touched', 'control · active-high digital state', 'D4 input → executed firmware → USART', 'actual-executed'],
   ['sensor.pir-motion-v1', 'motionDetected', 'control · active-high digital state', 'D5 input → executed firmware → USART', 'actual-executed'],
   ['sensor.hall-switch-digital-v1', 'magnetPresent', 'control · active-high digital state', 'D6 input → executed firmware → USART', 'actual-executed'],
+  ['sensor.ir-obstacle-reflective-v1', 'obstacleDetected', 'control · active-low digital state', 'D7 input → executed firmware → USART', 'actual-executed'],
+  ['sensor.line-tracking-reflective-v1', 'lineDetected', 'control · active-low digital state', 'D8 input → executed firmware → USART', 'actual-executed'],
 ].map(([model, field, workerEvent, observable, evidence]) => Object.freeze({
   profile: AVR_PROFILE,
   model,
@@ -47,8 +49,10 @@ const rows = [
   workerEvent,
   observable,
   evidence,
-  evidenceSource: ['touched', 'motionDetected', 'magnetPresent'].includes(field)
-    ? 'test/digital-presence-sensors-browser.cjs'
+  evidenceSource: ['obstacleDetected', 'lineDetected'].includes(field)
+    ? 'test/digital-reflective-sensors-browser.cjs'
+    : ['touched', 'motionDetected', 'magnetPresent'].includes(field)
+      ? 'test/digital-presence-sensors-browser.cjs'
     : ['thresholdPercent', 'hysteresisPercentagePoints', 'outputActive'].includes(field)
       ? 'test/control-runtime-evidence-browser.cjs'
       : 'test/control-persistence-browser.cjs',

@@ -150361,6 +150361,89 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "1360ebafc58dcbe74cb8f289b46f7df113eb240ebe9053884935687d89f00ead",
+      "componentType": "sensor.ir-obstacle-reflective-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.ir-obstacle-reflective-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.ir-obstacle-reflective-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-ir-obstacle-reflective",
+        "thumbnail": "sensor-ir-obstacle-reflective",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "53119b7381310a4b7d9cf5b1e30e70b99bc5862b91a439b47fe10f328cd0a34a",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "obstacleDetected": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.ir-obstacle-reflective-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-input",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT",
+            "role": "digital-out",
+            "signals": [
+              "digital.active-low"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal active-low reflected-object state only.",
+            "No distance, reflectivity, target size, angle, emitter power, threshold calibration, crosstalk or ambient-light model.",
+            "OUT is active LOW and must connect directly and exclusively to one D2–D12 INPUT_PULLUP pin on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "6a110eab5c56ebe60f49d981ceade8ad97864ea072fee1f3cd02374ba8168773",
+      "supportStatus": "simulated"
+    },
+    {
       "behaviorContractSha256": "b098c6801370b2396962e0765a42e2e97a50a7b5366ce9fb16b4b13ca595c461",
       "componentType": "sensor.light-analogue-v1",
       "componentVersion": 1,
@@ -150552,6 +150635,89 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         }
       },
       "semanticSha256": "af209039275b9cecebaee139b829e911fb3d0d6eb2f8dd15edd40bcde1baa992",
+      "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "04e767f19e279dbae5dd6d854445708fc0676cfd221538aa8a074e31812d93df",
+      "componentType": "sensor.line-tracking-reflective-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.line-tracking-reflective-ideal-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48",
+        "observerId": "sensor.line-tracking-reflective-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "sensor-line-tracking-reflective",
+        "thumbnail": "sensor-line-tracking-reflective",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "a6f04da384b4e9d86a67d6d2e867f5758689f83b49c4ac51ae757b8e506a5857",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "lineDetected": {
+            "default": false,
+            "kind": "boolean",
+            "mutability": "authored"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.line-tracking-reflective-ideal-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-input",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT",
+            "role": "digital-out",
+            "signals": [
+              "digital.active-low"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal active-low dark-line state only.",
+            "No surface colour calibration, sensor height, line width, speed, angle, emitter power, crosstalk or ambient-light model.",
+            "OUT is active LOW and must connect directly and exclusively to one D2–D12 INPUT_PULLUP pin on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "6a87afd4335ae702c9a8893835dbf0586f8f1c8ab78eb54296c2d7b33e072318",
       "supportStatus": "simulated"
     },
     {
@@ -152421,7 +152587,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "f23d2b6ccf38a169fed4dc67910c718c62a6e54fc899222d64fdd82fab0106e2"
+      "sha256": "2bc26d67e540a1ba9bed3a8783b62b60e06a567321fe50927b3f0c71ca1a11c1"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -152429,7 +152595,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "d86feaceb59ac8228d452ee8bded467401962ae3500c2fc137921e6db89dfa29"
+      "sha256": "2e18ed365afacccc86b9cefcc96acd18afa1b86765efd70e192291036c2cd493"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -152461,7 +152627,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "fb72f509305193c0f8190287a63d63585d09341320826debe57950ac6ea9a806"
+      "sha256": "ee50657c9be770127fcd6fa4e02493fd3a17e99bcc1c9778b10014849263b70a"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -152469,7 +152635,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "0403b59ca64f3806ead557ef9f492207bcafe816252627ccbf0be95105f56944"
+      "sha256": "598ffce015ab467253259ffd46492451fed36f33685373928e90d6b6b8b622df"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -152517,7 +152683,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "915babc4ee5930ef3f2288f7b4ec0aacd1703d1f60868eb8406a67ea4fcbc693"
+      "sha256": "7bc3465a970145188253544561d1e9780001764a17f60f2139cc8242b855d3f3"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -152534,6 +152700,14 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     {
       "path": "expansion-drafts/digital-presence-sensors-artwork-v1.mjs",
       "sha256": "d263637293808c0330c7004f3db5f0c2fe6ac8e9dcc6617ebefbd11610dab10e"
+    },
+    {
+      "path": "expansion-drafts/digital-reflective-sensors-v1.mjs",
+      "sha256": "8620dc94ff1a3e082f99c5cb09ed890aacadf23e04602a461aa77a1ed8d29bee"
+    },
+    {
+      "path": "expansion-drafts/digital-reflective-sensors-artwork-v1.mjs",
+      "sha256": "598f3cdafbfd969f293d17445bebde7fad0c5d237d9c8c14d771edc3909a6171"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -152605,10 +152779,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "d1438268164013f55584694286e5466c45fb21f77628ee808cc6ccaad9bed02d"
+      "sha256": "afebb791327a7cc69edd8fa7e7786a6792c03f0cd9f0a658e5bbaf2c55adec24"
     }
   ],
-  "implementationSha256": "3d967412ae6fadb427aae0208324dcc7d08419976b5c90a11474741120df1150",
+  "implementationSha256": "436cc66cddccb973a4fe839b32eb897a5a9207c1c54de4ce20ab7a44993edbaa",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only",
@@ -152618,7 +152792,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-x46-usart-rx-producer.1-current",
     "semanticDisposition": "adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract"
   },
-  "manifestSha256": "825a686a15ab5ecf4f364b722af1ee4bc759425094ab5aa2da2c710b9fffadea",
+  "manifestSha256": "766c96ec5e06c61a0e4e355e98d5df350c2b9b6ac33a0cb8445f50b822bd76b2",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

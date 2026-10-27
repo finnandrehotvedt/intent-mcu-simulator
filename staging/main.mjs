@@ -470,6 +470,11 @@ import {
   PIR_MOTION_TYPE,
 } from '../expansion-drafts/digital-presence-sensors-v1.mjs';
 import {
+  DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS,
+  IR_OBSTACLE_SENSOR_TYPE,
+  LINE_TRACKING_SENSOR_TYPE,
+} from '../expansion-drafts/digital-reflective-sensors-v1.mjs';
+import {
   ROTARY_ENCODER_TYPE,
   nextRotaryEncoderDetent,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
@@ -12996,6 +13001,8 @@ function candidateComponentPrefix(type) {
       [CAPACITIVE_TOUCH_TYPE]: 'touch-button',
       [PIR_MOTION_TYPE]: 'pir-motion',
       [HALL_SWITCH_TYPE]: 'hall-switch',
+      [IR_OBSTACLE_SENSOR_TYPE]: 'ir-obstacle',
+      [LINE_TRACKING_SENSOR_TYPE]: 'line-tracker',
       [COMMON_CATHODE_RGB_LED_TYPE]: 'rgb-led',
       [RGB_COMMON_ANODE_TYPE]: 'rgb-led-ca',
       [LED_BAR_GRAPH_TYPE]: 'led-bar',
@@ -13047,6 +13054,8 @@ function addComponent(type, point = null) {
       [CAPACITIVE_TOUCH_TYPE]: { x: 0.58, y: 0.7 },
       [PIR_MOTION_TYPE]: { x: 0.72, y: 0.7 },
       [HALL_SWITCH_TYPE]: { x: 0.84, y: 0.7 },
+      [IR_OBSTACLE_SENSOR_TYPE]: { x: 0.68, y: 0.62 },
+      [LINE_TRACKING_SENSOR_TYPE]: { x: 0.82, y: 0.62 },
       [COMMON_CATHODE_RGB_LED_TYPE]: { x: 0.78, y: 0.7 },
       [RGB_COMMON_ANODE_TYPE]: { x: 0.78, y: 0.7 },
       [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },
@@ -13557,6 +13566,23 @@ function renderRuntimeControls() {
         applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
         if (prepared.worker) worker?.postMessage(prepared.worker);
         elements.projectmessage.textContent = `${component.label} active-high state changed.`; renderProject();
+      }); row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
+      const row = document.createElement('div'); const label = document.createElement('span');
+      const key = DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+      const value = component.controls[key]; label.textContent = component.label;
+      const button = document.createElement('button'); button.type = 'button';
+      button.dataset.control = `${component.id}.${key}`; button.setAttribute('aria-pressed', String(value));
+      button.textContent = component.type === IR_OBSTACLE_SENSOR_TYPE
+        ? (value ? 'Obstacle detected' : 'Clear') : (value ? 'Dark line detected' : 'Light surface');
+      button.addEventListener('click', () => {
+        const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
+        const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
+        if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Reflective sensor control rejected.'); return; }
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker);
+        elements.projectmessage.textContent = `${component.label} active-low state changed.`; renderProject();
       }); row.append(label, button); return [row];
     }
     if (editor.kind === 'candidate-project-v3' && component.type === ROTARY_SELECTOR_TYPE) {

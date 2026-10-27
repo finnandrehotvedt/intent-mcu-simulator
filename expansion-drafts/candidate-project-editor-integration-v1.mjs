@@ -42,6 +42,8 @@ import {
 import { ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE } from './joystick-keypads-v1.mjs';
 import { CAPACITIVE_TOUCH_TYPE, DIGITAL_PRESENCE_SENSOR_DEFINITIONS,
   HALL_SWITCH_TYPE, PIR_MOTION_TYPE } from './digital-presence-sensors-v1.mjs';
+import { DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS, IR_OBSTACLE_SENSOR_TYPE,
+  LINE_TRACKING_SENSOR_TYPE } from './digital-reflective-sensors-v1.mjs';
 
 export const CANDIDATE_EDITOR_INTEGRATION_SCHEMA = 'intent-mcu-candidate-editor-session@1';
 export const CANDIDATE_EDITOR_HISTORY_LIMIT = 64;
@@ -59,6 +61,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   DIGITAL_LIGHT_THRESHOLD_TYPE,
   ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
   CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+  IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
 ]);
 
 function validPoint(value) {
@@ -542,6 +545,13 @@ export class CandidateEditorSession {
             const expectedKey = DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].controlKeys[0];
             if (command.key !== expectedKey || typeof command.value !== 'boolean') {
               return failure('PROJECT_CONTACT_DIGITAL_PRESENCE_SENSOR_STATE', this.revision);
+            }
+            component.controls[expectedKey] = command.value; runtimeDirty = true; break;
+          }
+          if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) {
+            const expectedKey = DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].controlKeys[0];
+            if (command.key !== expectedKey || typeof command.value !== 'boolean') {
+              return failure('PROJECT_CONTACT_DIGITAL_REFLECTIVE_SENSOR_STATE', this.revision);
             }
             component.controls[expectedKey] = command.value; runtimeDirty = true; break;
           }

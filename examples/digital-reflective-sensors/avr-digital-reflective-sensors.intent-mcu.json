@@ -1,0 +1,379 @@
+{
+  "schema": "intent-mcu-project-envelope@8",
+  "profile": "board.atmega328p-16mhz-v1",
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-lcd-20x4-cgram.1-current",
+    "manifestSha256": "766c96ec5e06c61a0e4e355e98d5df350c2b9b6ac33a0cb8445f50b822bd76b2",
+    "implementationSha256": "436cc66cddccb973a4fe839b32eb897a5a9207c1c54de4ce20ab7a44993edbaa"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-project-contact-persistence@1",
+    "project": {
+      "schema": "intent-mcu-project@3",
+      "metadata": {
+        "name": "Digital reflective sensors"
+      },
+      "catalogue": {
+        "schema": "intent-mcu-catalogue-ref@1",
+        "version": "intent-mcu-catalogue@2"
+      },
+      "controller": {
+        "profile": "board.atmega328p-16mhz-v1",
+        "adapterContract": "intent-mcu-controller-adapter@1",
+        "status": "simulated",
+        "capabilities": [
+          {
+            "id": "gpio",
+            "status": "simulated"
+          },
+          {
+            "id": "adc",
+            "status": "simulated"
+          },
+          {
+            "id": "pwm",
+            "status": "simulated"
+          },
+          {
+            "id": "uart0",
+            "status": "simulated"
+          },
+          {
+            "id": "timers",
+            "status": "partial"
+          },
+          {
+            "id": "interrupts",
+            "status": "partial"
+          },
+          {
+            "id": "spi",
+            "status": "unsupported"
+          },
+          {
+            "id": "i2c",
+            "status": "unsupported"
+          },
+          {
+            "id": "eeprom",
+            "status": "unsupported"
+          },
+          {
+            "id": "watchdog",
+            "status": "unsupported"
+          }
+        ]
+      },
+      "source": {
+        "files": [
+          {
+            "name": "main.ino",
+            "content": "void setup(){\n  Serial.begin(115200);\n  pinMode(7, INPUT_PULLUP); pinMode(8, INPUT_PULLUP);\n}\nvoid loop(){\n  bool obstacle = digitalRead(7) == LOW;\n  bool line = digitalRead(8) == LOW;\n  Serial.print(\"obstacle=\"); Serial.print(obstacle);\n  Serial.print(\",line=\"); Serial.println(line);\n  delay(120);\n}\n"
+          }
+        ]
+      },
+      "circuit": {
+        "schema": "teach-lab-circuit@2",
+        "components": [
+          {
+            "id": "board-1",
+            "type": "board.atmega328p-16mhz-v1",
+            "label": "ATmega328P board",
+            "properties": {},
+            "controls": {}
+          },
+          {
+            "id": "ir-obstacle-1",
+            "type": "button.momentary-v1",
+            "label": "IR reflective obstacle sensor",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": true
+            }
+          },
+          {
+            "id": "line-tracker-1",
+            "type": "button.momentary-v1",
+            "label": "Reflective line tracking sensor",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          }
+        ],
+        "nets": [
+          {
+            "id": "net-ground-branch",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "GND1"
+              },
+              {
+                "component": "ir-obstacle-1",
+                "pin": "B"
+              },
+              {
+                "component": "line-tracker-1",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-ir-obstacle-1-out",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D7"
+              },
+              {
+                "component": "ir-obstacle-1",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-line-tracker-1-out",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D8"
+              },
+              {
+                "component": "line-tracker-1",
+                "pin": "A"
+              }
+            ]
+          }
+        ],
+        "junctions": [
+          {
+            "id": "junction-ground-line",
+            "net": "net-ground-branch"
+          }
+        ]
+      },
+      "layout": {
+        "positions": {
+          "board-1": {
+            "x": 0.12,
+            "y": 0.2,
+            "rotation": 0
+          },
+          "ir-obstacle-1": {
+            "x": 0.64,
+            "y": 0.62,
+            "rotation": 0
+          },
+          "line-tracker-1": {
+            "x": 0.81,
+            "y": 0.62,
+            "rotation": 0
+          }
+        },
+        "wireRoutes": {},
+        "wireStyles": {
+          "net-ground-branch": {
+            "color": "#303943"
+          },
+          "net-ir-obstacle-1-out": {
+            "color": "#39dff2"
+          },
+          "net-line-tracker-1-out": {
+            "color": "#39dff2"
+          }
+        },
+        "viewport": {
+          "zoom": 1,
+          "panX": 0,
+          "panY": 0
+        }
+      },
+      "instruments": {
+        "logicChannels": [
+          "D13",
+          "D2"
+        ],
+        "selectedPin": "D13",
+        "serial": {
+          "baud": 9600,
+          "encoding": "utf-8",
+          "historyLimit": 512
+        }
+      },
+      "artifact": {
+        "schema": "intent-mcu-project-artifact-ref@1",
+        "status": "dirty",
+        "profile": null,
+        "inputIdentitySha256": null,
+        "artifactIdentitySha256": null
+      }
+    },
+    "candidateCircuit": {
+      "schema": "teach-lab-circuit@2",
+      "components": [
+        {
+          "id": "board-1",
+          "type": "board.atmega328p-16mhz-v1",
+          "label": "ATmega328P board",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "ir-obstacle-1",
+          "type": "sensor.ir-obstacle-reflective-v1",
+          "label": "IR reflective obstacle sensor",
+          "properties": {},
+          "controls": {
+            "obstacleDetected": true
+          }
+        },
+        {
+          "id": "line-tracker-1",
+          "type": "sensor.line-tracking-reflective-v1",
+          "label": "Reflective line tracking sensor",
+          "properties": {},
+          "controls": {
+            "lineDetected": false
+          }
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-5v",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "5V"
+            },
+            {
+              "component": "ir-obstacle-1",
+              "pin": "VCC"
+            },
+            {
+              "component": "line-tracker-1",
+              "pin": "VCC"
+            }
+          ]
+        },
+        {
+          "id": "net-ground-branch",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "GND1"
+            },
+            {
+              "component": "ir-obstacle-1",
+              "pin": "GND"
+            },
+            {
+              "component": "line-tracker-1",
+              "pin": "GND"
+            }
+          ]
+        },
+        {
+          "id": "net-ir-obstacle-1-out",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D7"
+            },
+            {
+              "component": "ir-obstacle-1",
+              "pin": "OUT"
+            }
+          ]
+        },
+        {
+          "id": "net-line-tracker-1-out",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D8"
+            },
+            {
+              "component": "line-tracker-1",
+              "pin": "OUT"
+            }
+          ]
+        }
+      ],
+      "junctions": [
+        {
+          "id": "junction-ground-line",
+          "net": "net-ground-branch"
+        },
+        {
+          "id": "junction-vcc-line",
+          "net": "net-5v"
+        }
+      ]
+    },
+    "candidateLayout": {
+      "schema": "intent-mcu-candidate-layout@1",
+      "positions": {
+        "board-1": {
+          "x": 0.12,
+          "y": 0.2,
+          "rotation": 0
+        },
+        "ir-obstacle-1": {
+          "x": 0.64,
+          "y": 0.62,
+          "rotation": 0
+        },
+        "line-tracker-1": {
+          "x": 0.81,
+          "y": 0.62,
+          "rotation": 0
+        }
+      },
+      "wireRoutes": {},
+      "viewport": {
+        "zoom": 1,
+        "panX": 0,
+        "panY": 0
+      }
+    },
+    "compiledFixture": {
+      "schema": "intent-mcu-compiled-fixture-ref@1",
+      "id": "button-pullup",
+      "profile": "board.atmega328p-16mhz-v1",
+      "toolchainImageId": "sha256:f04aa7a8c37699d16a965fb374870ff147ca776ba6386f81e7700e350ed3d89f",
+      "source": {
+        "sha256": "84ceea4f298483f4696a3672ac1fff97b046b9e35c65aaa6155b20140a66f518",
+        "bytes": 209
+      },
+      "executable": {
+        "format": "intel-hex",
+        "sha256": "247f94bb051e9eebb4dfe8099278d810e04ccbf097f1b3ddb53b904e26ea8ebc",
+        "bytes": 2525
+      },
+      "debug": {
+        "format": "elf",
+        "sha256": "23a37eff7f7c5b1d0626e12a3f31e00d9b79466eab374cd0d74c46e3667150bd",
+        "bytes": 14632
+      },
+      "artifactIdentitySha256": "69ad0bc87ba02a2d33ac4c5ba1d9bd07e28636b631cd007f4b9423889e76bd3b"
+    }
+  }
+}

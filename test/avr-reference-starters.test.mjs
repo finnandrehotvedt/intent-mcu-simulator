@@ -56,9 +56,10 @@ test('every available matrix cell now resolves to a real starter id', () => {
     'avr-rotary-selector-4', 'avr-rgb-common-anode', 'avr-led-bar-graph',
     'avr-analog-joystick', 'avr-matrix-keypad-3x4', 'avr-matrix-keypad-4x4',
     'avr-digital-presence-sensors',
+    'avr-digital-reflective-sensors',
   ]);
   const inventory = componentReferenceInventory();
-  assert.equal(inventory.length, 44);
+  assert.equal(inventory.length, 46);
   for (const item of inventory) {
     assert.equal(item.hasPositiveReference, true, `${item.profile}:${item.model}`);
     assert(item.starters.every((id) => ids.has(id)), `${item.model}:${item.starters.join(',')}`);

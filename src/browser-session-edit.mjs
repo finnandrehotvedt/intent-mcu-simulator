@@ -20,6 +20,8 @@ import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE, ROTARY_SELECTOR_TYPE,
   createRotarySelectorIndicator } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
 import { CAPACITIVE_TOUCH_TYPE, HALL_SWITCH_TYPE, PIR_MOTION_TYPE,
   createDigitalPresenceSensor } from '../expansion-drafts/digital-presence-sensors-v1.mjs';
+import { IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
+  createDigitalReflectiveSensor } from '../expansion-drafts/digital-reflective-sensors-v1.mjs';
 
 const ID = /^[a-z][a-z0-9-]{0,47}$/u;
 const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.basic-v1',
@@ -32,6 +34,7 @@ const TYPES = new Set(['board.atmega328p-16mhz-v1', 'resistor.fixed-v1', 'led.ba
   ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
   ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
   CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE,
+  IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
   GROUND_REFERENCE_3V3_TYPE, MOMENTARY_BUTTON_3V3_TYPE, POTENTIOMETER_3V3_TYPE, TOGGLE_SWITCH_3V3_TYPE]);
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).sort().join('|') === [...keys].sort().join('|');
@@ -95,6 +98,8 @@ export function prepareApiBatch(project, operations) {
           ? createRotarySelectorIndicator(operation.type, operation.id)
         : avr && [CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE].includes(operation.type)
           ? createDigitalPresenceSensor(operation.type, operation.id)
+        : avr && [IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE].includes(operation.type)
+          ? createDigitalReflectiveSensor(operation.type, operation.id)
         : avr ? createComponent(operation.id, operation.type) : { id: operation.id, type: operation.type };
       return { type: 'component.add', component,
         position: structuredClone(operation.position) };
