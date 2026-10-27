@@ -43,3 +43,13 @@ test('examples preserve physical pin truth and active-low output truth', async (
   assert.equal(new Set(bar.candidateCircuit.nets.flatMap(({ endpoints }) => endpoints
     .filter(({ component }) => component === barComponent.id).map(({ pin }) => pin))).size, 20);
 });
+
+test('CMP036/039/040 examples are visibly discoverable with electrical limits', async () => {
+  const html = await readFile(new URL('../staging/examples.html', import.meta.url), 'utf8');
+  for (const title of ['Four-position rotary selector', 'Common-anode RGB LED',
+    'Ten-segment LED bar graph']) assert.match(html, new RegExp(`<h2>${title}</h2>`, 'u'));
+  assert.match(html, /COM on D7 reads the selected ground or 5 V reference/u);
+  assert.match(html, /D3\/D5\/D6 through three explicit 330 Ω resistors/u);
+  assert.match(html, /ten separately resisted anodes and ten explicit ground returns/u);
+  assert.match(html, /no shared cathode, optical coupling, thermal or package-current model/u);
+});
