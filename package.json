@@ -1,6 +1,6 @@
 {
   "name": "intent-mcu-simulator",
-  "version": "1.1.0-rc.144",
+  "version": "1.1.0-rc.145",
   "private": true,
   "description": "Original browser-based microcontroller learning environment source",
   "license": "Apache-2.0",
@@ -30,6 +30,8 @@
     "test:dht11": "node --test --test-concurrency=1 test/dht11-temperature-humidity.test.mjs",
     "test:dht11:browser": "npm run build && node test/dht11-temperature-humidity-browser.cjs",
     "test:dht11:discovery:browser": "npm run build && node test/dht11-public-discovery-browser.cjs",
+    "test:dht22": "node --test --test-concurrency=1 test/dht22-temperature-humidity.test.mjs",
+    "test:dht22:browser": "npm run build && node test/dht22-temperature-humidity-browser.cjs",
     "test:ds18b20": "node --test --test-concurrency=1 test/ds18b20-temperature.test.mjs",
     "test:ds18b20:browser": "npm run build && node test/ds18b20-temperature-browser.cjs",
     "test:four-digit-seven-segment": "node scripts/generate-indicator-actuator-examples.mjs && node --test --test-concurrency=1 test/four-digit-seven-segment.test.mjs test/indicator-actuator-example-artifacts.test.mjs",

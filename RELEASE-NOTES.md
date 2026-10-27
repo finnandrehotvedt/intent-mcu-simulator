@@ -1,4 +1,28 @@
-# Intent MCU Simulator 1.1.0-rc.144
+# Intent MCU Simulator 1.1.0-rc.145
+
+## Signed decimal climate sensor
+
+Rc.145 adds DHT22 as a distinct AVR component and working starter. The part
+has original three-pin artwork, named VCC/DATA/GND terminals and independent
+temperature and humidity controls in exact 0.1-unit steps. Temperature spans
+−40.0–80.0 °C and humidity spans 0.0–100.0 %RH. Firmware issues the start
+pulse, decodes the signed decimal five-byte payload and only reports the
+visible Serial result after checksum validation.
+
+The DHT22 action is directly visible in the ordinary Simple view and the
+shared Parts drawer features the complete lesson. Component state and exact D5
+wiring survive canonical Save/Open, while a reopened project still requires a
+fresh Build before Run. The bounded simulator omits physical sensor latency,
+minimum sampling enforcement, noise, self-heating, cable and electrical
+effects. Pico, ESP32-C3 and STM32 keep DHT22 explicitly unavailable until they
+own a tested runtime path, while using the same AVR-style Parts drawer.
+
+This release is a source candidate only. The separate deployment checkpoint
+must verify the actual public HTTPS URL before DHT22 may be called public.
+
+---
+
+## 1.1.0-rc.144
 
 ## Digital sensors visible from the first screen
 

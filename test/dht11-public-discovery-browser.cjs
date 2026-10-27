@@ -47,20 +47,24 @@ const screenshot = process.env.DHT11_DISCOVERY_SCREENSHOT || null;
 
     await page.click('#toggle-catalog');
     assert.equal(await page.locator('#catalog-release-feature-title').textContent(),
-      'DHT11 temperature and humidity');
+      'DHT22 decimal temperature and humidity');
     assert.equal(await page.locator(
-      '#catalog-release-feature-artwork [data-artwork-key="sensor-dht11-temperature-humidity"]',
+      '#catalog-release-feature-artwork [data-artwork-key="sensor-dht22-temperature-humidity"]',
     ).count(), 1);
+    const picker = page.locator('#simple-parts-mount > [data-component-picker-contract]');
+    await picker.locator('[data-picker-role="search"]').fill('DHT11');
+    assert.equal(await picker.locator('[data-picker-role="list"] .catalog-item').count(), 1);
+    assert.match(await picker.locator('[data-picker-role="list"] .catalog-item').textContent(), /DHT11/u);
     await page.click('#toggle-catalog');
 
     await page.click('#beginner-examples');
     assert.equal(await page.locator('#example-picker-dialog').evaluate((dialog) => dialog.open), true);
-    assert.equal(await page.locator('.starter-card').nth(1).getAttribute('data-example'),
+    assert.equal(await page.locator('.starter-card').nth(2).getAttribute('data-example'),
       'avr-dht11-temperature-humidity');
     assert.equal(await page.locator(
       '.starter-card[data-example="avr-dht11-temperature-humidity"]',
     ).isVisible(), true);
-    assert.equal(await page.locator('#example-picker-status').textContent(), '22 examples available');
+    assert.equal(await page.locator('#example-picker-status').textContent(), '23 examples available');
 
     if (screenshot) {
       fs.mkdirSync(path.dirname(screenshot), { recursive: true });
@@ -69,7 +73,7 @@ const screenshot = process.env.DHT11_DISCOVERY_SCREENSHOT || null;
     assert.deepEqual(errors, []);
     assert.deepEqual(outside, []);
     process.stdout.write(`${JSON.stringify({ ok: true, simpleView: true, directDht11: true,
-      releaseFeature: 'DHT11 temperature and humidity', examples: 22, outsideRequests: 0,
+      releaseFeature: 'DHT22 decimal temperature and humidity', examples: 23, outsideRequests: 0,
       screenshot })}\n`);
   } finally {
     await browser.close();

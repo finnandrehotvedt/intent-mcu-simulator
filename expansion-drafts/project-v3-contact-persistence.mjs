@@ -223,6 +223,12 @@ import {
   validateDht11Component,
 } from './dht11-temperature-humidity-v1.mjs';
 import {
+  DHT22_DEFINITION,
+  DHT22_TYPE,
+  projectDht22Sensors,
+  validateDht22Component,
+} from './dht22-temperature-humidity-v1.mjs';
+import {
   DS18B20_DEFINITION,
   DS18B20_TYPE,
   projectDs18b20Sensors,
@@ -330,6 +336,7 @@ function pinIds(component) {
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return ['VCC', 'GND', 'OUT'];
   if (component.type === DHT11_TYPE) return ['VCC', 'DATA', 'GND'];
+  if (component.type === DHT22_TYPE) return ['VCC', 'DATA', 'GND'];
   if (component.type === DS18B20_TYPE) return ['VCC', 'DQ', 'GND'];
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return ['R', 'G', 'B', 'COM'];
   if (component.type === TRAFFIC_LIGHT_TYPE) return ['RED', 'AMBER', 'GREEN', 'COM'];
@@ -377,6 +384,7 @@ function componentPins(component) {
   if (DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_PULSE_SENSOR_DEFINITIONS[component.type].pins;
   if (DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type]) return DIGITAL_REFLECTIVE_SENSOR_DEFINITIONS[component.type].pins;
   if (component.type === DHT11_TYPE) return DHT11_DEFINITION.pins;
+  if (component.type === DHT22_TYPE) return DHT22_DEFINITION.pins;
   if (component.type === DS18B20_TYPE) return DS18B20_DEFINITION.pins;
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return COMMON_CATHODE_RGB_LED_DEFINITION.pins;
   if (component.type === TRAFFIC_LIGHT_TYPE) return TRAFFIC_LIGHT_DEFINITION.pins;
@@ -497,6 +505,8 @@ function validateCandidateComponent(component) {
     }
   } else if (component.type === DHT11_TYPE) {
     if (!validateDht11Component(component)) fail('PROJECT_CONTACT_DHT11_STATE', [component.id]);
+  } else if (component.type === DHT22_TYPE) {
+    if (!validateDht22Component(component)) fail('PROJECT_CONTACT_DHT22_STATE', [component.id]);
   } else if (component.type === DS18B20_TYPE) {
     if (!validateDs18b20Component(component)) fail('PROJECT_CONTACT_DS18B20_STATE', [component.id]);
   } else if (component.type === COMMON_CATHODE_RGB_LED_TYPE) {
@@ -584,7 +594,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
         ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
-        DHT11_TYPE, DS18B20_TYPE,
+        DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE,
         ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
         CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
@@ -1235,7 +1245,25 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
     }
   }
-  const ds18b20Projection = projectDs18b20Sensors(dht11Projection.runtimeGraph);
+  const dht22Projection = projectDht22Sensors(dht11Projection.runtimeGraph);
+  if (!dht22Projection.ok) fail(`PROJECT_CONTACT_${dht22Projection.code}`, dht22Projection.details);
+  contacts.push(...dht22Projection.sensors.map((sensor) => ({
+    componentId: sensor.componentId,
+    type: DHT22_TYPE,
+    state: { temperatureC: sensor.temperatureC, humidityPercent: sensor.humidityPercent },
+    runtimeProjection: clone(sensor),
+  })));
+  for (const sensor of dht22Projection.sensors) {
+    const expected = production(implementation, DHT22_TYPE, {
+      temperatureC: sensor.temperatureC, humidityPercent: sensor.humidityPercent,
+    }, [sensor.componentId]);
+    if (expected.temperatureC !== sensor.temperatureC
+        || expected.humidityPercent !== sensor.humidityPercent
+        || JSON.stringify(expected.payload) !== JSON.stringify(sensor.payload)) {
+      fail('MODEL_LIBRARY_PRODUCTION_MISMATCH', [sensor.componentId]);
+    }
+  }
+  const ds18b20Projection = projectDs18b20Sensors(dht22Projection.runtimeGraph);
   if (!ds18b20Projection.ok) fail(`PROJECT_CONTACT_${ds18b20Projection.code}`, ds18b20Projection.details);
   contacts.push(...ds18b20Projection.sensors.map((sensor) => ({
     componentId: sensor.componentId,
@@ -1573,6 +1601,11 @@ function draftContacts(graph) {
         state: { temperatureC: component.controls.temperatureC,
           humidityPercent: component.controls.humidityPercent }, runtimeProjection: null }];
     }
+    if (component.type === DHT22_TYPE) {
+      return [{ componentId: component.id, type: component.type,
+        state: { temperatureC: component.controls.temperatureC,
+          humidityPercent: component.controls.humidityPercent }, runtimeProjection: null }];
+    }
     if (component.type === DS18B20_TYPE) {
       return [{ componentId: component.id, type: component.type,
         state: { temperatureC: component.controls.temperatureC }, runtimeProjection: null }];
@@ -1766,7 +1799,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       ...Object.keys(CONNECTION_HARDWARE_DEFINITIONS),
       ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
-      DHT11_TYPE, DS18B20_TYPE,
+      DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
       ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
       CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,

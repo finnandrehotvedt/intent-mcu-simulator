@@ -40,7 +40,7 @@ const output = process.env.COMPONENT_DRAWER_OUTPUT || '/tmp/component-drawer-par
     await page.click('#toggle-catalog');
     await page.waitForSelector('#simple-parts-drawer.is-open');
     assert.equal(await page.locator('#catalog-release-feature').isVisible(), true);
-    assert.equal(await page.locator('#catalog-release-feature-artwork [data-artwork-key="sensor-dht11-temperature-humidity"]').count(), 1);
+    assert.equal(await page.locator('#catalog-release-feature-artwork [data-artwork-key="sensor-dht22-temperature-humidity"]').count(), 1);
     assert.equal(await page.locator('#catalog-release-feature-open').isVisible(), true);
     await page.evaluate(() => { window.__componentDrawerIdentity = document.querySelector('#simple-parts-drawer'); });
     const profiles = [
@@ -100,7 +100,7 @@ const output = process.env.COMPONENT_DRAWER_OUTPUT || '/tmp/component-drawer-par
     assert.deepEqual(errors, []);
     assert.deepEqual(builds, []);
     assert.deepEqual(outside, []);
-    process.stdout.write(`${JSON.stringify({ ok: true, profiles: 4, dht11Feature: true,
+    process.stdout.write(`${JSON.stringify({ ok: true, profiles: 4, dht22Feature: true,
       contract: 'intent-mcu-avr-catalog-picker@1', structureParity: true, cardStyleParity: true, screenshot: output })}\n`);
   } finally {
     await browser.close();

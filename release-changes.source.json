@@ -11,8 +11,8 @@
     }
   },
   "release": {
-    "previous": "1.1.0-rc.143",
-    "current": "1.1.0-rc.144"
+    "previous": "1.1.0-rc.144",
+    "current": "1.1.0-rc.145"
   },
   "changes": [
     {
@@ -24,7 +24,7 @@
       "contracts": [
         "x72-example-progression-v1"
       ],
-      "summary": "Surfaces the runnable AVR DHT11 lesson in Simple view and Parts, and adds a DS18B20 starter with original artwork, signed 1/16-degree control, OneWire scratchpad execution, CRC-8, and canonical Save/Open."
+      "summary": "Adds a directly discoverable AVR DHT22 lesson with original artwork, independent signed decimal temperature and humidity controls, timed five-byte protocol execution, checksum-validated Serial output, and canonical Save/Open."
     }
   ],
   "migrationRequired": false,

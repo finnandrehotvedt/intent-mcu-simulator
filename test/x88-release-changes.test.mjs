@@ -28,9 +28,9 @@ async function owner() {
   return { source, registry, release, options, value: parseReleaseChangesText(source, options) };
 }
 
-test('X88 binds the AVR DS18B20 release to coherent rc144 bytes', async () => {
+test('X88 binds the AVR DHT22 source candidate to coherent rc145 bytes', async () => {
   const { source, registry, release, options, value } = await owner();
-  assert.equal(release.version, '1.1.0-rc.144');
+  assert.equal(release.version, '1.1.0-rc.145');
   assert.equal(registry.ids.length, 96);
   assert.equal(registry.ids[0], 'X01');
   assert.equal(registry.ids.at(-1), 'X96');
@@ -38,12 +38,12 @@ test('X88 binds the AVR DS18B20 release to coherent rc144 bytes', async () => {
   assert(registry.ids.includes('X49'));
   assert(registry.ids.includes('X55'));
   assert(registry.ids.includes('X92'));
-  assert.deepEqual(value.release, { previous: '1.1.0-rc.143', current: '1.1.0-rc.144' });
+  assert.deepEqual(value.release, { previous: '1.1.0-rc.144', current: '1.1.0-rc.145' });
   assert.deepEqual(value.changes, [
     {
       id: 'X72', classification: 'additive', capabilities: ['intent-mcu-example-progression@1'],
       contracts: ['x72-example-progression-v1'],
-      summary: 'Adds a runnable AVR DS18B20 starter with original component artwork, signed 1/16 degree temperature control, OneWire reset, presence, command and scratchpad execution, Dallas CRC-8 validation, and canonical Save and Open persistence.',
+      summary: 'Adds a directly discoverable AVR DHT22 lesson with original artwork, independent signed decimal temperature and humidity controls, timed five-byte protocol execution, checksum-validated Serial output, and canonical Save/Open.',
     },
   ]);
   assert.equal(value.migrationRequired, false);
@@ -106,7 +106,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   const generated = await read('../dist/release-changes.json');
   assert.equal(generated, source);
   const discovery = capabilityDiscoverySnapshot();
-  assert.equal(discovery.identity.version, '1.1.0-rc.144');
+  assert.equal(discovery.identity.version, '1.1.0-rc.145');
   assert.deepEqual(Object.keys(discovery), ['schema', 'identity', 'transport', 'actions', 'quotas', 'contracts', 'profiles', 'parts']);
   assert.equal(discovery.actions.count, 7);
   assert.equal(discovery.actions.names.length, 7);
@@ -114,7 +114,7 @@ test('generated file is exact and capability discovery changes only its ordinary
   assert.equal('releaseChanges' in discovery, false);
   const baselineProjection = clone(discovery);
   baselineProjection.identity.version = '1.1.0-rc.81';
-  assert.equal(sha256(JSON.stringify(baselineProjection)), '4540dc88dd055e9a7c2c828f27e995f4dea251c876dbc0cb80f937bbaa9ad728');
+  assert.equal(sha256(JSON.stringify(baselineProjection)), '8a39821aca23871c2ea7a74a3aedf7cfecec481b2a3927919efecb7682b1c801');
 });
 
 test('HTML, llms and Support discover the same static file without adding a public API', async () => {

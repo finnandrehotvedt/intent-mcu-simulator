@@ -10,6 +10,7 @@ import { createSevenSegmentComponent } from '../expansion-drafts/seven-segment-c
 import { createFourDigitSevenSegmentComponent } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import { createTrafficLightComponent } from '../expansion-drafts/traffic-light-module-v1.mjs';
 import { createDht11Component } from '../expansion-drafts/dht11-temperature-humidity-v1.mjs';
+import { createDht22Component } from '../expansion-drafts/dht22-temperature-humidity-v1.mjs';
 import { createDs18b20Component } from '../expansion-drafts/ds18b20-temperature-v1.mjs';
 import { createComponent } from './circuit-engine.mjs';
 import { createCandidateUiComponent, openCandidateUiSession } from './candidate-existing-ui-adapter.mjs';
@@ -92,6 +93,17 @@ const CARDS = Object.freeze([
     observe: 'Serial reports TEMP_C and HUMIDITY_RH only after firmware validates the checksum.',
     limits: 'Integer AVR-only protocol model; no physical accuracy, latency, noise or cable effects.',
     next: 'Load Digital light threshold to compare a timed protocol sensor with a simple digital level.',
+  },
+  {
+    id: 'avr-dht22-temperature-humidity', name: 'DHT22 decimal temperature and humidity',
+    model: 'sensor.dht22-temperature-humidity-v1',
+    focus: 'Signed decimal digital protocol · D5', partsLabel: 'Controller · DHT22 digital sensor',
+    description: 'Read signed decimal temperature and relative humidity from a checksum-protected DHT22 response.',
+    learn: 'How two-byte tenths values and a sign bit extend the timed five-byte sensor payload.',
+    try: 'Build and Run, then move Temperature and Humidity independently in 0.1-unit steps.',
+    observe: 'Serial reports signed TEMP_C and decimal HUMIDITY_RH only after checksum validation.',
+    limits: 'Decimal AVR-only protocol model; no physical accuracy, minimum sampling interval, noise or cable effects.',
+    next: 'Load DHT11 to compare integer and signed decimal payload encodings.',
   },
   {
     id: 'avr-ds18b20-temperature', name: 'DS18B20 OneWire temperature',
@@ -227,6 +239,59 @@ void loop() {
     Serial.println("DHT11 READ ERROR");
   }
   delay(1500);
+}
+`,
+  'avr-dht22-temperature-humidity': `const byte DHT_DATA = 5;
+
+bool waitForDhtLevel(byte level, unsigned long timeoutMicros) {
+  unsigned long waitStart = micros();
+  while (digitalRead(DHT_DATA) != level) {
+    if (micros() - waitStart > timeoutMicros) return false;
+  }
+  return true;
+}
+
+bool readDht22(int16_t &temperatureTenths, uint16_t &humidityTenths) {
+  byte data[5] = {0, 0, 0, 0, 0};
+  pinMode(DHT_DATA, OUTPUT);
+  digitalWrite(DHT_DATA, LOW);
+  delay(2);
+  pinMode(DHT_DATA, INPUT_PULLUP);
+  if (!waitForDhtLevel(LOW, 250)) return false;
+  if (!waitForDhtLevel(HIGH, 150)) return false;
+  if (!waitForDhtLevel(LOW, 150)) return false;
+  for (byte bit = 0; bit < 40; bit++) {
+    if (!waitForDhtLevel(HIGH, 120)) return false;
+    delayMicroseconds(40);
+    data[bit / 8] = (data[bit / 8] << 1) | (digitalRead(DHT_DATA) == HIGH ? 1 : 0);
+    if (!waitForDhtLevel(LOW, 120)) return false;
+  }
+  byte checksum = byte(data[0] + data[1] + data[2] + data[3]);
+  if (checksum != data[4]) return false;
+  humidityTenths = (uint16_t(data[0]) << 8) | data[1];
+  int16_t magnitude = (int16_t(data[2] & 0x7f) << 8) | data[3];
+  temperatureTenths = (data[2] & 0x80) ? -magnitude : magnitude;
+  return humidityTenths <= 1000 && temperatureTenths >= -400 && temperatureTenths <= 800;
+}
+
+void setup() {
+  pinMode(DHT_DATA, INPUT_PULLUP);
+  Serial.begin(115200);
+}
+
+void loop() {
+  int16_t temperatureTenths = 0;
+  uint16_t humidityTenths = 0;
+  if (readDht22(temperatureTenths, humidityTenths)) {
+    Serial.print("TEMP_C=");
+    Serial.print(temperatureTenths / 10.0, 1);
+    Serial.print(" HUMIDITY_RH=");
+    Serial.print(humidityTenths / 10.0, 1);
+    Serial.println(" CHECKSUM=OK");
+  } else {
+    Serial.println("DHT22 READ ERROR");
+  }
+  delay(2000);
 }
 `,
   'avr-ds18b20-temperature': `const byte ONE_WIRE_PIN = 3;
@@ -425,6 +490,13 @@ function construct(card) {
     branch(session, 'net-5v', 'dht11-1', 'VCC', 'junction-starter-dht11-vcc');
     branch(session, 'net-ground-branch', 'dht11-1', 'GND', 'junction-starter-dht11-ground');
     wire(session, 'net-starter-dht11-d4', 'dht11-1', 'DATA', 'board-1', 'D4');
+  } else if (card.id === 'avr-dht22-temperature-humidity') {
+    add(session, createDht22Component('dht22-1', 'Room DHT22', {
+      temperatureC: 23.5, humidityPercent: 50,
+    }), { x: 0.76, y: 0.72 });
+    branch(session, 'net-5v', 'dht22-1', 'VCC', 'junction-starter-dht22-vcc');
+    branch(session, 'net-ground-branch', 'dht22-1', 'GND', 'junction-starter-dht22-ground');
+    wire(session, 'net-starter-dht22-d5', 'dht22-1', 'DATA', 'board-1', 'D5');
   } else if (card.id === 'avr-ds18b20-temperature') {
     add(session, createDs18b20Component('ds18b20-1', 'Waterproof temperature probe', {
       temperatureC: 23.5,

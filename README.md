@@ -91,7 +91,7 @@ guidance, and the two owner articles. They do not promise search rankings, AI
 citations, physical equivalence, hosted AI, or capabilities outside the exact
 tested AVR, Pico, ESP32-C3 and STM32F429ZI subsets.
 
-The component panel opens an exact 86-model by 4-profile compatibility matrix.
+The component panel opens an exact 87-model by 4-profile compatibility matrix.
 It derives from the real catalogues and reports Simulated, Partial or
 Unavailable status, project-mode scope and a concrete limitation for every
 cell; `/components.html` publishes the same contract as crawlable content.

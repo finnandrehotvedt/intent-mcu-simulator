@@ -92,7 +92,7 @@ let browser;
 
   await page.goto(base, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  assert(await page.locator('.starter-card').count() === 22, 'starter gallery did not retain all twenty-two validated AVR examples');
+  assert(await page.locator('.starter-card').count() === 23, 'starter gallery did not retain all twenty-three validated AVR examples');
 
   await page.click('.starter-card[data-example="button"]');
   await page.waitForFunction(() => window.__M6_PROJECT__().metadata?.name === 'Button input');
