@@ -13,6 +13,7 @@ import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs
 
 const expected = Object.freeze({
   'avr-ground-reference-input': 'reference.ground-v1',
+  'avr-ground-power-references': 'reference.power-5v-v1',
   'avr-toggle-input': 'switch.toggle-spst-v1',
   'avr-spdt-selector': 'switch.changeover-spdt-v1',
   'avr-light-analogue': 'sensor.light-analogue-v1',
@@ -22,9 +23,9 @@ const expected = Object.freeze({
   'avr-rotary-encoder': 'input.rotary-encoder-quadrature-v1',
 });
 
-test('L06 publishes exactly eight clear existing-capability AVR references', () => {
+test('L06 publishes exactly nine clear existing-capability AVR references', () => {
   const cards = avrReferenceStarterCatalog();
-  assert.equal(cards.length, 8);
+  assert.equal(cards.length, 9);
   assert.deepEqual(Object.fromEntries(cards.map((card) => [card.id, card.model])), expected);
   for (const card of cards) {
     for (const field of ['learn', 'try', 'observe', 'limits']) {
@@ -33,7 +34,7 @@ test('L06 publishes exactly eight clear existing-capability AVR references', () 
   }
 });
 
-test('all eight reference projects are canonical runnable candidate-v3 projects', () => {
+test('all nine reference projects are canonical runnable candidate-v3 projects', () => {
   for (const card of avrReferenceStarterCatalog()) {
     const created = createAvrReferenceStarter(card.id);
     const opened = openCandidateUiSession(created.text);
@@ -67,7 +68,7 @@ test('every available matrix cell now resolves to a real starter id', () => {
     'avr-contact-sensors',
   ]);
   const inventory = componentReferenceInventory();
-  assert.equal(inventory.length, 67);
+  assert.equal(inventory.length, 68);
   for (const item of inventory) {
     assert.equal(item.hasPositiveReference, true, `${item.profile}:${item.model}`);
     assert(item.starters.every((id) => ids.has(id)), `${item.model}:${item.starters.join(',')}`);

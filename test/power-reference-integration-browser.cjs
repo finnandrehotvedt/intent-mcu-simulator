@@ -10,14 +10,14 @@ const { chromium } = require(path.join(
 
 const base = process.env.POWER_REFERENCE_URL || 'http://127.0.0.1:18769';
 
-async function loadGroundStarter(page) {
-  await page.evaluate(() => document.querySelector(
-    '.starter-card[data-example="avr-ground-reference-input"] .starter-action',
-  ).click());
+async function loadStarter(page, id, name) {
+  await page.evaluate((exampleId) => document.querySelector(
+    `.starter-card[data-example="${exampleId}"] .starter-action`,
+  ).click(), id);
   if (await page.locator('#unsaved-change-dialog').evaluate((dialog) => dialog.open)) {
     await page.click('#unsaved-discard');
   }
-  await page.waitForFunction(() => window.__M6_PROJECT__()?.project?.metadata?.name === 'Ground reference input');
+  await page.waitForFunction((expected) => window.__M6_PROJECT__()?.project?.metadata?.name === expected, name);
 }
 
 (async () => {
@@ -29,11 +29,13 @@ async function loadGroundStarter(page) {
     await page.route('**/api/page-views', (route) => route.fulfill({
       status: 200, contentType: 'application/json', body: '{"status":"disabled"}',
     }));
-    const errors = []; const outside = [];
+    const errors = []; const outside = []; const builds = [];
     page.on('pageerror', (error) => errors.push(error.stack || String(error)));
     page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
     page.on('request', (request) => {
-      if (new URL(request.url()).origin !== new URL(base).origin) outside.push(request.url());
+      const url = new URL(request.url());
+      if (url.origin !== new URL(base).origin) outside.push(request.url());
+      if (request.method() === 'POST' && url.pathname === '/api/build') builds.push(request.postDataBuffer()?.length ?? 0);
     });
     await page.goto(base, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__M11_READY__ === true);
@@ -41,7 +43,22 @@ async function loadGroundStarter(page) {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__M11_READY__ === true);
     await page.click('#workbench-view-advanced');
-    await loadGroundStarter(page);
+    await loadStarter(page, 'avr-ground-power-references', 'Ground and 5 V references');
+    assert.equal(await page.locator('[data-component-id="ground-reference-1"] [data-terminal-pin="REF"]').count(), 1);
+    assert.equal(await page.locator('[data-component-id="power-reference-1"] [data-terminal-pin="OUT"]').count(), 1);
+    assert.equal((await page.evaluate(() => window.__BROWSER_SESSION_CANONICAL_OWNER__.snapshot())).candidateValidation.executable, true);
+    await page.click('#firmware-open');
+    await page.click('#build');
+    await page.waitForFunction(() => document.querySelector('#build-state').textContent === 'Build succeeded');
+    await page.click('#workbench-firmware-dialog .workbench-popup-close');
+    await page.waitForFunction(() => !document.querySelector('#quick-run').disabled);
+    await page.click('#quick-run');
+    await page.waitForFunction(() => document.querySelector('#worker-state').textContent.includes('Running'));
+    await page.waitForFunction(() => document.querySelector('#serial-output').textContent.includes('GROUND'), null,
+      { timeout: 15_000 });
+    assert.match(await page.textContent('#serial-output'), /POWER HIGH/u);
+
+    await loadStarter(page, 'avr-ground-reference-input', 'Ground reference input');
 
     if (!(await page.locator('#component-catalog').isVisible())) await page.click('#toggle-catalog');
     await page.locator('.catalog-item[data-type="reference.power-5v-v1"]').click();
@@ -69,7 +86,7 @@ async function loadGroundStarter(page) {
     ));
     assert.equal((await page.evaluate(() => window.__BROWSER_SESSION_CANONICAL_OWNER__.snapshot())).candidateValidation.executable, true);
 
-    await loadGroundStarter(page);
+    await loadStarter(page, 'avr-ground-reference-input', 'Ground reference input');
     const api = await page.evaluate(() => {
       const owner = window.__BROWSER_SESSION_CANONICAL_OWNER__;
       const before = owner.snapshot();
@@ -102,9 +119,11 @@ async function loadGroundStarter(page) {
     assert.equal(api.final.project.circuit.components.some(
       (component) => component.id === 'power-reference-api'), true);
     assert.equal(api.final.candidateValidation.executable, true);
+    assert.deepEqual(builds.length, 1); assert(builds[0] > 0);
     assert.deepEqual(errors, []); assert.deepEqual(outside, []);
     process.stdout.write(`${JSON.stringify({ ok: true, manualAdd: true, namedOutWire: true,
-      saveOpenReload: true, canonicalApiAdd: true, exactUndoRedo: true, mixedGroundPower: true })}\n`);
+      saveOpenReload: true, canonicalApiAdd: true, exactUndoRedo: true, mixedGroundPower: true,
+      starterBuildRun: true, compilerPosts: builds.length })}\n`);
   } finally {
     await browser.close();
   }

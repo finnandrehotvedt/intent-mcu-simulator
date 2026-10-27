@@ -14,6 +14,9 @@ import * as existingSnapshots from '../src/model-library-snapshots.mjs';
 const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -274,6 +277,8 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/contact-sensors-v1.mjs',
   '../expansion-drafts/contact-sensors-artwork-v1.mjs',
   '../expansion-drafts/ground-reference-integration-v1.mjs',
+  '../expansion-drafts/power-reference-integration-v1.mjs',
+  '../expansion-drafts/power-reference-artwork-v1.mjs',
   '../expansion-drafts/toggle-switch-integration-v1.mjs',
   '../expansion-drafts/switch-contact-graph-v1.mjs',
   '../expansion-drafts/ideal-three-pin-analogue-module-v1.mjs',
@@ -341,11 +346,11 @@ const current = manifest(
   'intent-mcu-model-bundle-current-lcd-20x4-cgram-1@48',
   currentImplementation,
   {
-    priorVersion: PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'adds bounded AVR-only 20x4 DDRAM addressing and eight 5x8 CGRAM custom-glyph slots while retaining every prior component contract',
-    presentationDisposition: 'CMP-052 and CMP-062 render firmware-decoded four-line text and deterministic custom glyph pixels with original project artwork',
+    semanticDisposition: 'adds the fixed AVR-only 5 V source as a manifest-owned simulated model while retaining every prior component contract',
+    presentationDisposition: 'CMP-020 distinguishes the named OUT source terminal from the existing REF ground terminal with original project artwork',
     baselineClosureDisposition: 'accepted public main 5042a70 and every earlier identity remain immutable migration-only anchors; this candidate is source and isolated-test only',
   },
 );
@@ -409,6 +414,7 @@ export const PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST = Object
 export const PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

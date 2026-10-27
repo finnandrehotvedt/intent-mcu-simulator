@@ -41,7 +41,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     'Choose example is not visible inside Project & files');
   await page.click('#project-demo');
   const cards = page.locator('.starter-card');
-  assert(await cards.count() === 15, 'AVR chooser must retain exactly 15 cards');
+  assert(await cards.count() === 16, 'AVR chooser must retain exactly 16 cards');
   const cardShape = await cards.evaluateAll((nodes) => nodes.map((node) => ({
     id: node.dataset.example,
     text: node.textContent.toLocaleLowerCase(),

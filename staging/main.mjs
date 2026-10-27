@@ -16082,8 +16082,8 @@ function filterStarterExamples() {
     if (!card.hidden) visible += 1;
   }
   elements.examplepickerstatus.textContent = query
-    ? `${visible} of 15 examples match “${elements.examplepickersearch.value.trim()}”`
-    : '15 examples available';
+    ? `${visible} of 16 examples match “${elements.examplepickersearch.value.trim()}”`
+    : '16 examples available';
 }
 function closeExamplePicker({ restoreFocus = true } = {}) {
   const returnFocus = examplePickerReturnFocus;

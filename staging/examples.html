@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Fifteen validated AVR starters, including eight exact component references, plus paired UART/LED lessons for bounded Pico, ESP32-C3 and STM32 profiles.">
+  <meta name="description" content="Sixteen validated AVR starters, including nine exact component references, plus paired UART/LED lessons for bounded Pico, ESP32-C3 and STM32 profiles.">
   <meta name="robots" content="index,follow,max-snippet:-1">
   <title>Starter examples | Intent MCU Simulator</title>
   <link rel="canonical" href="https://lab.teachthecompany.com/examples.html">
@@ -29,6 +29,7 @@
       <article class="docs-card"><h2>Temperature display</h2><p>Read the ideal temperature module on A1, write whole Celsius to a 16×2 LCD, and select a current-limited RGB status colour.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article id="thermostat-boundary-test" class="docs-card"><h2>Thermostat boundary test</h2><p>Build the exact A1 temperature, D2 active-low enable and current-limited D13 indicator circuit. Run four reset-isolated virtual-time scenarios—below, equal, above and disabled—then load the known-bad <code>&lt;=</code> firmware to prove the equality defect is caught from executed D13 and matching UART evidence.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Ground reference input</h2><p><strong>Learn:</strong> why a declared 0 V reference makes input levels meaningful. <strong>Try:</strong> build, run and press the button. <strong>Observe:</strong> D2, D13 and Serial. <strong>Limits:</strong> the symbol is topology authority, not an executable peripheral.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
+      <article class="docs-card"><h2>Ground and 5 V references</h2><p><strong>Learn:</strong> why 0 V common and a fixed source are distinct. <strong>Try:</strong> build, run and press the D2 button while the source holds D3 HIGH. <strong>Observe:</strong> both states independently in compiled Serial output. <strong>Limits:</strong> AVR-only topology projection, not a bench supply or current/fault model.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>SPST toggle input</h2><p><strong>Learn:</strong> maintained Open/Closed state. <strong>Try:</strong> toggle the D3 pull-up input. <strong>Observe:</strong> compiled D13 and Serial state. <strong>Limits:</strong> ideal contact with no bounce or contact resistance.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>SPDT input selector</h2><p><strong>Learn:</strong> COM selects one isolated throw. <strong>Try:</strong> choose GND or 5 V on D8. <strong>Observe:</strong> the explicit BREAK transition and compiled input result. <strong>Limits:</strong> Partial, direct digital-input model only.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
       <article class="docs-card"><h2>Analogue light level</h2><p><strong>Learn:</strong> ideal percentage-to-voltage conversion. <strong>Try:</strong> move the light control. <strong>Observe:</strong> A1 voltage, ADC counts and D13. <strong>Limits:</strong> no lux calibration or physical response.</p><a class="docs-card-action" href="/">Open workbench → Project &amp; files → Choose example</a></article>
@@ -49,6 +50,7 @@
         <li><strong>Temperature display</strong><span>Next: Load Thermostat boundary test to turn the threshold into saved scenarios and requirements.</span></li>
         <li><strong>Thermostat boundary test</strong><span>Next: Open Scenario timeline to change one timed input and rerun its requirement after a fresh Build.</span></li>
         <li><strong>Ground reference input</strong><span>Next: Load SPST toggle input to keep an input state without holding a button.</span></li>
+        <li><strong>Ground and 5 V references</strong><span>Next: Load SPST toggle input to replace a momentary ground path with a maintained contact.</span></li>
         <li><strong>SPST toggle input</strong><span>Next: Load SPDT input selector to choose between two explicit sources.</span></li>
         <li><strong>SPDT input selector</strong><span>Next: Load Quadrature encoder to observe ordered changes across two inputs.</span></li>
         <li><strong>Analogue light level</strong><span>Next: Load Digital light threshold to compare continuous and thresholded sensing.</span></li>
@@ -79,7 +81,7 @@
       <ol><li>Save the incomplete project and Open it again if you want to prove history-free recovery.</li><li>In <strong>Supported parts</strong>, add the one missing resistor or LED. The fixed stable ID returns, with no cable.</li><li>Activate two compatible free named pins for each missing connection. Unsafe resistance/colour pairs reject without changing the accepted draft.</li><li>When the circuit state says accepted, Build fresh and Run. Old executable authority never returns from the file.</li></ol>
       <nav class="docs-nav" aria-label="Recovery help"><a href="/components.html#narrow-profile-parts">Part and property limits</a><a href="/support.html#routing-help">Cable routing help</a><a href="/support.html#repair-after-open">Detailed Save/Open recovery</a><a href="/">Open the workbench</a></nav>
     </section>
-    <footer>Fifteen validated AVR starters and paired bounded Pico, ESP32-C3 and STM32 examples in Intent MCU Simulator 1.1.0-rc.137</footer>
+    <footer>Sixteen validated AVR starters and paired bounded Pico, ESP32-C3 and STM32 examples in Intent MCU Simulator 1.1.0-rc.139</footer>
   </main>
 </body>
 </html>

@@ -419,7 +419,22 @@ export function candidateRuntimeInputs(session) {
   if (session?.kind !== 'candidate-project-v3') return [];
   const runnable = session.runnable;
   if (!runnable.ok) throw Object.assign(new Error(runnable.code), { code: runnable.code, details: runnable.details });
-  const inputs = session.runtimeSupport
+  const runtimeGraph = session.runtimeProject?.circuit;
+  const board = runtimeGraph?.components?.find((component) => component.type === 'board.atmega328p-16mhz-v1');
+  const fixedReferences = board ? runtimeGraph.nets.flatMap((net) => {
+    const boardPins = net.endpoints.filter((endpoint) => endpoint.component === board.id).map((endpoint) => endpoint.pin);
+    const sourcePin = boardPins.includes('5V') ? '5V'
+      : boardPins.some((pin) => /^GND[1-3]$/u.test(pin)) ? 'GND' : null;
+    if (!sourcePin) return [];
+    return boardPins.filter((pin) => /^D(?:[0-9]|1[0-3])$/u.test(pin)).map((pinLabel) => ({
+      componentId: board.id,
+      pin: Number(pinLabel.slice(1)),
+      pinLabel,
+      level: sourcePin === '5V',
+      fixedReference: sourcePin,
+    }));
+  }).sort((left, right) => left.pin - right.pin) : [];
+  const inputs = [...fixedReferences, ...session.runtimeSupport
     .filter((item) => item.type === SPDT_CONTACT_TYPE)
     .map((item) => session.evaluateSpdtRuntime(item.componentId))
     .map((result) => {
@@ -431,7 +446,7 @@ export function candidateRuntimeInputs(session) {
         level: result.projection.level,
         selectedThrow: result.projection.selectedThrow,
       };
-    });
+    })];
   for (const support of session.runtimeSupport.filter((item) => item.type === ROTARY_ENCODER_TYPE)) {
     const projection = support.runtimeProjection;
     for (const phase of ['A', 'B']) inputs.push({

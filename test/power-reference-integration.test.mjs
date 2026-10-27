@@ -6,12 +6,16 @@ import test from 'node:test';
 import { DEFAULT_CIRCUIT } from '../src/default-circuit.mjs';
 import {
   candidateUiDefinition,
+  candidateRuntimeInputs,
   createCandidateUiArtwork,
   createCandidateUiComponent,
   openCandidateUiSession,
 } from '../src/candidate-existing-ui-adapter.mjs';
 import { createAvrReferenceStarter } from '../src/avr-reference-starters.mjs';
 import { prepareApiBatch } from '../src/browser-session-edit.mjs';
+import { COMPONENT_SUPPORT_CELLS } from '../src/component-support-matrix.mjs';
+import { CURRENT_MODEL_LIBRARY_LOCK, trustedModelLibraryManifests,
+  validateProjectModelLibrary } from '../src/model-library.mjs';
 import {
   POWER_REFERENCE_DEFINITION,
   createPowerReferenceComponent,
@@ -34,6 +38,20 @@ test('CMP-020 power symbol is an explicit immutable 5 V source', () => {
   assert.equal(POWER_REFERENCE_DEFINITION.pins[0].constraints.direction, 'source');
   assert.equal(POWER_REFERENCE_DEFINITION.pins[0].constraints.voltage, 5);
   assert.match(POWER_REFERENCE_DEFINITION.support.limitations.join(' '), /not an independent bench supply/u);
+});
+
+test('CMP-020 has one manifest-owned public AVR cell and no narrow-profile claim', () => {
+  const cells = COMPONENT_SUPPORT_CELLS.filter(({ model }) => model === 'reference.power-5v-v1');
+  assert.equal(cells.length, 4);
+  assert.deepEqual(cells.map(({ available }) => available), [true, false, false, false]);
+  assert.equal(cells[0].status, 'simulated');
+  const current = trustedModelLibraryManifests()[1];
+  const entries = current.entries.filter(({ componentType }) => componentType === 'reference.power-5v-v1');
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].profile, 'board.atmega328p-16mhz-v1');
+  const graph = candidate();
+  assert.equal(validateProjectModelLibrary(CURRENT_MODEL_LIBRARY_LOCK,
+    'board.atmega328p-16mhz-v1', { circuit: graph }).ok, true);
 });
 
 test('CMP-020 projects to the AVR 5 V source without becoming ground metadata', () => {
@@ -109,6 +127,9 @@ test('CMP-020 composes with a retained 0 V reference and preserves exact history
   });
   assert.equal(wire.ok, true, wire.code);
   assert.deepEqual(session.runnable, { ok: true, code: 'OK', details: [] });
+  assert.deepEqual(candidateRuntimeInputs(session), [{
+    componentId: 'board-1', pin: 3, pinLabel: 'D3', level: true, fixedReference: '5V',
+  }]);
   assert.equal(session.runtimeProject.circuit.components.some(
     (item) => ['reference.power-5v-v1', 'reference.ground-v1'].includes(item.type),
   ), false);

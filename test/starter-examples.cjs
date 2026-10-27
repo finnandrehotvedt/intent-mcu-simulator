@@ -32,7 +32,7 @@ let browser;
   await page.waitForFunction(() => window.__M11_READY__ === true);
   const cards = page.locator('.starter-card');
   const dialog = page.locator('#example-picker-dialog');
-  assert(await cards.count() === 15, 'example picker does not expose all fifteen validated examples');
+  assert(await cards.count() === 16, 'example picker does not expose all sixteen validated examples');
   assert(!(await dialog.evaluate((node) => node.open)), 'example picker is open by default');
   assert(await cards.filter({ visible: true }).count() === 0, 'inline starter gallery remains visible by default');
   const initialProject = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
@@ -72,6 +72,7 @@ let browser;
     ['temperature-lcd-threshold', 'Temperature display'],
     ['avr-thermostat-boundary-v1', 'Thermostat boundary test'],
     ['avr-ground-reference-input', 'Ground reference input'],
+    ['avr-ground-power-references', 'Ground and 5 V references'],
     ['avr-toggle-input', 'SPST toggle input'],
     ['avr-spdt-selector', 'SPDT input selector'],
     ['avr-light-analogue', 'Analogue light level'],

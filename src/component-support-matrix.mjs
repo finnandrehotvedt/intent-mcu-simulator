@@ -39,11 +39,7 @@ export const COMPONENT_SUPPORT_PROFILES = deepFreeze([
 ]);
 
 const avrBase = Object.values(COMPONENT_CATALOG).filter((definition) => definition.selectable);
-// CMP-020's AVR 5 V source is integrated for private candidate review but is
-// intentionally excluded from the public matrix until that review and release
-// gate complete. Candidate discovery is not public qualification.
-const avrCandidate = Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) =>
-  definition.selectable && definition.type !== 'reference.power-5v-v1');
+const avrCandidate = Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable);
 const narrowBoards = [
   RP2040_PICO_COMPONENT_CATALOG[PICO],
   ESP32C3_PUBLIC_COMPONENT_CATALOG[C3],
@@ -83,6 +79,7 @@ const referenceBindings = deepFreeze({
     'button.momentary-v1': { starters: ['button', 'avr-thermostat-boundary-v1'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs', 'test/input-control-example-artifacts.test.mjs'] },
     'potentiometer.linear-v1': { starters: ['adc'], tests: ['test/circuit-model.test.mjs', 'test/starter-examples.cjs', 'test/basic-component-example-artifacts.test.mjs'] },
     'reference.ground-v1': { starters: ['avr-ground-reference-input'], tests: ['test/candidate-draft-runnable-transition.test.mjs'] },
+    'reference.power-5v-v1': { starters: ['avr-ground-power-references'], tests: ['test/power-reference-integration.test.mjs', 'test/power-reference-example-artifacts.test.mjs'] },
     'switch.toggle-spst-v1': { starters: ['avr-toggle-input'], tests: ['test/candidate-draft-runnable-transition.test.mjs', 'test/input-control-example-artifacts.test.mjs'] },
     'switch.changeover-spdt-v1': { starters: ['avr-spdt-selector'], tests: ['test/candidate-draft-runnable-transition.test.mjs'] },
     'switch.slide-spdt-v1': { starters: ['avr-spdt-selector'], tests: ['test/mechanical-inputs-candidate.test.mjs'] },

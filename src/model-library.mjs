@@ -20,6 +20,7 @@ import {
   RC128_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X47_REPEATABLE_APPLY_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST,
+  PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST,
   PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST,
@@ -85,6 +86,7 @@ deepFreeze(RC124_CURRENT_MODEL_LIBRARY_MANIFEST);
 deepFreeze(RC128_CURRENT_MODEL_LIBRARY_MANIFEST);
 deepFreeze(PRE_X66_PUBLIC_THERMOSTAT_CREATE_FIX_CURRENT_MODEL_LIBRARY_MANIFEST);
 deepFreeze(PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST);
+deepFreeze(PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST);
 deepFreeze(PRE_X66_SUBCIRCUIT_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST);
 deepFreeze(PRE_X66_BOUNDED_SUBCIRCUITS_CURRENT_MODEL_LIBRARY_MANIFEST);
 deepFreeze(PRE_X66_LEGACY_OPEN_REVIEW_FIX_CURRENT_MODEL_LIBRARY_MANIFEST);
@@ -131,6 +133,8 @@ const lockFor = (manifest) => deepFreeze({
 export const CURRENT_MODEL_LIBRARY_LOCK = lockFor(CURRENT_MODEL_LIBRARY_MANIFEST);
 export const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_LOCK =
   lockFor(PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST);
+export const PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_LOCK =
+  lockFor(PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST);
 export const PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_LOCK =
   lockFor(PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_MANIFEST);
 export const PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK =
@@ -228,6 +232,8 @@ const trustedByHash = new Map([
   [RC124_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256, RC124_CURRENT_MODEL_LIBRARY_MANIFEST],
   [RC128_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256, RC128_CURRENT_MODEL_LIBRARY_MANIFEST],
   [CURRENT_MODEL_LIBRARY_LOCK.manifestSha256, CURRENT_MODEL_LIBRARY_MANIFEST],
+  [PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+    PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST],
   [PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
     PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST],
   [PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
@@ -446,21 +452,6 @@ function validateProjectWithEntries(entries, manifest, profile, project) {
   const components = graph?.components;
   if (!Array.isArray(components)) return failure('MODEL_LIBRARY_PROJECT_COMPONENTS');
   for (const component of components) {
-    if (manifest.manifestSha256 === CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256
-        && component?.type === 'reference.power-5v-v1') {
-      if (!exactKeys(component.properties ?? {}, ['voltageVolts']) || component.properties.voltageVolts !== 5) {
-        return failure('MODEL_LIBRARY_PROPERTY_VALUE', [component.id, component.type, 'voltageVolts']);
-      }
-      if (!exactKeys(component.controls ?? {}, [])) {
-        return failure('MODEL_LIBRARY_CONTROL_KEYS', [component.id, component.type]);
-      }
-      for (const net of graph.nets ?? []) for (const endpoint of net.endpoints ?? []) {
-        if (endpoint.component === component.id && endpoint.pin !== 'OUT') {
-          return failure('MODEL_LIBRARY_PIN_UNKNOWN', [component.id, component.type, endpoint.pin]);
-        }
-      }
-      continue;
-    }
     const entry = entries.get(entryKey(profile, component?.type));
     if (!entry) return failure('MODEL_LIBRARY_COMPONENT_UNAVAILABLE', [profile, component?.type ?? null]);
     if (entry.componentVersion < 1 || entry.modelVersion < 1
@@ -505,6 +496,8 @@ export function resolveModelLibrary(value) {
   if (!normalized.ok) return normalized;
   const role = normalized.lock.manifestSha256 === RETAINED_MODEL_LIBRARY_LOCK.manifestSha256
     ? 'retained'
+    : normalized.lock.manifestSha256 === PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256
+    ? 'pre-cmp020-public-source-current-migration'
     : normalized.lock.manifestSha256 === PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256
     ? 'pre-cmp020-manual-mixed-repair-current-migration'
     : normalized.lock.manifestSha256 === PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256
@@ -698,6 +691,7 @@ export function trustedModelLibraryManifests() {
 
 export function historicalModelLibraryManifests() {
   return [clone(RETAINED_MODEL_LIBRARY_MANIFEST),
+    clone(PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MANIFEST),
     clone(PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MANIFEST),
     clone(PRE_COMPONENT_IMAGE_PARITY_CURRENT_MODEL_LIBRARY_MANIFEST),
     clone(PRE_PRESERVED_DRAFT_EXPORT_CURRENT_MODEL_LIBRARY_MANIFEST),

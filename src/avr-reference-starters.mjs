@@ -26,6 +26,16 @@ const CARDS = Object.freeze([
     next: 'Load SPST toggle input to keep an input state without holding a button.',
   },
   {
+    id: 'avr-ground-power-references', name: 'Ground and 5 V references', model: 'reference.power-5v-v1',
+    focus: 'Explicit 0 V and fixed 5 V', partsLabel: 'Controller · 0 V reference · 5 V source · button · LED',
+    description: 'Use separate reference symbols for circuit common and the AVR board 5 V output.',
+    learn: 'Why 0 V reference and a fixed voltage source have different electrical roles.',
+    try: 'Build and Run, then press the D2 button while D3 remains tied to the fixed source.',
+    observe: 'Serial reports the D2 ground path and compiled D3 HIGH state independently.',
+    limits: 'AVR-only topology projection; not a bench supply, regulator, current or fault model.',
+    next: 'Load SPST toggle input to replace a momentary ground path with a maintained contact.',
+  },
+  {
     id: 'avr-toggle-input', name: 'SPST toggle input', model: 'switch.toggle-spst-v1',
     focus: 'Maintained contact · D3', partsLabel: 'Controller · SPST toggle · LED',
     description: 'Read a maintained switch through the existing pull-up input path.',
@@ -101,6 +111,9 @@ const SOURCES = Object.freeze({
   'avr-ground-reference-input': `void setup() { pinMode(2, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
 void loop() { bool grounded = digitalRead(2) == LOW; digitalWrite(13, grounded); Serial.println(grounded ? "GROUNDED" : "OPEN"); delay(120); }
 `,
+  'avr-ground-power-references': `void setup() { pinMode(2, INPUT_PULLUP); pinMode(3, INPUT); pinMode(13, OUTPUT); Serial.begin(115200); }
+void loop() { bool grounded = digitalRead(2) == LOW; bool powered = digitalRead(3) == HIGH; digitalWrite(13, grounded && powered); Serial.print(grounded ? "GROUND CLOSED" : "GROUND OPEN"); Serial.println(powered ? " POWER HIGH" : " POWER LOW"); delay(120); }
+`,
   'avr-toggle-input': `void setup() { pinMode(3, INPUT_PULLUP); pinMode(13, OUTPUT); Serial.begin(115200); }
 void loop() { bool closed = digitalRead(3) == LOW; digitalWrite(13, closed); Serial.println(closed ? "TOGGLE CLOSED" : "TOGGLE OPEN"); delay(120); }
 `,
@@ -161,6 +174,11 @@ function construct(card) {
   if (card.id === 'avr-ground-reference-input') {
     add(session, createCandidateUiComponent(card.model, 'ground-reference-1'), { x: 0.78, y: 0.78 });
     branch(session, 'net-ground-branch', 'ground-reference-1', 'REF', 'junction-starter-ground-reference');
+  } else if (card.id === 'avr-ground-power-references') {
+    add(session, createCandidateUiComponent('reference.ground-v1', 'ground-reference-1'), { x: 0.74, y: 0.78 });
+    branch(session, 'net-ground-branch', 'ground-reference-1', 'REF', 'junction-starter-ground-power-ground');
+    add(session, createCandidateUiComponent(card.model, 'power-reference-1'), { x: 0.86, y: 0.58 });
+    wire(session, 'net-starter-power-reference-d3', 'power-reference-1', 'OUT', 'board-1', 'D3');
   } else if (card.id === 'avr-toggle-input') {
     add(session, createCandidateUiComponent(card.model, 'toggle-switch-1'), { x: 0.72, y: 0.7 });
     branch(session, 'net-ground-branch', 'toggle-switch-1', 'B', 'junction-starter-toggle-ground');

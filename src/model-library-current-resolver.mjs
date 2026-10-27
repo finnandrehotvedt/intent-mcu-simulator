@@ -109,6 +109,11 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       return exactInput(input, []) ? { ok: true, code: 'OK', result: { potentialVolts: 0 } }
         : failure('MODEL_LIBRARY_PRODUCTION_INPUT');
     }
+    if (componentType === 'reference.power-5v-v1') {
+      return exactInput(input, [])
+        ? { ok: true, code: 'OK', result: { voltageVolts: 5, direction: 'source' } }
+        : failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+    }
     if (componentType === 'switch.toggle-spst-v1') {
       if (typeof input?.closed !== 'boolean') return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
       return { ok: true, code: 'OK', result: { connected: input.closed } };
@@ -355,6 +360,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
 export const PRE_CMP020_MANUAL_MIXED_REPAIR_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-pre-cmp020-manual-mixed-repair@49',
+  manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_CMP020_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-pre-cmp020-public-source@53',
   manifestVersion: '2.0.0-lcd-20x4-cgram.1-current',
   migrationOnly: true,
 });

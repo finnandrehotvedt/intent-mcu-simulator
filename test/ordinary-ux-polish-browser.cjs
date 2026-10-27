@@ -53,8 +53,8 @@ const outputDir = process.env.ORDINARY_UX_OUTPUT || '/tmp/ordinary-ux-polish';
 
       await page.click('#beginner-examples');
       await page.waitForSelector('#example-picker-dialog[open]');
-      assert.equal(await page.locator('.starter-card').count(), 15);
-      assert.equal(await page.locator('.starter-card .starter-visual').count(), 15);
+      assert.equal(await page.locator('.starter-card').count(), 16);
+      assert.equal(await page.locator('.starter-card .starter-visual').count(), 16);
       assert.equal(await page.locator('.starter-card .starter-action').first().innerText(), 'Open');
       assert.match(await page.locator('#example-picker-description').innerText(), /schematic icon/u);
       assert.equal(await page.locator('.starter-teaching[open]').count(), 0);

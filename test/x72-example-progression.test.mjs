@@ -38,6 +38,7 @@ const expectedNext = Object.freeze({
   'temperature-lcd-threshold': 'Load Thermostat boundary test to turn the threshold into saved scenarios and requirements.',
   'avr-thermostat-boundary-v1': 'Open Scenario timeline to change one timed input and rerun its requirement after a fresh Build.',
   'avr-ground-reference-input': 'Load SPST toggle input to keep an input state without holding a button.',
+  'avr-ground-power-references': 'Load SPST toggle input to replace a momentary ground path with a maintained contact.',
   'avr-toggle-input': 'Load SPDT input selector to choose between two explicit sources.',
   'avr-spdt-selector': 'Load Quadrature encoder to observe ordered changes across two inputs.',
   'avr-light-analogue': 'Load Digital light threshold to compare continuous and thresholded sensing.',
@@ -61,6 +62,7 @@ const baselineProjectHashes = Object.freeze({
   'temperature-lcd-threshold': 'de518c3c0754502f8c3d499249e329339214862578284e0a4ef3fbe585eaffd1',
   'avr-thermostat-boundary-v1': '1b7bcd61cb63bc7c9ae0e6166ef924b1b97ecb299ea93b5fabda1caf26783b89',
   'avr-ground-reference-input': '668eb900d712781b7b3c26cd7da619a6d743f654f3a40ef926139bf453ae15c6',
+  'avr-ground-power-references': '0a152cce7144196e00d80c7e0dec3b1ad31c7eebf9e5359cd64f2160ad200a9d',
   'avr-toggle-input': '06e0ceb7dcacc2ba9fa59a5cd3a39cdd455a7b17e4e79caa0e6a6611e4835ae8',
   'avr-spdt-selector': 'cb16776f2abc4f4533e022333582cbee1fffcdc38d35de636847771e0b1efad9',
   'avr-light-analogue': 'd4b20faf2c75fc16fe902010cc11b231c649e50d8c8e3b7272fac148a7263f64',
@@ -68,19 +70,19 @@ const baselineProjectHashes = Object.freeze({
   'avr-active-buzzer': '999a45c11f65edf45e02d29815ab9df38d29534cb41c9609482cd1b3f9ae03d6',
   'avr-seven-segment': 'b8bbdca870e92d26026eef5ceb1219a1771f62422eb789fb8652180360b88733',
   'avr-rotary-encoder': 'b86effd37b2593b7740c903cb0916a821f826f32ce5e0723d7539f382478a817',
-  'pico-led-on': '264c514565c6106264ec1f1d25e21ba8278827b4541b31464588490726e4d44d',
-  'pico-led-off': 'd8369e2d6b162c56b347256d11aec5d9b2c6c1d68884c24822fe2a2881e7a183',
-  'c3-led-on': 'b1057cef5aa1834a80cef10f218ed386d59b3d946974d67d0d125ea6fc03177f',
-  'c3-led-off': '258dfd6212b9fa05cd44cf2f475c44b2cc1594806851aa1e1fadedcb64c9a4d2',
-  'stm32-led-on': 'be7b7508d22cfe5ece9477899d201d5b63ee464308e8bca91de401f4c5c8ca91',
-  'stm32-led-off': '583cc4927d716a9ce7808654d4422c1bbf7b786f4f5d0b2450cd41183d47bcb3',
+  'pico-led-on': 'e2e4f928148c45041ee6d2cba1deba6b60436425800add0cd8069607e9f47d3e',
+  'pico-led-off': '5197b7127bb70e224f707da86bf6d55619ce309f79764733a782c58345da14de',
+  'c3-led-on': '579a0a7c617498531b5b2338ae250911bfafbb491f28757fc6a026b926f77dbc',
+  'c3-led-off': '85916840a1df532a1f5b7eaadcf101a953e3b8c9778ad57d6e48a3ec9fc17707',
+  'stm32-led-on': '706ff978e55f583df148eb2553e74ce0628997dd3cb5bc95512591b485dd8b79',
+  'stm32-led-off': 'b1ae7f4239f9059e6ae1272ffeb93906ae2572c9b2f1f522b825fd8ed39aec29',
 });
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-test('X72 exposes one concise five-part learning progression for all 21 examples', () => {
+test('X72 exposes one concise five-part learning progression for all 22 examples', () => {
   const catalog = cards();
-  assert.equal(catalog.length, 21);
-  assert.equal(new Set(catalog.map(({ id }) => id)).size, 21);
+  assert.equal(catalog.length, 22);
+  assert.equal(new Set(catalog.map(({ id }) => id)).size, 22);
   assert.deepEqual(Object.fromEntries(catalog.map(({ id, next }) => [id, next])), expectedNext);
   for (const card of catalog) {
     for (const field of ['learn', 'try', 'limits', 'next']) assert.match(card[field], /\S/u, `${card.id}.${field}`);
