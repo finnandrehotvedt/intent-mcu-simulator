@@ -66,6 +66,12 @@ async function openCanonicalProject(page, relativePath, componentId) {
   }
 }
 
+async function selectComponentCard(page, componentId) {
+  await page.locator(`[data-component-id="${componentId}"]`).focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction((id) => window.__M6_STATE__.selectedComponentId === id, componentId);
+}
+
 (async () => {
   if (output) fs.mkdirSync(output, { recursive: true });
   const server = staticServer();
@@ -179,20 +185,27 @@ async function openCanonicalProject(page, relativePath, componentId) {
     await openCanonicalProject(page,
       'examples/digital-presence-sensors/avr-digital-presence-sensors.intent-mcu.json',
       'touch-button-1');
+    await selectComponentCard(page, 'touch-button-1');
     await buildAndRunWithKeyboard(page);
-    await page.locator('[data-component-id="touch-button-1"]').click();
+    assert.equal(await page.evaluate(() => window.__M6_STATE__.selectedComponentId), 'touch-button-1');
     assert.match(await page.locator('#selected-runtime-action').textContent(), /Toggle switch · Space/u);
     await page.keyboard.press('Space');
     await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.components.find(
       ({ id }) => id === 'touch-button-1').controls.touched === false);
     await page.keyboard.press('Shift+F5');
     await page.waitForFunction(() => window.__M6_STATE__.runtimeInteractionLocked === false);
+    assert.equal(await page.evaluate(() => window.__M6_STATE__.selectedComponentId), 'touch-button-1');
 
     await openCanonicalProject(page,
       'examples/digital-reflective-sensors/avr-digital-reflective-sensors.intent-mcu.json',
       'ir-obstacle-1');
+    assert.equal(await page.evaluate(() => window.__M6_STATE__.selectedComponentId), null,
+      'opening a replacement project retained a stale component selection');
+    assert.equal(await page.locator('#selected-runtime-control-name').textContent(),
+      'No interactive component selected');
+    await selectComponentCard(page, 'ir-obstacle-1');
     await buildAndRunWithKeyboard(page);
-    await page.locator('[data-component-id="ir-obstacle-1"]').click();
+    assert.equal(await page.evaluate(() => window.__M6_STATE__.selectedComponentId), 'ir-obstacle-1');
     assert.match(await page.locator('#selected-runtime-action').textContent(), /Toggle switch · Space/u);
     await page.keyboard.press('Space');
     await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.components.find(
@@ -206,6 +219,7 @@ async function openCanonicalProject(page, relativePath, componentId) {
     process.stdout.write(`${JSON.stringify({ result: 'pass', visibleControls: 8,
       automaticInteract: true, lockedAuthoring: true, potKeyboardAndField: true,
       switchSpaceHoldRelease: true, presenceSpaceToggle: true, activeLowSpaceToggle: true,
+      selectionPreservedThroughBuildRun: true, staleSelectionClearedOnProjectReplace: true,
       stopReturnsEdit: true, builds: buildInputs.length })}\n`);
   } finally {
     await browser.close();
