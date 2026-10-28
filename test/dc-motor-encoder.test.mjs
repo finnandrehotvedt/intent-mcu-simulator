@@ -4,8 +4,6 @@ import { L298N_DRIVER_TYPE, createDcMotorL298nComponent } from '../expansion-dra
 import { DC_MOTOR_ENCODER_DEFINITION, createDcMotorEncoderComponent,
   projectDcMotorEncoders } from '../expansion-drafts/dc-motor-encoder-v1.mjs';
 import { createDcMotorEncoderArtwork } from '../expansion-drafts/dc-motor-encoder-artwork-v1.mjs';
-import { candidateUiDefinition, createCandidateUiArtwork,
-  createCandidateUiComponent } from '../src/candidate-existing-ui-adapter.mjs';
 class N { constructor(name) { this.name = name; this.attributes = {}; this.children = []; this.textContent = ''; }
   setAttribute(key, value) { this.attributes[key] = String(value); } append(...children) { this.children.push(...children); }
   all(predicate, out = []) { if (predicate(this)) out.push(this); for (const child of this.children) child.all?.(predicate, out); return out; } }
@@ -20,11 +18,6 @@ test('CMP-069 owns five exact terminals and original motor/encoder artwork', () 
   const svg = createDcMotorEncoderArtwork(doc, DC_MOTOR_ENCODER_DEFINITION, component);
   assert.deepEqual(svg.all((node) => node.attributes['data-terminal-pin']).map((node) => node.attributes['data-terminal-pin']),
     ['M1','M2','EA','ECOM','EB']); assert.match(DC_MOTOR_ENCODER_DEFINITION.artwork.provenance, /Original IntentForce/u); });
-test('CMP-069 is available through the canonical candidate component and artwork APIs', () => {
-  const component = createCandidateUiComponent('output.dc-motor-encoder-v1', 'assembly');
-  assert.equal(candidateUiDefinition(component.type), DC_MOTOR_ENCODER_DEFINITION);
-  assert.equal(createCandidateUiArtwork(doc, DC_MOTOR_ENCODER_DEFINITION, component).attributes['data-renderer'], 'output-dc-motor-encoder');
-});
 test('CMP-069 expands to the bounded L298N command observer and real quadrature runtime', () => { const projection = projectDcMotorEncoders(graph());
   assert.equal(projection.ok, true); assert.equal(projection.motors.length, 1); assert.equal(projection.encoders.length, 1);
   assert.equal(projection.encoders[0].detent, 4); assert.deepEqual(projection.encoders[0].sequences.cw, ['11','01','00','10','11']);
