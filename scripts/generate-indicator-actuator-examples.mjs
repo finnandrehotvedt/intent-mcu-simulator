@@ -55,6 +55,11 @@ const definitions = [
     namedPins: { VCC: '5V', GND: 'GND1', EN: 'D8' },
     expectedBehavior: 'Compiled D8 alternates the visible enabled/disabled state and matching Serial BUZZER ON/OFF lines.',
     firmwareLimits: 'Silent logical indicator only; no browser audio, oscillator, frequency, sound pressure or physical current model.' },
+  { id: 'avr-passive-piezo', requirementIds: ['CMP-063'], file: 'avr-passive-piezo.intent-mcu.json',
+    bytes: envelope(starter('avr-passive-piezo')), componentType: 'output.passive-piezo-v1',
+    namedPins: { SIGNAL: 'D9 direct AVR PWM output', GND: 'GND1' },
+    expectedBehavior: 'Compiled D9 transitions produce visible driven/rest and transition-activity states with matching Serial markers.',
+    firmwareLimits: 'AVR-only silent visual observer; no audio, calibrated frequency, loudness, current, loading or physical piezo accuracy.' },
 ];
 for (const item of definitions) {
   const opened = prepareProjectEnvelope(item.bytes, adapters);

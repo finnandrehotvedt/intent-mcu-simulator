@@ -484,6 +484,7 @@ import { TRAFFIC_LIGHT_TYPE } from '../expansion-drafts/traffic-light-module-v1.
 import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE,
   ROTARY_SELECTOR_TYPE } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
+import { PASSIVE_PIEZO_TYPE } from '../expansion-drafts/passive-piezo-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { FOUR_DIGIT_SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import {
@@ -11819,6 +11820,13 @@ function clearRuntimePresentation() {
     artwork.querySelector('.buzzer-status')?.classList.remove('on');
     for (const wave of artwork.querySelectorAll('.buzzer-wave')) wave.classList.remove('on');
   }
+  passivePiezoRuntime.clear();
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-passive-piezo"]')) {
+    artwork.dataset.driveState = 'rest'; artwork.dataset.transitionActive = 'false'; artwork.dataset.transitionCount = '0';
+    artwork.querySelector('.passive-piezo-disc')?.classList.remove('on');
+    artwork.querySelector('.passive-piezo-status')?.classList.remove('on');
+    artwork.querySelector('.passive-piezo-transition')?.classList.remove('on');
+  }
   characterLcdRuntime.clear();
   for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key^="output-character-lcd-"]')) {
     artwork.dataset.protocolState = 'awaiting-initialization';
@@ -13341,6 +13349,7 @@ function candidateComponentPrefix(type) {
       [RGB_COMMON_ANODE_TYPE]: 'rgb-led-ca',
       [LED_BAR_GRAPH_TYPE]: 'led-bar',
       [ACTIVE_BUZZER_TYPE]: 'active-buzzer',
+      [PASSIVE_PIEZO_TYPE]: 'passive-piezo',
       [SEVEN_SEGMENT_TYPE]: 'seven-segment',
       [FOUR_DIGIT_SEVEN_SEGMENT_TYPE]: 'four-digit-seven-segment',
       [CHARACTER_LCD_TYPE]: 'character-lcd',
@@ -13439,6 +13448,7 @@ function addComponent(type, point = null) {
       [RGB_COMMON_ANODE_TYPE]: { x: 0.78, y: 0.7 },
       [LED_BAR_GRAPH_TYPE]: { x: 0.72, y: 0.62 },
       [ACTIVE_BUZZER_TYPE]: { x: 0.78, y: 0.68 },
+      [PASSIVE_PIEZO_TYPE]: { x: 0.78, y: 0.68 },
       [SEVEN_SEGMENT_TYPE]: { x: 0.76, y: 0.66 },
       [FOUR_DIGIT_SEVEN_SEGMENT_TYPE]: { x: 0.72, y: 0.64 },
       [CHARACTER_LCD_TYPE]: { x: 0.72, y: 0.64 },
@@ -14621,6 +14631,36 @@ function renderActiveBuzzerRuntime(message) {
   }
 }
 
+const passivePiezoRuntime = new Map();
+function renderPassivePiezoRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter(
+    (item) => item.type === PASSIVE_PIEZO_TYPE && item.runtimeProjection,
+  )) {
+    const artwork = elements.componentlayer.querySelector(
+      `[data-component-id="${support.componentId}"] [data-artwork-key="output-passive-piezo"]`,
+    );
+    if (!artwork) continue;
+    const pin = pins.get(support.runtimeProjection.sourcePin);
+    const driven = pin?.mode === 'OUTPUT' || pin?.mode === 'DIGITAL_PWM';
+    const level = driven && (Number.isFinite(pin?.pwm?.duty) ? pin.pwm.duty > 0.001 : Boolean(pin?.level));
+    const previous = passivePiezoRuntime.get(support.componentId) ?? { level, count: 0 };
+    const count = previous.count + (driven && previous.level !== level ? 1 : 0);
+    passivePiezoRuntime.set(support.componentId, { level, count });
+    const observed = modelLibraryImplementationFor(AVR_PROFILE)
+      .evaluateProduction(PASSIVE_PIEZO_TYPE, { level, transitionCount: count }).result;
+    const driveState = driven ? (observed.driven ? 'driven-high' : 'driven-low') : 'rest';
+    artwork.dataset.driveState = driveState; artwork.dataset.transitionActive = String(observed.transitionActive);
+    artwork.dataset.transitionCount = String(observed.transitionCount);
+    artwork.querySelector('.passive-piezo-disc')?.classList.toggle('on', observed.driven);
+    artwork.querySelector('.passive-piezo-status')?.classList.toggle('on', driven);
+    artwork.querySelector('.passive-piezo-transition')?.classList.toggle('on', observed.transitionActive);
+    const label = `${support.componentId}, ${driveState}, ${observed.transitionCount} observed transitions from ${support.runtimeProjection.sourcePin}; visual observer only, no audio or calibrated frequency`;
+    artwork.setAttribute('aria-label', label); const title = artwork.querySelector('title'); if (title) title.textContent = label;
+  }
+}
+
 function renderSevenSegmentRuntime(message) {
   if (editor.kind !== 'candidate-project-v3') return;
   const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
@@ -14854,6 +14894,7 @@ function renderRuntime(message, { publishState = true } = {}) {
   renderRgbLedRuntime(message);
   renderTrafficLightRuntime(message);
   renderActiveBuzzerRuntime(message);
+  renderPassivePiezoRuntime(message);
   renderSevenSegmentRuntime(message);
   renderFourDigitSevenSegmentRuntime(message);
   renderCharacterLcdRuntime(message);

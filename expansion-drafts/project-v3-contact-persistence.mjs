@@ -154,6 +154,12 @@ import {
   validateActiveBuzzerComponent,
 } from './active-buzzer-module-v1.mjs';
 import {
+  PASSIVE_PIEZO_DEFINITION,
+  PASSIVE_PIEZO_TYPE,
+  projectPassivePiezos,
+  validatePassivePiezoComponent,
+} from './passive-piezo-v1.mjs';
+import {
   SEVEN_SEGMENT_DEFINITION,
   SEVEN_SEGMENT_TYPE,
   projectSevenSegmentDisplays,
@@ -348,6 +354,7 @@ function pinIds(component) {
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return ['R', 'G', 'B', 'COM'];
   if (component.type === TRAFFIC_LIGHT_TYPE) return ['RED', 'AMBER', 'GREEN', 'COM'];
   if (component.type === ACTIVE_BUZZER_TYPE) return ['VCC', 'GND', 'EN'];
+  if (component.type === PASSIVE_PIEZO_TYPE) return ['SIGNAL', 'GND'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
   if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
     return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp', 'DIG1', 'DIG2', 'DIG3', 'DIG4'];
@@ -397,6 +404,7 @@ function componentPins(component) {
   if (component.type === COMMON_CATHODE_RGB_LED_TYPE) return COMMON_CATHODE_RGB_LED_DEFINITION.pins;
   if (component.type === TRAFFIC_LIGHT_TYPE) return TRAFFIC_LIGHT_DEFINITION.pins;
   if (component.type === ACTIVE_BUZZER_TYPE) return ACTIVE_BUZZER_DEFINITION.pins;
+  if (component.type === PASSIVE_PIEZO_TYPE) return PASSIVE_PIEZO_DEFINITION.pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
   if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
     return FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION.pins;
@@ -531,6 +539,8 @@ function validateCandidateComponent(component) {
     if (!validateActiveBuzzerComponent(component)) {
       fail('PROJECT_CONTACT_ACTIVE_BUZZER_STATE', [component.id]);
     }
+  } else if (component.type === PASSIVE_PIEZO_TYPE) {
+    if (!validatePassivePiezoComponent(component)) fail('PROJECT_CONTACT_PASSIVE_PIEZO_STATE', [component.id]);
   } else if (component.type === SEVEN_SEGMENT_TYPE) {
     if (!validateSevenSegmentComponent(component)) {
       fail('PROJECT_CONTACT_SEVEN_SEGMENT_STATE', [component.id]);
@@ -605,7 +615,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
         DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
-        ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+        ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
         CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
       ].includes(component.type))) {
@@ -1359,7 +1369,15 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   })));
   for (const buzzer of buzzerProjection.buzzers) production(implementation, ACTIVE_BUZZER_TYPE,
     { level: false }, [buzzer.componentId]);
-  const sevenSegmentProjection = projectSevenSegmentDisplays(buzzerProjection.runtimeGraph);
+  const piezoProjection = projectPassivePiezos(buzzerProjection.runtimeGraph);
+  if (!piezoProjection.ok) fail(`PROJECT_CONTACT_${piezoProjection.code}`, piezoProjection.details);
+  contacts.push(...piezoProjection.piezos.map((piezo) => ({
+    componentId: piezo.componentId, type: PASSIVE_PIEZO_TYPE,
+    state: { driven: false, transitionActive: false, transitionCount: 0 }, runtimeProjection: clone(piezo),
+  })));
+  for (const piezo of piezoProjection.piezos) production(implementation, PASSIVE_PIEZO_TYPE,
+    { level: false, transitionCount: 0 }, [piezo.componentId]);
+  const sevenSegmentProjection = projectSevenSegmentDisplays(piezoProjection.runtimeGraph);
   if (!sevenSegmentProjection.ok) {
     fail(`PROJECT_CONTACT_${sevenSegmentProjection.code}`, sevenSegmentProjection.details);
   }
@@ -1671,6 +1689,10 @@ function draftContacts(graph) {
         runtimeProjection: null,
       }];
     }
+    if (component.type === PASSIVE_PIEZO_TYPE) {
+      return [{ componentId: component.id, type: component.type,
+        state: { driven: false, transitionActive: false, transitionCount: 0 }, runtimeProjection: null }];
+    }
     if (component.type === SEVEN_SEGMENT_TYPE) {
       return [{
         componentId: component.id,
@@ -1838,7 +1860,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
-      ACTIVE_BUZZER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+      ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
       CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,
     ].includes(component.type),

@@ -239610,6 +239610,74 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
+      "behaviorContractSha256": "a4a46c54c6355b0a75aee2c17dd1b4e9bdd6d89590ab014b09e411c61080b600",
+      "componentType": "output.passive-piezo-v1",
+      "componentVersion": 1,
+      "modelId": "model.passive-piezo-transition-observer-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "output.passive-piezo-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "output-passive-piezo",
+        "thumbnail": "output-passive-piezo",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "1fc12b4e72878e498fb15f7e1a04af311fae1e8876357c7da3b488bbe93f0bac",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.passive-piezo-transition-observer-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "SIGNAL",
+            "role": "digital-in",
+            "signals": [
+              "digital.output-observer",
+              "pwm.output-observer"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "AVR-only direct SIGNAL connection to D3, D5, D6, D9, D10 or D11 and direct GND connection.",
+            "The runtime displays rest, driven level and observed transition activity only; it produces no browser audio.",
+            "No frequency calibration, loudness, sound pressure, resonance, capacitance, current, loading or physical piezo accuracy is modelled."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "8886607056a07d027dc93234abae1cca6cadedb63dfb3dc7d9e99b8547b7022c",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "585dcdacc2deff68ceb80d782adc244f6a627aad55666bfd5d8c46fd9b676933",
       "componentType": "output.rgb-led-common-anode-v1",
       "componentVersion": 1,
@@ -245196,7 +245264,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "c08fc9a62906092464a798e1ed8445c154907494616d98deaaa8ba0b92f4a757"
+      "sha256": "ea527182fc771bcf5973963d78c80e013ae2401d1db56a29cd797a9c4694ec71"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -245228,7 +245296,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "9033010f9edd05340112f54f879401a4fdd9596152b9920237bce63f0a9acb10"
+      "sha256": "355ccace7bcd41d363590f5642e750d2f113442cbbd7b3299f084188eedcea63"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -245236,7 +245304,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "f8ca63b3cc286cb54c8631ed20d236b6c8355987531445cbf7b4b1fb142ce411"
+      "sha256": "95d543854669205fe19bc7bdcd6028c3fc7f7cd9f8921da37d9da36bd8444a76"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -245292,7 +245360,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "61fe55c78e4fcd612e9feb90cbc38e633cb7cfbcf905879c50026c347413cf1c"
+      "sha256": "a82ab5b72aa7d34d0fc546b8bea6358976e3df4e664f88e2583e656dd0317bae"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -245499,6 +245567,18 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "aa8bd1dc352a689ebcf0443cc2595426cdcf46396b1bc47b742c3731b2dafe94"
     },
     {
+      "path": "expansion-drafts/passive-piezo-contract-v1.mjs",
+      "sha256": "a5647b0b7e7be286b726faa4d0953ca54d1cad73aa26c8d104a51aca1239c580"
+    },
+    {
+      "path": "expansion-drafts/passive-piezo-v1.mjs",
+      "sha256": "9079ea074ce14bcd89e2fa949f0af27570132f41c1fced8de5a7e3f73afd6fd4"
+    },
+    {
+      "path": "expansion-drafts/passive-piezo-artwork-v1.mjs",
+      "sha256": "3b8869c6de11518245b6e75be0a6003eee5dd90e34e8c764c1be4449681e6118"
+    },
+    {
       "path": "expansion-drafts/seven-segment-common-cathode-v1.mjs",
       "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
     },
@@ -245540,10 +245620,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "c08af4fd851fcc566ae29683b7f16e15f2c376d09854e43e296abb9acf4ca8ea"
+      "sha256": "73a855799e377279517ae01670a37d9269bf56f11a354fe32e08a397b16a3a81"
     }
   ],
-  "implementationSha256": "a573eee2cb8456682a5b5ada197233e0632253939e2de2bf47cb892b2ec55b28",
+  "implementationSha256": "c50e43a942fe57c539c32867398704eaddd918a3192c48cb46d954117a3c81cc",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only",
@@ -245553,7 +245633,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-visible-runtime-controls.1-current",
     "semanticDisposition": "retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change"
   },
-  "manifestSha256": "3f0793594b6636eeb6a90419987626381dcbdcb9ffa73059a3e64b8b010f782d",
+  "manifestSha256": "367ed0a9eb1d6bdbfc07b2b775b2bf91edac54bb00e02ccc8d82b7a5736e074c",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

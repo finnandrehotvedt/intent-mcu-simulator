@@ -85,6 +85,8 @@ import {
   createActiveBuzzerComponent,
 } from '../expansion-drafts/active-buzzer-module-v1.mjs';
 import { createActiveBuzzerArtwork } from '../expansion-drafts/active-buzzer-artwork-v1.mjs';
+import { PASSIVE_PIEZO_DEFINITION, PASSIVE_PIEZO_TYPE, createPassivePiezoComponent } from '../expansion-drafts/passive-piezo-v1.mjs';
+import { createPassivePiezoArtwork } from '../expansion-drafts/passive-piezo-artwork-v1.mjs';
 import {
   SEVEN_SEGMENT_DEFINITION,
   SEVEN_SEGMENT_TYPE,
@@ -288,6 +290,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [COMMON_CATHODE_RGB_LED_TYPE]: COMMON_CATHODE_RGB_LED_DEFINITION,
   [TRAFFIC_LIGHT_TYPE]: TRAFFIC_LIGHT_DEFINITION,
   [ACTIVE_BUZZER_TYPE]: ACTIVE_BUZZER_DEFINITION,
+  [PASSIVE_PIEZO_TYPE]: PASSIVE_PIEZO_DEFINITION,
   [SEVEN_SEGMENT_TYPE]: SEVEN_SEGMENT_DEFINITION,
   [FOUR_DIGIT_SEVEN_SEGMENT_TYPE]: FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION,
   [CHARACTER_LCD_TYPE]: CHARACTER_LCD_DEFINITION,
@@ -363,6 +366,7 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (component?.type === ACTIVE_BUZZER_TYPE) {
     return createActiveBuzzerArtwork(documentObject, definition, component, options);
   }
+  if (component?.type === PASSIVE_PIEZO_TYPE) return createPassivePiezoArtwork(documentObject, definition, component, options);
   if (component?.type === SEVEN_SEGMENT_TYPE) {
     return createSevenSegmentArtwork(documentObject, definition, component, options);
   }
@@ -463,6 +467,7 @@ export function createCandidateUiComponent(type, id) {
   if (type === COMMON_CATHODE_RGB_LED_TYPE) return createCommonCathodeRgbLedComponent(id);
   if (type === TRAFFIC_LIGHT_TYPE) return createTrafficLightComponent(id);
   if (type === ACTIVE_BUZZER_TYPE) return createActiveBuzzerComponent(id);
+  if (type === PASSIVE_PIEZO_TYPE) return createPassivePiezoComponent(id);
   if (type === SEVEN_SEGMENT_TYPE) return createSevenSegmentComponent(id);
   if (type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) return createFourDigitSevenSegmentComponent(id);
   if (type === CHARACTER_LCD_TYPE) return createCharacterLcdComponent(id);
