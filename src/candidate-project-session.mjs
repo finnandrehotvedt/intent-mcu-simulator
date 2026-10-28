@@ -48,6 +48,7 @@ import { COMMON_CATHODE_RGB_LED_TYPE } from '../expansion-drafts/common-cathode-
 import { TRAFFIC_LIGHT_TYPE } from '../expansion-drafts/traffic-light-module-v1.mjs';
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
 import { PASSIVE_PIEZO_TYPE } from '../expansion-drafts/passive-piezo-v1.mjs';
+import { SPEAKER_SIGNAL_TYPE } from '../expansion-drafts/speaker-signal-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { FOUR_DIGIT_SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import { CHARACTER_LCD_TYPE } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
@@ -120,7 +121,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   LIGHT_ANALOGUE_SENSOR_TYPE, TEMPERATURE_ANALOGUE_SENSOR_TYPE,
   DIGITAL_LIGHT_THRESHOLD_TYPE, COMMON_CATHODE_RGB_LED_TYPE,
   TRAFFIC_LIGHT_TYPE,
-  ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+  ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
   CHARACTER_LCD_TYPE,
   CHARACTER_LCD_20X4_TYPE,
   PCF8574_LCD_TYPE,
@@ -308,6 +309,8 @@ function contactSupport(result) {
             ? 'avr-gpio-logical-output-observer-v1'
           : contact.type === PASSIVE_PIEZO_TYPE
             ? 'avr-gpio-transition-observer-v1'
+          : contact.type === SPEAKER_SIGNAL_TYPE
+            ? 'avr-gpio-transition-observer-v1'
           : contact.type === SEVEN_SEGMENT_TYPE
             ? 'seven-independent-led.basic-v1'
           : contact.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE
@@ -369,6 +372,8 @@ function contactSupport(result) {
         ? 'Ideal high-active GPIO enable observed as a silent logical on/off indicator; no waveform, frequency, sound pressure, supply/GPIO current, loading or physical acoustic accuracy is modelled.'
         : contact.type === PASSIVE_PIEZO_TYPE
         ? 'Ideal high-impedance AVR GPIO transition observer with visual driven/rest and transition activity only; no audio, calibrated frequency, loudness, loading or physical piezo accuracy.'
+        : contact.type === SPEAKER_SIGNAL_TYPE
+        ? 'Ideal high-impedance AVR GPIO transition observer with visual driven/rest and transition activity only; no audio, impedance, power, calibrated frequency, loudness or physical speaker accuracy.'
         : contact.type === SEVEN_SEGMENT_TYPE
         ? 'Ideal commanded on/off state through seven independently current-limited existing LED channels; no decimal point, multiplexing, driver IC, brightness, optical, package-current or physical display accuracy is modelled.'
         : contact.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE

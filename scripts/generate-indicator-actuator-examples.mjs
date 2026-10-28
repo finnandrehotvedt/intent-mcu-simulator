@@ -60,6 +60,7 @@ const definitions = [
     namedPins: { SIGNAL: 'D9 direct AVR PWM output', GND: 'GND1' },
     expectedBehavior: 'Compiled D9 transitions produce visible driven/rest and transition-activity states with matching Serial markers.',
     firmwareLimits: 'AVR-only silent visual observer; no audio, calibrated frequency, loudness, current, loading or physical piezo accuracy.' },
+  { id: 'avr-speaker-signal', requirementIds: ['CMP-065'], file: 'avr-speaker-signal.intent-mcu.json', bytes: envelope(starter('avr-speaker-signal')), componentType: 'output.speaker-signal-v1', namedPins: { SIGNAL: 'D10 direct AVR PWM output', GND: 'GND1' }, expectedBehavior: 'Compiled D10 transitions produce visible driven/rest and transition activity.', firmwareLimits: 'Visual observer only; no audio, impedance, power, calibrated frequency, loudness or physical speaker accuracy.' },
 ];
 for (const item of definitions) {
   const opened = prepareProjectEnvelope(item.bytes, adapters);

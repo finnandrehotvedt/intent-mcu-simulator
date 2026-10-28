@@ -334,6 +334,8 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/passive-piezo-contract-v1.mjs',
   '../expansion-drafts/passive-piezo-v1.mjs',
   '../expansion-drafts/passive-piezo-artwork-v1.mjs',
+  '../expansion-drafts/speaker-signal-v1.mjs',
+  '../expansion-drafts/speaker-signal-artwork-v1.mjs',
   '../expansion-drafts/seven-segment-common-cathode-v1.mjs',
   '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs',
   '../expansion-drafts/seven-segment-four-digit-common-cathode-artwork-v1.mjs',

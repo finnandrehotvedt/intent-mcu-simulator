@@ -240206,6 +240206,74 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "60884851e8a37424d0bf3b392b5eb7fdab098a2a9e0cc3be5e4846cea11ffb1b",
+      "componentType": "output.speaker-signal-v1",
+      "componentVersion": 1,
+      "modelId": "model.speaker-signal-transition-observer-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "output.speaker-signal-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 100,
+        "cssWidth": 120,
+        "renderer": "output-speaker-signal",
+        "thumbnail": "output-speaker-signal",
+        "viewBox": [
+          0,
+          0,
+          120,
+          100
+        ]
+      },
+      "rendererContractSha256": "3c959d51014a6c1f37f99b91513cbc525215115e225c4a51a991d035d7096413",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.speaker-signal-transition-observer-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "SIGNAL",
+            "role": "digital-in",
+            "signals": [
+              "digital.output-observer",
+              "pwm.output-observer"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "AVR-only direct SIGNAL connection to D3, D5, D6, D9, D10 or D11 and direct GND connection.",
+            "Visual rest, driven level and observed transition activity only; no browser audio is produced.",
+            "No impedance, coil, cone, power, current, loading, calibrated frequency, loudness, resonance or physical speaker accuracy is modelled."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "af7f1c10ba90379480ba90ad9e1796bde407acf728ea7507288170f41b7e0129",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "3c388cb9d52e480c5677ae32f6d98e9b2825f8790399a55c1f79970bb9f20557",
       "componentType": "output.traffic-light-module-v1",
       "componentVersion": 1,
@@ -245264,7 +245332,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "ea527182fc771bcf5973963d78c80e013ae2401d1db56a29cd797a9c4694ec71"
+      "sha256": "75cff920b0249c96795faa7b5f483f0ed9a924bb62918ff8d49b0ccbbaa88854"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -245296,7 +245364,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "355ccace7bcd41d363590f5642e750d2f113442cbbd7b3299f084188eedcea63"
+      "sha256": "bae8b0d7a5265eaa074ca888248cad8e24fbd5273f67f490cb565362a83cdc54"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -245304,7 +245372,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "95d543854669205fe19bc7bdcd6028c3fc7f7cd9f8921da37d9da36bd8444a76"
+      "sha256": "2320ac5b2a30e13885325846082db0cb1cf0d3c369da4167c7ead7b5a864f8d5"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -245360,7 +245428,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "a82ab5b72aa7d34d0fc546b8bea6358976e3df4e664f88e2583e656dd0317bae"
+      "sha256": "4b1a998a7aaaea7478b7009a7366ea48b52785233a3af61c7d6b708bb65ca4ad"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -245579,6 +245647,14 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "3b8869c6de11518245b6e75be0a6003eee5dd90e34e8c764c1be4449681e6118"
     },
     {
+      "path": "expansion-drafts/speaker-signal-v1.mjs",
+      "sha256": "ef846b6e5356a88fa13f7c60dd827197654a1eb7ffe8c81345b45011994ee3d9"
+    },
+    {
+      "path": "expansion-drafts/speaker-signal-artwork-v1.mjs",
+      "sha256": "ed727dd85996aefe7e6b2e402e6c48c0ec107b527d356d67cb4c451421ce04a1"
+    },
+    {
       "path": "expansion-drafts/seven-segment-common-cathode-v1.mjs",
       "sha256": "5d2b30cdfcfd48ad8dfc6e767ac9c9ee2825018e94980cf8915d5550b7d69905"
     },
@@ -245620,10 +245696,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "73a855799e377279517ae01670a37d9269bf56f11a354fe32e08a397b16a3a81"
+      "sha256": "643927e99d24e32934746b6b6a381988fabded56f2edef3c2f66e41df6470360"
     }
   ],
-  "implementationSha256": "c50e43a942fe57c539c32867398704eaddd918a3192c48cb46d954117a3c81cc",
+  "implementationSha256": "314da0fdc82068a7ed367a19076eb57e27e1ed0574d55d25c879d1a13f0d671a",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only",
@@ -245633,7 +245709,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-visible-runtime-controls.1-current",
     "semanticDisposition": "retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change"
   },
-  "manifestSha256": "367ed0a9eb1d6bdbfc07b2b775b2bf91edac54bb00e02ccc8d82b7a5736e074c",
+  "manifestSha256": "e1fd9c5ef31572fed8b21099e752d6307ac3f65ac225232d583b71e754d0db7d",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

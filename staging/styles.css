@@ -1194,6 +1194,9 @@ button:disabled, select:disabled { opacity: .42; }
 .passive-piezo-disc.on { fill: #4b4212; stroke: #ffe46a; filter: drop-shadow(0 0 8px #f7d44aaa); }
 .passive-piezo-status.on { fill: #f7d44a; stroke: #fff2ae; }
 .passive-piezo-transition.on { opacity: 0.95; filter: drop-shadow(0 0 4px #f7d44a99); }
+.speaker-signal-artwork { overflow: visible; }
+.speaker-cone.on { fill: #594615; stroke: #ffe08a; filter: drop-shadow(0 0 7px #ffca5999); }
+.speaker-status.on { fill: #ffca59; } .speaker-transition.on { opacity: .95; filter: drop-shadow(0 0 4px #ffca5999); }
 .active-buzzer-disc, .buzzer-status, .buzzer-wave { transition: fill 80ms linear, stroke 80ms linear, opacity 80ms linear, filter 80ms linear; }
 .active-buzzer-disc.on { fill: #304414; stroke: #b8ff63; filter: drop-shadow(0 0 8px #9cf545aa); }
 .buzzer-status.on { fill: #9cf545; stroke: #e6ffbd; filter: drop-shadow(0 0 5px #9cf545); }

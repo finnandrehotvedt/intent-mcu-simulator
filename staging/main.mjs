@@ -485,6 +485,7 @@ import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE,
   ROTARY_SELECTOR_TYPE } from '../expansion-drafts/rotary-selector-indicators-v1.mjs';
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
 import { PASSIVE_PIEZO_TYPE } from '../expansion-drafts/passive-piezo-v1.mjs';
+import { SPEAKER_SIGNAL_TYPE } from '../expansion-drafts/speaker-signal-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { FOUR_DIGIT_SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import {
@@ -11827,6 +11828,10 @@ function clearRuntimePresentation() {
     artwork.querySelector('.passive-piezo-status')?.classList.remove('on');
     artwork.querySelector('.passive-piezo-transition')?.classList.remove('on');
   }
+  for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key="output-speaker-signal"]')) {
+    artwork.dataset.driveState = 'rest'; artwork.dataset.transitionActive = 'false';
+    artwork.querySelector('.speaker-cone')?.classList.remove('on'); artwork.querySelector('.speaker-status')?.classList.remove('on'); artwork.querySelector('.speaker-transition')?.classList.remove('on');
+  }
   characterLcdRuntime.clear();
   for (const artwork of elements.componentlayer.querySelectorAll('[data-artwork-key^="output-character-lcd-"]')) {
     artwork.dataset.protocolState = 'awaiting-initialization';
@@ -14661,6 +14666,20 @@ function renderPassivePiezoRuntime(message) {
   }
 }
 
+function renderSpeakerSignalRuntime(message) {
+  if (editor.kind !== 'candidate-project-v3') return;
+  const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter((item) => item.type === SPEAKER_SIGNAL_TYPE && item.runtimeProjection)) {
+    const artwork = elements.componentlayer.querySelector(`[data-component-id="${support.componentId}"] [data-artwork-key="output-speaker-signal"]`); if (!artwork) continue;
+    const pin = pins.get(support.runtimeProjection.sourcePin); const driven = pin?.mode === 'OUTPUT' || pin?.mode === 'DIGITAL_PWM';
+    const level = driven && (Number.isFinite(pin?.pwm?.duty) ? pin.pwm.duty > 0.001 : Boolean(pin?.level));
+    const key = `speaker:${support.componentId}`; const previous = passivePiezoRuntime.get(key) ?? { level, count: 0 }; const count = previous.count + (driven && previous.level !== level ? 1 : 0); passivePiezoRuntime.set(key, { level, count });
+    const observed = modelLibraryImplementationFor(AVR_PROFILE).evaluateProduction(SPEAKER_SIGNAL_TYPE, { level, transitionCount: count }).result;
+    artwork.dataset.driveState = driven ? (observed.driven ? 'driven-high' : 'driven-low') : 'rest'; artwork.dataset.transitionActive = String(observed.transitionActive); artwork.dataset.transitionCount = String(count);
+    artwork.querySelector('.speaker-cone')?.classList.toggle('on', observed.driven); artwork.querySelector('.speaker-status')?.classList.toggle('on', driven); artwork.querySelector('.speaker-transition')?.classList.toggle('on', observed.transitionActive);
+  }
+}
+
 function renderSevenSegmentRuntime(message) {
   if (editor.kind !== 'candidate-project-v3') return;
   const pins = new Map((Array.isArray(message.pins) ? message.pins : []).map((pin) => [pin.pin, pin]));
@@ -14895,6 +14914,7 @@ function renderRuntime(message, { publishState = true } = {}) {
   renderTrafficLightRuntime(message);
   renderActiveBuzzerRuntime(message);
   renderPassivePiezoRuntime(message);
+  renderSpeakerSignalRuntime(message);
   renderSevenSegmentRuntime(message);
   renderFourDigitSevenSegmentRuntime(message);
   renderCharacterLcdRuntime(message);

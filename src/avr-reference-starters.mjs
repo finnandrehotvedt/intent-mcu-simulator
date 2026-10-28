@@ -143,6 +143,7 @@ const CARDS = Object.freeze([
     limits: 'AVR-only visual observer; no sound, frequency calibration, loudness or physical piezo accuracy.',
     next: 'Load Logical active buzzer to compare a three-terminal self-oscillating module.',
   },
+  { id: 'avr-speaker-signal', name: 'Speaker signal transitions', model: 'output.speaker-signal-v1', focus: 'PWM output · D10', partsLabel: 'Controller · speaker signal model', description: 'Observe compiled output transitions without claiming acoustic simulation.', learn: 'How firmware output activity differs from physical speaker sound.', try: 'Build and Run the D10 transition sequence.', observe: 'The visual cone shows driven/rest and transition activity.', limits: 'AVR-only visual observer; no audio, impedance, power, frequency calibration or physical speaker accuracy.', next: 'Load Passive piezo transitions to compare transducer boundaries.' },
   {
     id: 'avr-traffic-light', name: 'Traffic light sequence', model: 'output.traffic-light-module-v1',
     focus: 'Three current-limited outputs', partsLabel: 'Controller · traffic light · three resistors',
@@ -423,6 +424,9 @@ void loop() { digitalWrite(8, HIGH); Serial.println("BUZZER ON"); delay(240); di
 void setup() { pinMode(PIEZO_SIGNAL, OUTPUT); Serial.begin(115200); }
 void loop() { for (byte i=0;i<8;i++) { digitalWrite(PIEZO_SIGNAL, !digitalRead(PIEZO_SIGNAL)); delay(25); } Serial.println("PIEZO TRANSITIONS=8"); digitalWrite(PIEZO_SIGNAL, LOW); Serial.println("PIEZO REST"); delay(240); }
 `,
+  'avr-speaker-signal': `const byte SPEAKER_SIGNAL=10;
+void setup(){pinMode(SPEAKER_SIGNAL,OUTPUT);Serial.begin(115200);} void loop(){for(byte i=0;i<6;i++){digitalWrite(SPEAKER_SIGNAL,!digitalRead(SPEAKER_SIGNAL));delay(30);}Serial.println("SPEAKER TRANSITIONS=6");digitalWrite(SPEAKER_SIGNAL,LOW);delay(240);}
+`,
   'avr-traffic-light': `const byte RED=3, AMBER=5, GREEN=6;
 void phase(bool red, bool amber, bool green, const char* label) { digitalWrite(RED, red); digitalWrite(AMBER, amber); digitalWrite(GREEN, green); Serial.println(label); delay(240); }
 void setup() { pinMode(RED, OUTPUT); pinMode(AMBER, OUTPUT); pinMode(GREEN, OUTPUT); Serial.begin(115200); }
@@ -543,6 +547,10 @@ function construct(card) {
     add(session, createCandidateUiComponent(card.model, 'passive-piezo-1'), { x: 0.76, y: 0.7 });
     branch(session, 'net-ground-branch', 'passive-piezo-1', 'GND', 'junction-starter-passive-piezo-ground');
     wire(session, 'net-starter-passive-piezo-d9', 'passive-piezo-1', 'SIGNAL', 'board-1', 'D9');
+  } else if (card.id === 'avr-speaker-signal') {
+    add(session, createCandidateUiComponent(card.model, 'speaker-signal-1'), { x: 0.76, y: 0.7 });
+    branch(session, 'net-ground-branch', 'speaker-signal-1', 'GND', 'junction-starter-speaker-ground');
+    wire(session, 'net-starter-speaker-d10', 'speaker-signal-1', 'SIGNAL', 'board-1', 'D10');
   } else if (card.id === 'avr-traffic-light') {
     add(session, createTrafficLightComponent('traffic-light-1', 'Workshop traffic light'), { x: 0.79, y: 0.68 });
     const channels = [['RED', 'D3'], ['AMBER', 'D5'], ['GREEN', 'D6']];

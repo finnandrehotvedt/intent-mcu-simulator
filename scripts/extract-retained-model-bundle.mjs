@@ -36,6 +36,8 @@ const SEEDS = Object.freeze([
   'expansion-drafts/passive-piezo-contract-v1.mjs',
   'expansion-drafts/passive-piezo-v1.mjs',
   'expansion-drafts/passive-piezo-artwork-v1.mjs',
+  'expansion-drafts/speaker-signal-v1.mjs',
+  'expansion-drafts/speaker-signal-artwork-v1.mjs',
   'expansion-drafts/seven-segment-common-cathode-v1.mjs',
   'expansion-drafts/character-lcd-16x2-4bit-v1.mjs',
   'expansion-drafts/rotary-encoder-quadrature-v1.mjs',

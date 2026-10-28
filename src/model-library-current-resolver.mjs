@@ -386,6 +386,10 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       }
       return { ok: true, code: 'OK', result: { driven: input.level, transitionActive: input.transitionCount > 0, transitionCount: input.transitionCount } };
     }
+    if (componentType === 'output.speaker-signal-v1') {
+      if (typeof input?.level !== 'boolean' || !Number.isInteger(input?.transitionCount) || input.transitionCount < 0) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      return { ok: true, code: 'OK', result: { driven: input.level, transitionActive: input.transitionCount > 0, transitionCount: input.transitionCount } };
+    }
     if (componentType === 'output.seven-segment-common-cathode-v1') {
       if (Array.isArray(input?.activeSegments)
           && input.activeSegments.every((segment) => ['a', 'b', 'c', 'd', 'e', 'f', 'g'].includes(segment))) {

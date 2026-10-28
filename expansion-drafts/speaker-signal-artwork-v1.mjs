@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+import { SPEAKER_SIGNAL_DEFINITION, SPEAKER_SIGNAL_RENDERER } from './speaker-signal-v1.mjs';
+const NS='http://www.w3.org/2000/svg';
+const el=(doc,name,attrs={},text=null)=>{const node=doc.createElementNS(NS,name);for(const[k,v]of Object.entries(attrs))node.setAttribute(k,String(v));if(text!==null)node.textContent=text;return node;};
+export function createSpeakerSignalArtwork(doc, definition=SPEAKER_SIGNAL_DEFINITION, component={id:'speaker-preview',label:definition.displayName},{thumbnail=false}={}) {
+  if(!doc?.createElementNS||definition.artwork.renderer!==SPEAKER_SIGNAL_RENDERER)throw new TypeError('SPEAKER_SIGNAL_ARTWORK_CONTRACT');
+  const label=thumbnail?`${definition.displayName}, visual transition observer`:`${component.label}, resting visual speaker signal observer; no audio, impedance or calibrated frequency`;
+  const svg=el(doc,'svg',{class:`speaker-signal-artwork${thumbnail?' speaker-signal-thumbnail':''}`,viewBox:definition.artwork.viewBox.join(' '),role:'img','aria-label':label,'data-artwork-key':SPEAKER_SIGNAL_RENDERER,'data-drive-state':'rest','data-transition-active':'false'});
+  svg.append(el(doc,'title',{},label),el(doc,'rect',{x:13,y:10,width:94,height:63,rx:9,fill:'#122833',stroke:'#50d5e8','stroke-width':2}),el(doc,'path',{d:'M32 30 H48 L69 17 V61 L48 48 H32 Z',class:'speaker-cone',fill:'#243b47',stroke:'#9ab4be','stroke-width':2}),el(doc,'path',{d:'M75 25 Q91 39 75 53',class:'speaker-transition',fill:'none',stroke:'#ffca59','stroke-width':3,opacity:.15}),el(doc,'circle',{cx:24,cy:21,r:3,class:'speaker-status',fill:'#53656d',stroke:'#91a7ae'}),...[['SIGNAL',41,'#ffca59'],['GND',79,'#d9e4e5']].flatMap(([pin,x,color])=>[el(doc,'text',{x,y:81,fill:color,'font-size':6.5,'font-family':'ui-monospace, monospace','text-anchor':'middle','font-weight':800},pin),el(doc,'line',{x1:x,y1:83,x2:x,y2:92,stroke:'#c9d2d4','stroke-width':4,'stroke-linecap':'round'}),el(doc,'circle',{cx:x,cy:92,r:3.6,fill:'#23282d',stroke:'#d8e0df','stroke-width':1.5,'data-terminal-pin':pin})]));return svg;
+}
