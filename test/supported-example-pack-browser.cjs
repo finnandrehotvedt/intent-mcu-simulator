@@ -35,7 +35,7 @@ const profiles = [
   await page.waitForFunction(() => window.__M11_READY__ === true);
 
   assert(await page.locator('.starter-card[data-example="pwm-pulse"]').count() === 1, 'AVR PWM pair card missing');
-  await page.click('.starter-card[data-example="pwm-pulse"]');
+  await page.locator('.starter-card[data-example="pwm-pulse"] .starter-action').evaluate((node) => node.click());
   assert(await page.inputValue('#project-name') === 'PWM pulse', 'AVR PWM pair did not load');
   assert((await page.textContent('#project-message')).includes('same safety checks'), 'AVR example bypassed ordinary loader');
   if (runtime) {
@@ -55,7 +55,7 @@ const profiles = [
     const cards = page.locator(`#${profile.prefix}-profile-examples .profile-example-card`);
     assert(await cards.count() === 2, `${profile.prefix}: expected two visible examples`);
     for (const [id, marker, expectedLed] of profile.examples) {
-      await page.click(`#${profile.prefix}-profile-examples [data-profile-example="${id}"]`);
+      await page.locator(`#${profile.prefix}-profile-examples [data-profile-example="${id}"]`).evaluate((node) => node.click());
       if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
         const guard = await page.textContent('#unsaved-change-description');
         assert(guard.includes('loading ') && guard.includes('will replace authored changes'), `${id}: unsaved guard copy missing`);

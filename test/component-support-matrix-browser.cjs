@@ -23,31 +23,36 @@ let browser;
 
   await page.goto(base, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  assert(await page.locator('#catalog-list .catalog-item').count() === 5, 'ordinary AVR default must show 5 Simulated models');
+  await page.click('#workbench-view-advanced');
+  assert(await page.locator('#catalog-list .catalog-item').count() === 6, 'ordinary AVR default must show 6 Simulated project-v2 models');
 
-  await page.click('.starter-card[data-example="temperature-lcd-threshold"]');
+  await page.locator('.starter-card[data-example="temperature-lcd-threshold"] .starter-action').evaluate((node) => node.click());
   await page.waitForFunction(() => window.__M6_PROJECT__().schema === 'intent-mcu-project-contact-persistence@1');
-  await page.waitForFunction(() => document.querySelectorAll('#catalog-list .catalog-item').length === 20);
-  await page.selectOption('#catalog-status', 'all');
-  await page.waitForFunction(() => document.querySelectorAll('#catalog-list .catalog-item').length === 20);
+  await page.waitForFunction(() => document.querySelectorAll('#catalog-list .catalog-item').length === 43);
+  await page.click('#workbench-view-advanced');
+  if (await page.locator('#simple-parts-drawer').getAttribute('aria-hidden') === 'true') {
+    await page.click('#toggle-catalog');
+  }
+  await page.selectOption('#catalog-status', 'all', { force: true });
+  await page.waitForFunction(() => document.querySelectorAll('#catalog-list .catalog-item').length === 80);
 
   const beforeMatrix = await page.evaluate(() => ({
     project: JSON.stringify(window.__M6_PROJECT__()), history: JSON.stringify(window.__M6_HISTORY__?.() ?? null),
     runtime: JSON.stringify(window.__M6_STATE__?.runtime ?? null),
   }));
-  await page.focus('#catalog-support-open');
+  await page.locator('#catalog-support-open').evaluate((node) => node.focus());
   await page.keyboard.press('Enter');
   await page.locator('#component-support-dialog').waitFor({ state: 'visible' });
-  assert(await page.locator('#component-support-body tr').count() === 19, 'AVR matrix must render all 19 models');
-  assert((await page.locator('#component-support-summary').textContent()).includes('16 of 19 models available'), 'AVR matrix count mismatch');
-  assert(await page.locator('#component-support-body tr[data-status="partial"]').count() === 3, 'AVR must expose 3 Partial models');
+  assert(await page.locator('#component-support-body tr').count() === 103, 'AVR matrix must render all 103 models');
+  assert((await page.locator('#component-support-summary').textContent()).includes('81 of 103 models available'), 'AVR matrix count mismatch');
+  assert(await page.locator('#component-support-body tr[data-status="partial"]').count() === 38, 'AVR must expose 38 Partial models');
 
   for (const profile of [
     'board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1',
   ]) {
     await page.selectOption('#component-support-profile', profile);
-    assert((await page.locator('#component-support-summary').textContent()).includes('3 of 19 models available'), `${profile} available count mismatch`);
-    assert(await page.locator('#component-support-body tr[data-status="unavailable"]').count() === 16, `${profile} unavailable count mismatch`);
+    assert((await page.locator('#component-support-summary').textContent()).includes('3 of 103 models available'), `${profile} available count mismatch`);
+    assert(await page.locator('#component-support-body tr[data-status="unavailable"]').count() === 81, `${profile} unavailable count mismatch`);
   }
   await page.selectOption('#component-support-profile', 'board.atmega328p-16mhz-v1');
   if (screenshot) await page.screenshot({ path: screenshot, fullPage: false });
@@ -63,11 +68,11 @@ let browser;
   assert(overflow <= 1, `unexpected horizontal page overflow: ${overflow}px`);
 
   await page.goto(`${base}/components.html#compatibility-matrix`, { waitUntil: 'domcontentloaded' });
-  assert(await page.locator('#compatibility-matrix tbody tr[data-model]').count() === 19, 'crawlable matrix row count mismatch');
-  assert((await page.locator('#compatibility-matrix').textContent()).includes('25 cells are available and 51 are unavailable'), 'crawlable totals missing');
+  assert(await page.locator('#compatibility-matrix tbody tr[data-model]').count() === 103, 'crawlable matrix row count mismatch');
+  assert((await page.locator('#compatibility-matrix').textContent()).includes('90 cells are executable, 72 more are authoring-only and 250 are unavailable'), 'crawlable totals missing');
   assert(errors.length === 0, `browser errors: ${JSON.stringify(errors)}`);
   assert(outside.length === 0, `third-party requests: ${JSON.stringify(outside)}`);
-  console.log(JSON.stringify({ ok: true, avrAvailable: 16, narrowAvailable: 3, rows: 19, outsideRequests: 0 }));
+  console.log(JSON.stringify({ ok: true, avrAvailable: 81, narrowAvailable: 3, rows: 103, outsideRequests: 0 }));
 })().catch((error) => {
   console.error(error.stack || error); process.exitCode = 1;
 }).finally(async () => { await browser?.close(); });
