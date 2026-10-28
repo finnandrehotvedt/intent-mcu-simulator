@@ -139,6 +139,7 @@ const referenceBindings = deepFreeze({
     'sensor.ldr-divider-v1': { starters: ['avr-resistive-divider-sensors'], tests: ['test/resistive-divider-sensors-candidate.test.mjs', 'test/resistive-divider-sensor-example-artifacts.test.mjs'] },
     'sensor.ntc-10k-divider-v1': { starters: ['avr-resistive-divider-sensors'], tests: ['test/resistive-divider-sensors-candidate.test.mjs', 'test/resistive-divider-sensor-example-artifacts.test.mjs'] },
     'sensor.flex-divider-v1': { starters: ['avr-resistive-divider-sensors'], tests: ['test/resistive-divider-sensors-candidate.test.mjs', 'test/resistive-divider-sensor-example-artifacts.test.mjs'] },
+    'sensor.force-sensitive-resistor-divider-v1': { starters: ['avr-resistive-divider-sensors'], tests: ['test/resistive-divider-sensors-candidate.test.mjs', 'test/resistive-divider-sensor-example-artifacts.test.mjs'] },
   },
   [PICO]: {
     [PICO]: { starters: ['pico-led-on', 'pico-led-off'], tests: ['test/rp2040-pico-circuit.test.mjs', 'test/supported-example-pack-browser.cjs'] },

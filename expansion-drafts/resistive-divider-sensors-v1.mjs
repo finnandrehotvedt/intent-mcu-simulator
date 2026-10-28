@@ -10,6 +10,7 @@ import {
 export const LDR_DIVIDER_TYPE = 'sensor.ldr-divider-v1';
 export const NTC_DIVIDER_TYPE = 'sensor.ntc-10k-divider-v1';
 export const FLEX_DIVIDER_TYPE = 'sensor.flex-divider-v1';
+export const FORCE_SENSITIVE_DIVIDER_TYPE = 'sensor.force-sensitive-resistor-divider-v1';
 export const DIVIDER_FIXED_OHMS = 10_000;
 
 const freeze = (value) => {
@@ -63,6 +64,17 @@ const SPECS = freeze({
       'No bend angle, direction, hysteresis, fatigue, tolerance, response time or physical force accuracy is modelled.',
     ],
   },
+  [FORCE_SENSITIVE_DIVIDER_TYPE]: {
+    family: 'sensor.force-sensitive-resistor-divider', displayName: 'Force-sensitive resistor divider',
+    partNumber: 'IL-FSR-DIV-10K', renderer: 'sensor-force-sensitive-divider', controlKey: 'forceRatio',
+    control: { label: 'Relative force', minimum: 0, maximum: 1, step: 0.01, default: 0 },
+    aliases: ['FSR', 'force-sensitive resistor', 'pressure sensor divider'],
+    functions: ['relative force input', 'analogue voltage divider'], package: 'force-sensitive resistor plus fixed 10 kΩ divider',
+    limitations: [
+      'Ideal integrated divider: a high-side force-sensitive resistor falls logarithmically from 1 MΩ with no authored force to 10 kΩ at maximum authored force, above a fixed 10 kΩ low side.',
+      'The control is a unitless teaching ratio; no newtons, pressure, contact area, threshold, hysteresis, creep, tolerance, response time or physical force accuracy is modelled.',
+    ],
+  },
 });
 
 function definition(type, spec) {
@@ -89,6 +101,7 @@ export function resistiveDividerSensorResistance(type, value) {
     return 10_000 * Math.exp(3950 * ((1 / kelvin) - (1 / 298.15)));
   }
   if (type === FLEX_DIVIDER_TYPE) return 10_000 + 30_000 * value;
+  if (type === FORCE_SENSITIVE_DIVIDER_TYPE) return 1_000_000 * (10_000 / 1_000_000) ** value;
   throw new TypeError('RESISTIVE_DIVIDER_SENSOR_TYPE');
 }
 

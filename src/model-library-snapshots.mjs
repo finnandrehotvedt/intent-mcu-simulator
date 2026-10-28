@@ -241436,6 +241436,93 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
+      "behaviorContractSha256": "e30277fa672d0256b3511de2b17790ace5cd60c8c69d4bd10dc82d49d690f14f",
+      "componentType": "sensor.force-sensitive-resistor-divider-v1",
+      "componentVersion": 1,
+      "modelId": "model.sensor.force-sensitive-resistor-divider-v1-ideal",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "sensor.force-sensitive-resistor-divider-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 106,
+        "cssWidth": 132,
+        "renderer": "sensor-force-sensitive-divider",
+        "thumbnail": "sensor-force-sensitive-divider",
+        "viewBox": [
+          0,
+          0,
+          132,
+          106
+        ]
+      },
+      "rendererContractSha256": "aafc4d16a379c3b384dc80e776560612c9742aa8cd68005208741123260e2439",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "forceRatio": {
+            "default": 0,
+            "kind": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "mutability": "authored",
+            "unit": "ratio"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.sensor.force-sensitive-resistor-divider-v1-ideal",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v-reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "AOUT",
+            "role": "analogue-out",
+            "signals": [
+              "analogue.scalar-0-5v"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Ideal integrated divider: a high-side force-sensitive resistor falls logarithmically from 1 MΩ with no authored force to 10 kΩ at maximum authored force, above a fixed 10 kΩ low side.",
+            "The control is a unitless teaching ratio; no newtons, pressure, contact area, threshold, hysteresis, creep, tolerance, response time or physical force accuracy is modelled.",
+            "This is a three-terminal integrated divider model, not a general two-terminal resistor or arbitrary analogue-network solver.",
+            "AOUT must connect directly and exclusively to one A0–A5 input on the supported 5 V AVR controller."
+          ],
+          "status": "simulated"
+        }
+      },
+      "semanticSha256": "924cb4a405591ba6ca744e47f4b3fb37f8ef1f342aa356d8936c76d494aac6f4",
+      "supportStatus": "simulated"
+    },
+    {
       "behaviorContractSha256": "4f72166446ad643cc84f241cd937494ed2e3e8d3c5ab18b8ee9ef7224fb07922",
       "componentType": "sensor.hall-magnetic-analogue-v1",
       "componentVersion": 1,
@@ -245101,7 +245188,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "95d3388112724c7bdc9f9d22c50f90a7607b1fd197d83355434f19c53bc84ef9"
+      "sha256": "d2bd3f653df5868ca237af1e67cdb238cbf4e0cc58db8b17e188ee1316367470"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -245109,7 +245196,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "42ba6bd8d231f77c156833e285e9904f6d3c13c54ea85c138f4a387a660bd9f4"
+      "sha256": "c08fc9a62906092464a798e1ed8445c154907494616d98deaaa8ba0b92f4a757"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -245305,11 +245392,11 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/resistive-divider-sensors-v1.mjs",
-      "sha256": "ff707d3940506997619f9cb371cd61ba6ac4bd83b863e48e095cb6e3fe09a62a"
+      "sha256": "fe78895d3f513eb27fa4d53ede8279d411034094e55a2e93d5825926c8c74ce0"
     },
     {
       "path": "expansion-drafts/resistive-divider-sensors-artwork-v1.mjs",
-      "sha256": "2f6c17bd76adf0ab20ca5289c74b6019ad0fbf502d6b837d8e0a2378ee09d1f3"
+      "sha256": "a9c2281619be8b47b05f16741276b8831cec34dd9b613c236c0cb6e54ecc196a"
     },
     {
       "path": "expansion-drafts/passive-energy-storage-components-v1.mjs",
@@ -245456,7 +245543,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "c08af4fd851fcc566ae29683b7f16e15f2c376d09854e43e296abb9acf4ca8ea"
     }
   ],
-  "implementationSha256": "d85102e29be5ad67193f6adcce3af1c3d626f2c62db8900ab3f4b40182faa5b2",
+  "implementationSha256": "a573eee2cb8456682a5b5ada197233e0632253939e2de2bf47cb892b2ec55b28",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only",
@@ -245466,7 +245553,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-visible-runtime-controls.1-current",
     "semanticDisposition": "retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change"
   },
-  "manifestSha256": "e203716fb02b2ca80a019e2f3cca87b251a9afb39dc61f4691fbc06d24c69419",
+  "manifestSha256": "3f0793594b6636eeb6a90419987626381dcbdcb9ffa73059a3e64b8b010f782d",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

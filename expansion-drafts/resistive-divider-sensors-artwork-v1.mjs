@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
-import { FLEX_DIVIDER_TYPE, LDR_DIVIDER_TYPE, NTC_DIVIDER_TYPE,
+import { FLEX_DIVIDER_TYPE, FORCE_SENSITIVE_DIVIDER_TYPE, LDR_DIVIDER_TYPE, NTC_DIVIDER_TYPE,
   resistiveDividerSensorResistance, resistiveDividerSensorValue,
   resistiveDividerSensorVoltage } from './resistive-divider-sensors-v1.mjs';
 
@@ -43,6 +43,14 @@ export function createResistiveDividerSensorArtwork(documentObject, definition, 
     const bend = 12 + value * 25;
     svg.append(el(documentObject, 'path', { d: `M25 65 Q66 ${65 - bend} 107 65`, fill: 'none', stroke: '#a8ff3f', 'stroke-width': 8, 'stroke-linecap': 'round' }),
       el(documentObject, 'path', { d: `M28 65 Q66 ${68 - bend} 104 65`, fill: 'none', stroke: '#17334a', 'stroke-width': 2 }));
+  } else if (component.type === FORCE_SENSITIVE_DIVIDER_TYPE) {
+    const radius = 10 + value * 13;
+    svg.append(el(documentObject, 'circle', { cx: 66, cy: 45, r: radius, fill: '#213c51',
+      stroke: '#a8ff3f', 'stroke-width': 4 }),
+    el(documentObject, 'path', { d: 'M66 13v13M58 20l8 8 8-8', fill: 'none', stroke: '#ffbf47',
+      'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
+    el(documentObject, 'text', { x: 66, y: 49, fill: '#cce7ef', 'font-size': 10,
+      'font-weight': '700', 'text-anchor': 'middle' }, 'FSR'));
   }
   svg.append(el(documentObject, 'text', { x: 66, y: 84, fill: '#cce7ef', 'font-size': 8,
     'text-anchor': 'middle' }, `${(ohms / 1000).toFixed(1)} kΩ · ${volts.toFixed(2)} V`));

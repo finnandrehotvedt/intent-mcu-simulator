@@ -7,12 +7,12 @@ import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs
 
 const root = new URL('../examples/resistive-divider-sensors/', import.meta.url);
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
-test('CMP085/CMP088/CMP116 discovery names ADC pins and ideal limits', async () => { const html = await readFile(new URL('../staging/examples.html', import.meta.url), 'utf8'); assert.match(html, /<h2>LDR, NTC and flex divider sensors<\/h2>/u); assert.match(html, /A0\/A1\/A2 ADC values/u); assert.match(html, /without lux, thermal, force, tolerance, self-heating or dynamic response accuracy/u); });
-test('CMP085/CMP088/CMP116 canonical example is hashed, openable and executable', async () => {
+test('CMP085/CMP088/CMP116/CMP117 discovery names ADC pins and ideal limits', async () => { const html = await readFile(new URL('../staging/examples.html', import.meta.url), 'utf8'); assert.match(html, /<h2>LDR, NTC, flex and force divider sensors<\/h2>/u); assert.match(html, /A0\/A1\/A2\/A3 ADC values/u); assert.match(html, /without lux, thermal, angle, newton, pressure, tolerance, self-heating or dynamic-response accuracy/u); });
+test('CMP085/CMP088/CMP116/CMP117 canonical example is hashed, openable and executable', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', root), 'utf8'));
-  const [entry] = manifest.entries; assert.deepEqual(entry.requirementIds, ['CMP-085', 'CMP-088', 'CMP-116']);
+  const [entry] = manifest.entries; assert.deepEqual(entry.requirementIds, ['CMP-085', 'CMP-088', 'CMP-116', 'CMP-117']);
   assert.deepEqual(entry.namedPins, { supply: 'VCC → 5V', ground: 'GND → GND1',
-    ldr: 'AOUT → A0', ntc: 'AOUT → A1', flex: 'AOUT → A2' });
+    ldr: 'AOUT → A0', ntc: 'AOUT → A1', flex: 'AOUT → A2', fsr: 'AOUT → A3' });
   for (const profile of ['board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1']) {
     assert.equal(entry.profileBehavior[profile], 'unavailable');
   }
@@ -21,6 +21,6 @@ test('CMP085/CMP088/CMP116 canonical example is hashed, openable and executable'
   const opened = openCandidateUiSession(JSON.stringify(envelope.project)); assert.equal(opened.ok, true, opened.code);
   assert.deepEqual(opened.session.runnable, { ok: true, code: 'OK', details: [] });
   assert.equal(opened.session.runtimeProject.circuit.components.filter((item) =>
-    ['ldr-divider-1', 'ntc-divider-1', 'flex-divider-1'].includes(item.id)
-      && item.type === 'potentiometer.linear-v1').length, 3);
+    ['ldr-divider-1', 'ntc-divider-1', 'flex-divider-1', 'fsr-divider-1'].includes(item.id)
+      && item.type === 'potentiometer.linear-v1').length, 4);
 });

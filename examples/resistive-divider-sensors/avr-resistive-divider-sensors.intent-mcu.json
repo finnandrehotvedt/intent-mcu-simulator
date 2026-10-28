@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-configurable-shortcuts.1-current",
-    "manifestSha256": "e203716fb02b2ca80a019e2f3cca87b251a9afb39dc61f4691fbc06d24c69419",
-    "implementationSha256": "d85102e29be5ad67193f6adcce3af1c3d626f2c62db8900ab3f4b40182faa5b2"
+    "manifestSha256": "3f0793594b6636eeb6a90419987626381dcbdcb9ffa73059a3e64b8b010f782d",
+    "implementationSha256": "a573eee2cb8456682a5b5ada197233e0632253939e2de2bf47cb892b2ec55b28"
   },
   "brief": {
     "schema": "intent-mcu-project-brief@4",
@@ -24,7 +24,7 @@
     "project": {
       "schema": "intent-mcu-project@3",
       "metadata": {
-        "name": "LDR, NTC and flex voltage dividers"
+        "name": "LDR, NTC, flex and FSR voltage dividers"
       },
       "catalogue": {
         "schema": "intent-mcu-catalogue-ref@1",
@@ -81,7 +81,7 @@
         "files": [
           {
             "name": "main.ino",
-            "content": "void setup() { Serial.begin(115200); }\nvoid loop() {\n  Serial.print(\"LDR=\"); Serial.print(analogRead(A0));\n  Serial.print(\",NTC=\"); Serial.print(analogRead(A1));\n  Serial.print(\",FLEX=\"); Serial.println(analogRead(A2));\n  delay(150);\n}\n"
+            "content": "void setup() { Serial.begin(115200); }\nvoid loop() {\n  Serial.print(\"LDR=\"); Serial.print(analogRead(A0));\n  Serial.print(\",NTC=\"); Serial.print(analogRead(A1));\n  Serial.print(\",FLEX=\"); Serial.println(analogRead(A2));\n  Serial.print(\",FSR=\"); Serial.println(analogRead(A3));\n  delay(150);\n}\n"
           }
         ]
       },
@@ -105,6 +105,18 @@
             },
             "controls": {
               "position": 0.3125
+            }
+          },
+          {
+            "id": "fsr-divider-1",
+            "type": "potentiometer.linear-v1",
+            "label": "Force-sensitive resistor divider",
+            "properties": {
+              "ohms": 10000,
+              "taper": "linear"
+            },
+            "controls": {
+              "position": 0.11181576977811698
             }
           },
           {
@@ -145,6 +157,10 @@
                 "pin": "HIGH"
               },
               {
+                "component": "fsr-divider-1",
+                "pin": "HIGH"
+              },
+              {
                 "component": "ldr-divider-1",
                 "pin": "HIGH"
               },
@@ -168,6 +184,19 @@
             ]
           },
           {
+            "id": "net-fsr-divider-1-aout",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "A3"
+              },
+              {
+                "component": "fsr-divider-1",
+                "pin": "WIPER"
+              }
+            ]
+          },
+          {
             "id": "net-ground-branch",
             "endpoints": [
               {
@@ -176,6 +205,10 @@
               },
               {
                 "component": "flex-divider-1",
+                "pin": "LOW"
+              },
+              {
+                "component": "fsr-divider-1",
                 "pin": "LOW"
               },
               {
@@ -238,6 +271,11 @@
             "y": 0.56,
             "rotation": 0
           },
+          "fsr-divider-1": {
+            "x": 0.72,
+            "y": 0.56,
+            "rotation": 0
+          },
           "ldr-divider-1": {
             "x": 0.58,
             "y": 0.56,
@@ -255,6 +293,9 @@
             "color": "#f04f5f"
           },
           "net-flex-divider-1-aout": {
+            "color": "#a8ff3f"
+          },
+          "net-fsr-divider-1-aout": {
             "color": "#a8ff3f"
           },
           "net-ground-branch": {
@@ -313,6 +354,15 @@
           }
         },
         {
+          "id": "fsr-divider-1",
+          "type": "sensor.force-sensitive-resistor-divider-v1",
+          "label": "Force-sensitive resistor divider",
+          "properties": {},
+          "controls": {
+            "forceRatio": 0.55
+          }
+        },
+        {
           "id": "ldr-divider-1",
           "type": "sensor.ldr-divider-v1",
           "label": "LDR voltage-divider module",
@@ -344,6 +394,10 @@
               "pin": "VCC"
             },
             {
+              "component": "fsr-divider-1",
+              "pin": "VCC"
+            },
+            {
               "component": "ldr-divider-1",
               "pin": "VCC"
             },
@@ -367,6 +421,19 @@
           ]
         },
         {
+          "id": "net-fsr-divider-1-aout",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "A3"
+            },
+            {
+              "component": "fsr-divider-1",
+              "pin": "AOUT"
+            }
+          ]
+        },
+        {
           "id": "net-ground-branch",
           "endpoints": [
             {
@@ -375,6 +442,10 @@
             },
             {
               "component": "flex-divider-1",
+              "pin": "GND"
+            },
+            {
+              "component": "fsr-divider-1",
               "pin": "GND"
             },
             {
@@ -435,6 +506,11 @@
         },
         "flex-divider-1": {
           "x": 0.86,
+          "y": 0.56,
+          "rotation": 0
+        },
+        "fsr-divider-1": {
+          "x": 0.72,
           "y": 0.56,
           "rotation": 0
         },

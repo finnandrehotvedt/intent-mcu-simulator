@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createEditableContactDraft } from '../expansion-drafts/contact-persistence-fixture-v1.mjs';
 import { canonicalContactPersistenceDraftJson } from '../expansion-drafts/project-v3-contact-persistence.mjs';
-import { FLEX_DIVIDER_TYPE, LDR_DIVIDER_TYPE, NTC_DIVIDER_TYPE,
+import { FLEX_DIVIDER_TYPE, FORCE_SENSITIVE_DIVIDER_TYPE, LDR_DIVIDER_TYPE, NTC_DIVIDER_TYPE,
   createResistiveDividerSensor } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
 import { openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
 import { CURRENT_MODEL_LIBRARY_LOCK } from '../src/model-library.mjs';
@@ -20,12 +20,13 @@ void loop() {
   Serial.print("LDR="); Serial.print(analogRead(A0));
   Serial.print(",NTC="); Serial.print(analogRead(A1));
   Serial.print(",FLEX="); Serial.println(analogRead(A2));
+  Serial.print(",FSR="); Serial.println(analogRead(A3));
   delay(150);
 }
 `;
 const draft = createEditableContactDraft(source);
 if (!draft.ok) throw new Error(draft.code);
-draft.project.project.metadata.name = 'LDR, NTC and flex voltage dividers';
+draft.project.project.metadata.name = 'LDR, NTC, flex and FSR voltage dividers';
 const session = openCandidateUiSession(canonicalContactPersistenceDraftJson(draft.project)).session;
 const apply = (command) => { const result = session.apply({ ...command, revision: session.revision });
   if (!result.ok) throw new Error(`RESISTIVE_DIVIDER_EXAMPLE:${command.type}:${result.code}`); };
@@ -33,6 +34,7 @@ const cases = [
   [LDR_DIVIDER_TYPE, 'ldr-divider-1', 'A0', { lightLevel: 0.6 }, 0.58],
   [NTC_DIVIDER_TYPE, 'ntc-divider-1', 'A1', { temperatureC: 30 }, 0.72],
   [FLEX_DIVIDER_TYPE, 'flex-divider-1', 'A2', { bendRatio: 0.4 }, 0.86],
+  [FORCE_SENSITIVE_DIVIDER_TYPE, 'fsr-divider-1', 'A3', { forceRatio: 0.55 }, 0.72],
 ];
 for (const component of session.visualProject.circuit.components) {
   if (component.id !== 'board-1') apply({ type: 'component.remove', componentId: component.id });
@@ -62,14 +64,14 @@ const adapters = { [AVR]: { schemas: ['intent-mcu-project-contact-persistence@1'
 const bytes = canonicalProjectEnvelope(AVR, project, adapters, emptyProjectBrief(), null,
   CURRENT_MODEL_LIBRARY_LOCK);
 const entry = {
-  id: 'avr-resistive-divider-sensors', requirementIds: ['CMP-085', 'CMP-088', 'CMP-116'],
+  id: 'avr-resistive-divider-sensors', requirementIds: ['CMP-085', 'CMP-088', 'CMP-116', 'CMP-117'],
   file: 'avr-resistive-divider-sensors.intent-mcu.json',
   namedPins: { supply: 'VCC → 5V', ground: 'GND → GND1', ldr: 'AOUT → A0',
-    ntc: 'AOUT → A1', flex: 'AOUT → A2' },
+    ntc: 'AOUT → A1', flex: 'AOUT → A2', fsr: 'AOUT → A3' },
   values: { fixedLowSideOhms: 10000, ldrLightLevel: 0.6, ntcTemperatureC: 30,
-    flexBendRatio: 0.4 },
-  expectedBehavior: 'Compiled firmware prints three ADC readings while each original control applies its declared integrated divider transfer.',
-  firmwareLimits: 'AVR-only integrated 5 V dividers. No raw two-terminal network solver, lux or angle calibration, tolerance, hysteresis, thermal dynamics or physical equivalence.',
+    flexBendRatio: 0.4, fsrForceRatio: 0.55 },
+  expectedBehavior: 'Compiled firmware prints four ADC readings while each original control applies its declared integrated divider transfer.',
+  firmwareLimits: 'AVR-only integrated 5 V dividers. No raw two-terminal network solver, lux, angle or force calibration, tolerance, hysteresis, thermal dynamics or physical equivalence.',
   profileBehavior: { [AVR]: 'authoring and executable integrated-divider adapter available after a fresh isolated Build',
     'board.rp2040-pico-v1': 'unavailable', 'board.esp32-c3-devmodule-v1': 'unavailable',
     'board.stm32f429zi-nucleo144-v1': 'unavailable' },

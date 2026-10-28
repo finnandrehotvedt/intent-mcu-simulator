@@ -62,7 +62,8 @@ async function resultFor(origin, claim, requestId) {
     if (await page.locator('#workbench-project-dialog').evaluate((node) => node.open)) await page.click('#workbench-project-dialog .workbench-popup-close');
     const expected = [['ldr-divider-1', 'sensor-ldr-divider', 'lightLevel', 0.8],
       ['ntc-divider-1', 'sensor-ntc-divider', 'temperatureC', 45],
-      ['flex-divider-1', 'sensor-flex-divider', 'bendRatio', 0.75]];
+      ['flex-divider-1', 'sensor-flex-divider', 'bendRatio', 0.75],
+      ['fsr-divider-1', 'sensor-force-sensitive-divider', 'forceRatio', 0.8]];
     for (const [id, renderer, key, value] of expected) {
       assert.equal(await page.locator(`.circuit-component[data-component-id="${id}"] [data-artwork-key="${renderer}"]`).count(), 1);
       assert.equal(await page.locator(`.circuit-component[data-component-id="${id}"] [data-terminal-pin]`).count(), 3);
@@ -97,12 +98,13 @@ async function resultFor(origin, claim, requestId) {
       return resultFor(origin, claim, requestId);
     };
     const catalog = await command('divider-catalog-1', 'components.catalog');
-    for (const type of ['sensor.ldr-divider-v1', 'sensor.ntc-10k-divider-v1', 'sensor.flex-divider-v1']) assert.ok(catalog.components[type]);
+    for (const type of ['sensor.ldr-divider-v1', 'sensor.ntc-10k-divider-v1', 'sensor.flex-divider-v1',
+      'sensor.force-sensitive-resistor-divider-v1']) assert.ok(catalog.components[type]);
     const added = await command('divider-add-1', 'edit.batch', { commands: [
       { command: 'component.add', id: 'ldr-api', type: 'sensor.ldr-divider-v1', position: { x: 0.9, y: 0.28, rotation: 0 } },
       { command: 'wire.branch.connect', net_id: 'net-5v', endpoint: { component: 'ldr-api', pin: 'VCC' } },
       { command: 'wire.branch.connect', net_id: 'net-ground-branch', endpoint: { component: 'ldr-api', pin: 'GND' } },
-      { command: 'wire.connect', net_id: 'net-ldr-api-aout', from: { component: 'ldr-api', pin: 'AOUT' }, to: { component: 'board-1', pin: 'A3' } },
+      { command: 'wire.connect', net_id: 'net-ldr-api-aout', from: { component: 'ldr-api', pin: 'AOUT' }, to: { component: 'board-1', pin: 'A4' } },
     ] }); assert.equal(added.status, 'accepted', added.code); await page.waitForSelector('[data-component-id="ldr-api"]');
     const afterAdd = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
     const disconnected = await command('divider-disconnect-1', 'edit.batch', { commands: [
@@ -118,7 +120,7 @@ async function resultFor(origin, claim, requestId) {
     assert.equal(invalid.revision_after, redone.revision_after);
     assert.equal(await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__())), beforeInvalid);
     await dialog.locator('[data-revoke]').click(); assert.deepEqual(errors, []); assert.deepEqual(outside, []); assert.equal(buildRequests, 0);
-    process.stdout.write(`${JSON.stringify({ ok: true, rendered: 3, controls: 3, fileRoundtrip: true,
+    process.stdout.write(`${JSON.stringify({ ok: true, rendered: 4, controls: 4, fileRoundtrip: true,
       apiAddAndWire: true, disconnectUndoRedo: true, invalidAtomic: true, buildRequests,
       thirdPartyRequests: outside.length })}\n`);
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

@@ -70,6 +70,7 @@ const expected = {
   'sensor.ldr-divider-v1': ['lightLevel'],
   'sensor.ntc-10k-divider-v1': ['temperatureC'],
   'sensor.flex-divider-v1': ['bendRatio'],
+  'sensor.force-sensitive-resistor-divider-v1': ['forceRatio'],
   'input.rotary-encoder-quadrature-v1': ['detent'],
 };
 
@@ -93,10 +94,10 @@ function candidate(id, componentId, changes) {
   return opened.session;
 }
 
-test('all 75 executable cells have one exact controls-persist or controls-empty policy', () => {
+test('all 76 executable cells have one exact controls-persist or controls-empty policy', () => {
   assert.deepEqual(controlPersistenceSummary(), {
-    profiles: 4, cells: 352, available: 75, unavailable: 277,
-    controlBearing: 51, controlsEmpty: 24, controls: 64,
+    profiles: 4, cells: 356, available: 76, unavailable: 280,
+    controlBearing: 52, controlsEmpty: 24, controls: 65,
   });
   const inventory = controlPersistenceInventory();
   const bearing = inventory.filter((cell) => cell.available && cell.controls.length);

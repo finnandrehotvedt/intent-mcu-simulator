@@ -153,6 +153,10 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     bendRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0,
       unit: 'ratio', mutability: 'authored' },
   },
+  'sensor.force-sensitive-resistor-divider-v1': {
+    forceRatio: { kind: 'number', minimum: 0, maximum: 1, default: 0,
+      unit: 'ratio', mutability: 'authored' },
+  },
   'sensor.light-threshold-digital-v1': {
     lightLevelPercent: { kind: 'number', minimum: 0, maximum: 100, default: 40,
       unit: '%', mutability: 'authored' },

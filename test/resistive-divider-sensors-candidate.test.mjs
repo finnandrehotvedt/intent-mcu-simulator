@@ -6,11 +6,11 @@ import { createEditableContactDraft } from '../expansion-drafts/contact-persiste
 import { canonicalContactPersistenceDraftJson } from '../expansion-drafts/project-v3-contact-persistence.mjs';
 import { CANDIDATE_UI_COMPONENTS, candidateContactControl,
   createCandidateUiComponent, openCandidateUiSession } from '../src/candidate-existing-ui-adapter.mjs';
-import { FLEX_DIVIDER_TYPE, LDR_DIVIDER_TYPE, NTC_DIVIDER_TYPE,
+import { FLEX_DIVIDER_TYPE, FORCE_SENSITIVE_DIVIDER_TYPE, LDR_DIVIDER_TYPE, NTC_DIVIDER_TYPE,
   RESISTIVE_DIVIDER_SENSOR_DEFINITIONS, resistiveDividerSensorResistance,
   resistiveDividerSensorVoltage, validateResistiveDividerSensor } from '../expansion-drafts/resistive-divider-sensors-v1.mjs';
 
-const TYPES = [LDR_DIVIDER_TYPE, NTC_DIVIDER_TYPE, FLEX_DIVIDER_TYPE];
+const TYPES = [LDR_DIVIDER_TYPE, NTC_DIVIDER_TYPE, FLEX_DIVIDER_TYPE, FORCE_SENSITIVE_DIVIDER_TYPE];
 function session() { const draft = createEditableContactDraft(); assert.equal(draft.ok, true);
   const active = openCandidateUiSession(canonicalContactPersistenceDraftJson(draft.project)).session;
   for (const component of active.visualProject.circuit.components) {
@@ -29,9 +29,9 @@ function addAndWire(active, type, id, pin) {
   apply(active, { type: 'wire.create', net: { id: `${id}-out`, endpoints: [{ component: id, pin: 'AOUT' }, { component: 'board-1', pin }] } });
 }
 
-test('CMP085/CMP088/CMP116 expose distinct original bounded divider contracts', () => {
-  assert.equal(new Set(TYPES.map((type) => RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[type].modelRef)).size, 3);
-  assert.equal(new Set(TYPES.map((type) => RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[type].artwork.renderer)).size, 3);
+test('CMP085/CMP088/CMP116/CMP117 expose distinct original bounded divider contracts', () => {
+  assert.equal(new Set(TYPES.map((type) => RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[type].modelRef)).size, 4);
+  assert.equal(new Set(TYPES.map((type) => RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[type].artwork.renderer)).size, 4);
   for (const type of TYPES) {
     const definition = RESISTIVE_DIVIDER_SENSOR_DEFINITIONS[type];
     assert.equal(CANDIDATE_UI_COMPONENTS[type], definition);
@@ -44,11 +44,14 @@ test('CMP085/CMP088/CMP116 expose distinct original bounded divider contracts', 
   assert.ok(resistiveDividerSensorVoltage(LDR_DIVIDER_TYPE, 1) > resistiveDividerSensorVoltage(LDR_DIVIDER_TYPE, 0));
   assert.equal(resistiveDividerSensorResistance(NTC_DIVIDER_TYPE, 25), 10000);
   assert.equal(resistiveDividerSensorResistance(FLEX_DIVIDER_TYPE, 1), 40000);
+  assert.equal(resistiveDividerSensorResistance(FORCE_SENSITIVE_DIVIDER_TYPE, 0), 1000000);
+  assert.equal(resistiveDividerSensorResistance(FORCE_SENSITIVE_DIVIDER_TYPE, 1), 10000);
 });
 
 test('each divider projects exact controls through the AVR ADC adapter and survives Save/Open', () => {
   const cases = [[LDR_DIVIDER_TYPE, 'lightLevel', 0.75, 'A0', 0],
-    [NTC_DIVIDER_TYPE, 'temperatureC', 55, 'A1', 1], [FLEX_DIVIDER_TYPE, 'bendRatio', 0.7, 'A2', 2]];
+    [NTC_DIVIDER_TYPE, 'temperatureC', 55, 'A1', 1], [FLEX_DIVIDER_TYPE, 'bendRatio', 0.7, 'A2', 2],
+    [FORCE_SENSITIVE_DIVIDER_TYPE, 'forceRatio', 0.65, 'A3', 3]];
   for (const [index, [type, key, value, pin, channel]] of cases.entries()) {
     const active = session(); const id = `divider-${index}`; addAndWire(active, type, id, pin);
     const prepared = candidateContactControl(active, id, key, value); assert.equal(prepared.ok, true);
