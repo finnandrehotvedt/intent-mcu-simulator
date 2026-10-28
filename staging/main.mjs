@@ -486,6 +486,7 @@ import { LED_BAR_GRAPH_TYPE, RGB_COMMON_ANODE_TYPE,
 import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.mjs';
 import { PASSIVE_PIEZO_TYPE } from '../expansion-drafts/passive-piezo-v1.mjs';
 import { SPEAKER_SIGNAL_TYPE } from '../expansion-drafts/speaker-signal-v1.mjs';
+import { SERVO_DEFINITIONS } from '../expansion-drafts/servo-components-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { FOUR_DIGIT_SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import {
@@ -14677,6 +14678,19 @@ function renderSpeakerSignalRuntime(message) {
     const observed = modelLibraryImplementationFor(AVR_PROFILE).evaluateProduction(SPEAKER_SIGNAL_TYPE, { level, transitionCount: count }).result;
     artwork.dataset.driveState = driven ? (observed.driven ? 'driven-high' : 'driven-low') : 'rest'; artwork.dataset.transitionActive = String(observed.transitionActive); artwork.dataset.transitionCount = String(count);
     artwork.querySelector('.speaker-cone')?.classList.toggle('on', observed.driven); artwork.querySelector('.speaker-status')?.classList.toggle('on', driven); artwork.querySelector('.speaker-transition')?.classList.toggle('on', observed.transitionActive);
+  }
+  for (const support of (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter((item) => SERVO_DEFINITIONS[item.type] && item.runtimeProjection)) {
+    const artwork = elements.componentlayer.querySelector(`[data-component-id="${CSS.escape(support.componentId)}"] .servo-artwork`);
+    const pin = pins.get(support.runtimeProjection.sourcePin); const pwm = pin?.pwm;
+    if (!artwork || !Number.isFinite(pwm?.periodCycles) || !Number.isFinite(pwm?.highCycles)) continue;
+    const observed = modelLibraryImplementationFor(AVR_PROFILE).evaluateProduction(support.type,
+      { periodCycles: Math.round(pwm.periodCycles), highCycles: Math.round(pwm.highCycles) });
+    if (!observed.ok) { artwork.dataset.command = 'unavailable'; continue; }
+    const result = observed.result; const value = Number.isFinite(result.angleDegrees) ? `${result.angleDegrees.toFixed(1)}deg`
+      : `${result.direction}:${result.command.toFixed(3)}`;
+    artwork.dataset.command = value; artwork.setAttribute('aria-label', `${support.componentId}, ${value}; visual command intent only`);
+    const indicator = artwork.querySelector('[data-servo-indicator]');
+    if (indicator && Number.isFinite(result.angleDegrees)) indicator.style.transform = `rotate(${result.angleDegrees - 90}deg)`;
   }
 }
 

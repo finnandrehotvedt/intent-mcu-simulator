@@ -160,6 +160,7 @@ import {
   validatePassivePiezoComponent,
 } from './passive-piezo-v1.mjs';
 import { SPEAKER_SIGNAL_DEFINITION, SPEAKER_SIGNAL_TYPE, projectSpeakerSignals, validateSpeakerSignalComponent } from './speaker-signal-v1.mjs';
+import { SERVO_DEFINITIONS, projectServoComponents, validateServoComponent } from './servo-components-v1.mjs';
 import {
   SEVEN_SEGMENT_DEFINITION,
   SEVEN_SEGMENT_TYPE,
@@ -357,6 +358,7 @@ function pinIds(component) {
   if (component.type === ACTIVE_BUZZER_TYPE) return ['VCC', 'GND', 'EN'];
   if (component.type === PASSIVE_PIEZO_TYPE) return ['SIGNAL', 'GND'];
   if (component.type === SPEAKER_SIGNAL_TYPE) return ['SIGNAL', 'GND'];
+  if (SERVO_DEFINITIONS[component.type]) return ['SIGNAL', 'VCC', 'GND'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
   if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
     return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp', 'DIG1', 'DIG2', 'DIG3', 'DIG4'];
@@ -408,6 +410,7 @@ function componentPins(component) {
   if (component.type === ACTIVE_BUZZER_TYPE) return ACTIVE_BUZZER_DEFINITION.pins;
   if (component.type === PASSIVE_PIEZO_TYPE) return PASSIVE_PIEZO_DEFINITION.pins;
   if (component.type === SPEAKER_SIGNAL_TYPE) return SPEAKER_SIGNAL_DEFINITION.pins;
+  if (SERVO_DEFINITIONS[component.type]) return SERVO_DEFINITIONS[component.type].pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
   if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
     return FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION.pins;
@@ -546,6 +549,8 @@ function validateCandidateComponent(component) {
     if (!validatePassivePiezoComponent(component)) fail('PROJECT_CONTACT_PASSIVE_PIEZO_STATE', [component.id]);
   } else if (component.type === SPEAKER_SIGNAL_TYPE) {
     if (!validateSpeakerSignalComponent(component)) fail('PROJECT_CONTACT_SPEAKER_SIGNAL_STATE', [component.id]);
+  } else if (SERVO_DEFINITIONS[component.type]) {
+    if (!validateServoComponent(component)) fail('PROJECT_CONTACT_SERVO_STATE', [component.id]);
   } else if (component.type === SEVEN_SEGMENT_TYPE) {
     if (!validateSevenSegmentComponent(component)) {
       fail('PROJECT_CONTACT_SEVEN_SEGMENT_STATE', [component.id]);
@@ -620,7 +625,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
         DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
-        ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+        ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
         CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
       ].includes(component.type))) {
@@ -1388,7 +1393,14 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     state: { driven: false, transitionActive: false, transitionCount: 0 }, runtimeProjection: clone(speaker) })));
   for (const speaker of speakerProjection.speakers) production(implementation, SPEAKER_SIGNAL_TYPE,
     { level: false, transitionCount: 0 }, [speaker.componentId]);
-  const sevenSegmentProjection = projectSevenSegmentDisplays(speakerProjection.runtimeGraph);
+  const servoProjection = projectServoComponents(speakerProjection.runtimeGraph);
+  if (!servoProjection.ok) fail(`PROJECT_CONTACT_${servoProjection.code}`, servoProjection.details);
+  contacts.push(...servoProjection.servos.map((servo) => ({ componentId: servo.componentId, type: servo.type,
+    state: servo.type === 'output.hobby-servo-v1' ? { angleDegrees: 90, pulseUs: 1500 }
+      : { direction: 'stopped', command: 0, pulseUs: 1500 }, runtimeProjection: clone(servo) })));
+  for (const servo of servoProjection.servos) production(implementation, servo.type,
+    { periodCycles: 320000, highCycles: 24000 }, [servo.componentId]);
+  const sevenSegmentProjection = projectSevenSegmentDisplays(servoProjection.runtimeGraph);
   if (!sevenSegmentProjection.ok) {
     fail(`PROJECT_CONTACT_${sevenSegmentProjection.code}`, sevenSegmentProjection.details);
   }
@@ -1706,6 +1718,9 @@ function draftContacts(graph) {
     }
     if (component.type === SPEAKER_SIGNAL_TYPE) return [{ componentId: component.id, type: component.type,
       state: { driven: false, transitionActive: false, transitionCount: 0 }, runtimeProjection: null }];
+    if (SERVO_DEFINITIONS[component.type]) return [{ componentId: component.id, type: component.type,
+      state: component.type === 'output.hobby-servo-v1' ? { angleDegrees: 90, pulseUs: 1500 }
+        : { direction: 'stopped', command: 0, pulseUs: 1500 }, runtimeProjection: null }];
     if (component.type === SEVEN_SEGMENT_TYPE) {
       return [{
         componentId: component.id,
@@ -1873,7 +1888,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
-      ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+      ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
       CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,
     ].includes(component.type),

@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-configurable-shortcuts.1-current",
-    "manifestSha256": "e1fd9c5ef31572fed8b21099e752d6307ac3f65ac225232d583b71e754d0db7d",
-    "implementationSha256": "314da0fdc82068a7ed367a19076eb57e27e1ed0574d55d25c879d1a13f0d671a"
+    "manifestSha256": "807479d1c624719af0c2d706230c0a098496982d399ff8b6ee700e6889a09a59",
+    "implementationSha256": "c4000bb42249661fe505f52022dfea5e218bbf3a4f35abde1f2cd142854768e1"
   },
   "brief": {
     "schema": "intent-mcu-project-brief@4",

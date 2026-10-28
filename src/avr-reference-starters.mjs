@@ -144,6 +144,8 @@ const CARDS = Object.freeze([
     next: 'Load Logical active buzzer to compare a three-terminal self-oscillating module.',
   },
   { id: 'avr-speaker-signal', name: 'Speaker signal transitions', model: 'output.speaker-signal-v1', focus: 'PWM output · D10', partsLabel: 'Controller · speaker signal model', description: 'Observe compiled output transitions without claiming acoustic simulation.', learn: 'How firmware output activity differs from physical speaker sound.', try: 'Build and Run the D10 transition sequence.', observe: 'The visual cone shows driven/rest and transition activity.', limits: 'AVR-only visual observer; no audio, impedance, power, frequency calibration or physical speaker accuracy.', next: 'Load Passive piezo transitions to compare transducer boundaries.' },
+  { id: 'avr-hobby-servo', name: 'Hobby servo position intent', model: 'output.hobby-servo-v1', focus: 'Servo pulse · D9', partsLabel: 'Controller · hobby servo', description: 'Map bounded 1–2 ms pulses to a visible 0–180 degree command.', learn: 'How pulse width encodes servo position intent.', try: 'Build and Run the 0, 90 and 180 degree sequence.', observe: 'The visual horn follows command intent when a valid frame is observed.', limits: 'AVR-only ideal command observer; no motion, torque, current, load or physical accuracy.', next: 'Load Continuous rotation servo to compare direction intent.' },
+  { id: 'avr-continuous-servo', name: 'Continuous servo command intent', model: 'output.continuous-servo-v1', focus: 'Servo pulse · D10', partsLabel: 'Controller · continuous servo', description: 'Map bounded pulses to reverse, stopped and forward command intent.', learn: 'Why the same pulse widths mean direction rather than angle on a continuous servo.', try: 'Build and Run the reverse, stop and forward sequence.', observe: 'The visual arrow changes direction and stops around neutral.', limits: 'AVR-only ideal command observer; no RPM, torque, current, inertia or physical accuracy.', next: 'Load Hobby servo to compare position intent.' },
   {
     id: 'avr-traffic-light', name: 'Traffic light sequence', model: 'output.traffic-light-module-v1',
     focus: 'Three current-limited outputs', partsLabel: 'Controller · traffic light · three resistors',
@@ -427,6 +429,14 @@ void loop() { for (byte i=0;i<8;i++) { digitalWrite(PIEZO_SIGNAL, !digitalRead(P
   'avr-speaker-signal': `const byte SPEAKER_SIGNAL=10;
 void setup(){pinMode(SPEAKER_SIGNAL,OUTPUT);Serial.begin(115200);} void loop(){for(byte i=0;i<6;i++){digitalWrite(SPEAKER_SIGNAL,!digitalRead(SPEAKER_SIGNAL));delay(30);}Serial.println("SPEAKER TRANSITIONS=6");digitalWrite(SPEAKER_SIGNAL,LOW);delay(240);}
 `,
+  'avr-hobby-servo': `#include <Servo.h>
+Servo actuator; const byte SIGNAL=9; const byte commands[3]={0,90,180};
+void setup(){actuator.attach(SIGNAL);Serial.begin(115200);} void loop(){for(byte i=0;i<3;i++){actuator.write(commands[i]);Serial.print("ANGLE=");Serial.println(commands[i]);delay(500);}}
+`,
+  'avr-continuous-servo': `#include <Servo.h>
+Servo actuator; const byte SIGNAL=10; const int pulses[3]={1000,1500,2000}; const char* labels[3]={"REVERSE","STOPPED","FORWARD"};
+void setup(){actuator.attach(SIGNAL);Serial.begin(115200);} void loop(){for(byte i=0;i<3;i++){actuator.writeMicroseconds(pulses[i]);Serial.println(labels[i]);delay(500);}}
+`,
   'avr-traffic-light': `const byte RED=3, AMBER=5, GREEN=6;
 void phase(bool red, bool amber, bool green, const char* label) { digitalWrite(RED, red); digitalWrite(AMBER, amber); digitalWrite(GREEN, green); Serial.println(label); delay(240); }
 void setup() { pinMode(RED, OUTPUT); pinMode(AMBER, OUTPUT); pinMode(GREEN, OUTPUT); Serial.begin(115200); }
@@ -551,6 +561,12 @@ function construct(card) {
     add(session, createCandidateUiComponent(card.model, 'speaker-signal-1'), { x: 0.76, y: 0.7 });
     branch(session, 'net-ground-branch', 'speaker-signal-1', 'GND', 'junction-starter-speaker-ground');
     wire(session, 'net-starter-speaker-d10', 'speaker-signal-1', 'SIGNAL', 'board-1', 'D10');
+  } else if (card.id === 'avr-hobby-servo' || card.id === 'avr-continuous-servo') {
+    const continuous = card.id === 'avr-continuous-servo'; const id = continuous ? 'continuous-servo-1' : 'hobby-servo-1';
+    add(session, createCandidateUiComponent(card.model, id), { x: 0.76, y: 0.7 });
+    branch(session, 'net-5v', id, 'VCC', `junction-starter-${id}-vcc`);
+    branch(session, 'net-ground-branch', id, 'GND', `junction-starter-${id}-ground`);
+    wire(session, `net-starter-${id}-signal`, id, 'SIGNAL', 'board-1', continuous ? 'D10' : 'D9');
   } else if (card.id === 'avr-traffic-light') {
     add(session, createTrafficLightComponent('traffic-light-1', 'Workshop traffic light'), { x: 0.79, y: 0.68 });
     const channels = [['RED', 'D3'], ['AMBER', 'D5'], ['GREEN', 'D6']];

@@ -239325,6 +239325,160 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
+      "behaviorContractSha256": "f1410673622bc401aa3e5383792a41844a97559f2bc50b92d969e8f7670688bf",
+      "componentType": "output.continuous-servo-v1",
+      "componentVersion": 1,
+      "modelId": "model.continuous-servo-command-intent-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "output.continuous-servo-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 110,
+        "cssWidth": 140,
+        "renderer": "output-continuous-servo",
+        "thumbnail": "output-continuous-servo",
+        "viewBox": [
+          0,
+          0,
+          140,
+          110
+        ]
+      },
+      "rendererContractSha256": "0ddaf89f2bc242ada628e57bfa3d7f0efff32751b4e65570a7d6006ad31855ba",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.continuous-servo-command-intent-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "SIGNAL",
+            "role": "digital-in",
+            "signals": [
+              "pwm.pulse-width-observer"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "AVR-only direct SIGNAL connection to D3, D5, D6, D9, D10 or D11, direct 5 V VCC and GND.",
+            "Accepts only measured 1.0–2.0 ms high pulses in a 10–30 ms frame from the 16 MHz AVR runtime.",
+            "Displays reverse/stopped/forward command intent with a 20 microsecond neutral deadband only; no RPM, torque, load, current, inertia or physical accuracy is modelled."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "71becf67466db02102cc1aecb0255be3931d725ebdd337947dfa4dcb09438e1e",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "c62baede788e3673f765550dafd7e2f675ce102a59039d8c6ce5056629f8a484",
+      "componentType": "output.hobby-servo-v1",
+      "componentVersion": 1,
+      "modelId": "model.hobby-servo-position-intent-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "output.hobby-servo-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 110,
+        "cssWidth": 140,
+        "renderer": "output-hobby-servo",
+        "thumbnail": "output-hobby-servo",
+        "viewBox": [
+          0,
+          0,
+          140,
+          110
+        ]
+      },
+      "rendererContractSha256": "513b9dfab198693b30d95c28c724783813f24200d03138ced3138ba3e4ccae59",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.hobby-servo-position-intent-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "SIGNAL",
+            "role": "digital-in",
+            "signals": [
+              "pwm.pulse-width-observer"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "AVR-only direct SIGNAL connection to D3, D5, D6, D9, D10 or D11, direct 5 V VCC and GND.",
+            "Accepts only measured 1.0–2.0 ms high pulses in a 10–30 ms frame from the 16 MHz AVR runtime.",
+            "Displays idealized 0–180 degree command intent only; no motion, speed, torque, load, current, backlash, travel limit or physical accuracy is modelled."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "9884e01f8033829220a6006abe0362a1354ac1f3618e56572cb11739004dadbd",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "d8e2a7e7b0396534ea002317e1e3ea0dfa1b05cbd1f084fc284b6d8afe6c216f",
       "componentType": "output.led-bar-graph-10-v1",
       "componentVersion": 1,
@@ -245332,7 +245486,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "75cff920b0249c96795faa7b5f483f0ed9a924bb62918ff8d49b0ccbbaa88854"
+      "sha256": "bed25eb45a59a2dd5280e399d3b86909e9ffd04cb1d55021a0fb1c1f3bdfb247"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -245364,7 +245518,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "bae8b0d7a5265eaa074ca888248cad8e24fbd5273f67f490cb565362a83cdc54"
+      "sha256": "b310e00e672fca789802238fe0beafbf1f88b750c31bdc06a073c9ec74f2dd40"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -245372,7 +245526,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "2320ac5b2a30e13885325846082db0cb1cf0d3c369da4167c7ead7b5a864f8d5"
+      "sha256": "728daa459e566848c20347a138a96652f982300d3229d2952f01c6552c644bda"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -245428,7 +245582,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "4b1a998a7aaaea7478b7009a7366ea48b52785233a3af61c7d6b708bb65ca4ad"
+      "sha256": "d412c244b0a636ea589a8027fa50cbce3136955d86617fba976ac128d818f2b2"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -245696,10 +245850,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "643927e99d24e32934746b6b6a381988fabded56f2edef3c2f66e41df6470360"
+      "sha256": "ae7c26969e493c3c0cc2b550e0f0b70f087b035aa39410b9f3d3e48b840be253"
     }
   ],
-  "implementationSha256": "314da0fdc82068a7ed367a19076eb57e27e1ed0574d55d25c879d1a13f0d671a",
+  "implementationSha256": "c4000bb42249661fe505f52022dfea5e218bbf3a4f35abde1f2cd142854768e1",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only",
@@ -245709,7 +245863,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-visible-runtime-controls.1-current",
     "semanticDisposition": "retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change"
   },
-  "manifestSha256": "e1fd9c5ef31572fed8b21099e752d6307ac3f65ac225232d583b71e754d0db7d",
+  "manifestSha256": "807479d1c624719af0c2d706230c0a098496982d399ff8b6ee700e6889a09a59",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

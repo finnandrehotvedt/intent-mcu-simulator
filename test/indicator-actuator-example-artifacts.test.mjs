@@ -19,10 +19,10 @@ const adapters = Object.freeze({ 'board.atmega328p-16mhz-v1': Object.freeze({
   },
 }) });
 
-test('CMP-038/041/042/043/063/064/065 artifacts are canonical, hashed and profile-bounded', async () => {
+test('CMP-038/041/042/043/063–067 artifacts are canonical, hashed and profile-bounded', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
   assert.deepEqual(manifest.entries.flatMap((entry) => entry.requirementIds), [
-    'CMP-038', 'CMP-041', 'CMP-042', 'CMP-043', 'CMP-064', 'CMP-063', 'CMP-065',
+    'CMP-038', 'CMP-041', 'CMP-042', 'CMP-043', 'CMP-064', 'CMP-063', 'CMP-065', 'CMP-066', 'CMP-067',
   ]);
   for (const entry of manifest.entries) {
     const bytes = await readFile(new URL(entry.file, ROOT), 'utf8');
