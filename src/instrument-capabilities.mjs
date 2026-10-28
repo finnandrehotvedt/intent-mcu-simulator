@@ -48,7 +48,7 @@ const contracts = freeze({
     runtimeProvenance: 'Compiled UF2 → rp2040js worker',
     clockHertz: 125_000_000,
     serial: { status: 'output-only', surface: 'profile-UART0-output', source: 'bounded worker UART0 output', reason: 'The shared Serial console and RX input are not public for this profile.' },
-    pin: unavailable('No shared pin inspector is public for Pico.'),
+    pin: unavailable('The shared cross-profile pin inspector is unavailable for Pico; current profile-owned GPIO0 evidence remains visible in the Pico runtime panel.'),
     logic: { status: 'recorded', surface: 'shared-analyser', source: 'rp2040js worker GPIO0 transition records', channels: 1, retained: null },
     input: unavailable('No public Pico button, analogue or Serial-input control is modelled.'),
   },

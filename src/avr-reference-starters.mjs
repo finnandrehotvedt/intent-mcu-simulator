@@ -435,13 +435,13 @@ void loop() { for (byte i=0;i<8;i++) { digitalWrite(PIEZO_SIGNAL, !digitalRead(P
   'avr-speaker-signal': `const byte SPEAKER_SIGNAL=10;
 void setup(){pinMode(SPEAKER_SIGNAL,OUTPUT);Serial.begin(115200);} void loop(){for(byte i=0;i<6;i++){digitalWrite(SPEAKER_SIGNAL,!digitalRead(SPEAKER_SIGNAL));delay(30);}Serial.println("SPEAKER TRANSITIONS=6");digitalWrite(SPEAKER_SIGNAL,LOW);delay(240);}
 `,
-  'avr-hobby-servo': `#include <Servo.h>
-Servo actuator; const byte SIGNAL=9; const byte commands[3]={0,90,180};
-void setup(){actuator.attach(SIGNAL);Serial.begin(115200);} void loop(){for(byte i=0;i<3;i++){actuator.write(commands[i]);Serial.print("ANGLE=");Serial.println(commands[i]);delay(500);}}
+  'avr-hobby-servo': `const byte SIGNAL=9; const byte commands[3]={0,90,180};
+void pulseAngle(byte angle){unsigned int highUs=1000U+((unsigned long)angle*1000U/180U);digitalWrite(SIGNAL,HIGH);delayMicroseconds(highUs);digitalWrite(SIGNAL,LOW);delayMicroseconds(20000U-highUs);}
+void setup(){pinMode(SIGNAL,OUTPUT);Serial.begin(115200);} void loop(){for(byte i=0;i<3;i++){for(byte frame=0;frame<20;frame++)pulseAngle(commands[i]);Serial.print("ANGLE=");Serial.println(commands[i]);delay(100);}}
 `,
-  'avr-continuous-servo': `#include <Servo.h>
-Servo actuator; const byte SIGNAL=10; const int pulses[3]={1000,1500,2000}; const char* labels[3]={"REVERSE","STOPPED","FORWARD"};
-void setup(){actuator.attach(SIGNAL);Serial.begin(115200);} void loop(){for(byte i=0;i<3;i++){actuator.writeMicroseconds(pulses[i]);Serial.println(labels[i]);delay(500);}}
+  'avr-continuous-servo': `const byte SIGNAL=10; const unsigned int pulses[3]={1000,1500,2000}; const char* labels[3]={"REVERSE","STOPPED","FORWARD"};
+void pulseWidth(unsigned int highUs){digitalWrite(SIGNAL,HIGH);delayMicroseconds(highUs);digitalWrite(SIGNAL,LOW);delayMicroseconds(20000U-highUs);}
+void setup(){pinMode(SIGNAL,OUTPUT);Serial.begin(115200);} void loop(){for(byte i=0;i<3;i++){for(byte frame=0;frame<20;frame++)pulseWidth(pulses[i]);Serial.println(labels[i]);delay(100);}}
 `,
   'avr-dc-motor-l298n': `const byte IN1=7,IN2=8,ENA=9;
 void command(bool a,bool b,byte enable,const char* label){digitalWrite(IN1,a);digitalWrite(IN2,b);analogWrite(ENA,enable);Serial.println(label);delay(400);}

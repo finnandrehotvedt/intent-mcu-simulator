@@ -18,7 +18,10 @@ const el = (documentObject, name, attributes = {}, text = null) => {
 };
 
 export function createContactSensorArtwork(documentObject, definition, component) {
-  if (!documentObject?.createElementNS || definition !== CONTACT_SENSOR_DEFINITIONS[component?.type]) {
+  const canonical = CONTACT_SENSOR_DEFINITIONS[component?.type];
+  if (!documentObject?.createElementNS || !canonical
+      || definition?.type !== canonical.type
+      || definition?.artwork?.renderer !== canonical.artwork.renderer) {
     throw new TypeError('CONTACT_SENSOR_ARTWORK');
   }
   const { closed } = contactSensorRuntimeState(component);

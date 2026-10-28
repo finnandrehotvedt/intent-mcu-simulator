@@ -205,8 +205,8 @@
       },
       "expectedBehavior": "Valid 1–2 ms pulses in bounded frames map to visible 0–180 degree command intent.",
       "firmwareLimits": "Ideal AVR command observer only; no motion, torque, load, current, backlash or physical accuracy.",
-      "sourceSha256": "d71b1c606ff409da9bc231debdee1c34612742653fc8cd4044b4848d06186269",
-      "projectSha256": "307a74d876edd6524132c21192e3a76391c343f0b1700fb60d139dc74a923225",
+      "sourceSha256": "20c99909a75a8b5dede030162b02ddbe931c4983c8e93536f8e98416bebadb77",
+      "projectSha256": "a4fdbe43ff4b800efd7a8cb5d85a0ea3aa835c47b91f54aae04b3e31eeb3c9a7",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -229,8 +229,8 @@
       },
       "expectedBehavior": "Valid bounded pulses map to visible reverse, stopped and forward command intent.",
       "firmwareLimits": "Ideal AVR command observer only; no RPM, torque, load, current, inertia or physical accuracy.",
-      "sourceSha256": "c882d70f55b1813c8c8a8b0663b343116dfddd6c510714e1a7d748c19985e13d",
-      "projectSha256": "8801284a8f94eeadcc395a5700e92cf59e22c8968c96725a48f44feb8216df83",
+      "sourceSha256": "360ed27c4f7f3d034137c4fd0a663543733a7265ef5561ffb8ba4eee6c8cb87c",
+      "projectSha256": "aac5789bb7e296fc9f70649c2697ee9d2e8594deafec2226903540b642cb4bef",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",

@@ -81,7 +81,7 @@
         "files": [
           {
             "name": "main.ino",
-            "content": "#include <Servo.h>\nServo actuator; const byte SIGNAL=9; const byte commands[3]={0,90,180};\nvoid setup(){actuator.attach(SIGNAL);Serial.begin(115200);} void loop(){for(byte i=0;i<3;i++){actuator.write(commands[i]);Serial.print(\"ANGLE=\");Serial.println(commands[i]);delay(500);}}\n"
+            "content": "const byte SIGNAL=9; const byte commands[3]={0,90,180};\nvoid pulseAngle(byte angle){unsigned int highUs=1000U+((unsigned long)angle*1000U/180U);digitalWrite(SIGNAL,HIGH);delayMicroseconds(highUs);digitalWrite(SIGNAL,LOW);delayMicroseconds(20000U-highUs);}\nvoid setup(){pinMode(SIGNAL,OUTPUT);Serial.begin(115200);} void loop(){for(byte i=0;i<3;i++){for(byte frame=0;frame<20;frame++)pulseAngle(commands[i]);Serial.print(\"ANGLE=\");Serial.println(commands[i]);delay(100);}}\n"
           }
         ]
       },

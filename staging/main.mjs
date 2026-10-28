@@ -11775,7 +11775,7 @@ function clearRuntimePresentation() {
   elements.instructions.textContent = '0';
   elements.artifact.textContent = 'none';
   elements.simulatedtime.textContent = '0.000 ms';
-  elements.achievedspeed.textContent = '—';
+  elements.achievedspeed.textContent = '— · measured after Run; host throughput may be below requested pacing';
   lastThroughputSample = null;
   elements.trace.replaceChildren(Object.assign(document.createElement('li'), { textContent: 'No D13 observations.' }));
   elements.serialoutput.textContent = 'No firmware bytes.';
@@ -13029,7 +13029,16 @@ function renderComponents() {
         if (![' ', 'Enter'].includes(event.key)) return;
         event.preventDefault(); event.stopPropagation(); setMomentaryControl(component.id, false, 'canvas keyboard');
       });
-      control.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); });
+      control.addEventListener('click', (event) => {
+        event.preventDefault(); event.stopPropagation();
+        if (canvasInteractionMode === 'select') {
+          selectComponent(component.id);
+          renderInspector();
+          for (const candidate of elements.componentlayer.querySelectorAll('.circuit-component')) {
+            candidate.classList.toggle('selected', candidate.dataset.componentId === component.id);
+          }
+        }
+      });
       control.addEventListener('blur', () => setMomentaryControl(component.id, false, 'canvas keyboard blur'));
       card.classList.toggle('control-pressed', component.controls.pressed);
       card.append(control);
@@ -14394,13 +14403,23 @@ function renderRuntimeControls() {
       const row = document.createElement('div');
       const label = document.createElement('label'); label.textContent = component.label;
       const input = document.createElement('input'); input.type = 'range'; input.min = '0'; input.max = '100'; input.value = String(component.controls.position * 100); input.dataset.control = `${component.id}.position`;
+      const output = document.createElement('output');
+      const renderValue = () => {
+        const percent = Number(input.value);
+        const volts = percent * 0.05;
+        const adc = Math.round(percent * 10.23);
+        output.value = `${percent}% · ideal ${volts.toFixed(2)} V · ADC ${adc}`;
+        output.textContent = output.value;
+      };
       input.id = `control-${component.id}-position`; label.htmlFor = input.id;
       input.addEventListener('input', () => {
+        renderValue();
         const position = Number(input.value) / 100;
         const result = applyEditor({ type: 'component.control.set', componentId: component.id, key: 'position', value: position }, `${component.id} ${input.value}%`);
         if (result.ok) worker?.postMessage({ command: 'control', componentId: component.id, key: 'position', value: position });
       });
-      row.append(label, input); return [row];
+      renderValue();
+      row.append(label, input, output); return [row];
     }
     return [];
   });
@@ -15528,12 +15547,15 @@ async function build() {
     return { ok: false, code: circuit.code ?? 'INVALID_CIRCUIT' };
   }
   detachOutstandingBuild();
-  stopRuntime('Build in progress', { updateLifecycle: false });
   const started = applyLifecycle({ type: 'build.start' });
   if (!started.accepted) {
+    elements.buildstate.textContent = 'Build ready to retry';
+    elements.build.disabled = false;
+    elements.cancel.disabled = true;
     showActionableError(elements.projectmessage, started.code, 'Build start rejected by lifecycle guard.');
     return { ok: false, code: started.code };
   }
+  stopRuntime('Build in progress', { updateLifecycle: false });
   const binding = started.binding;
   const inputAtSubmit = buildInputIdentity();
   const modelExecutionContextSha256 = await projectTextSha256(inputAtSubmit);
