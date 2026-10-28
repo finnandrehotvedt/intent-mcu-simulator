@@ -92,6 +92,8 @@ import { createSpeakerSignalArtwork } from '../expansion-drafts/speaker-signal-a
 import { SERVO_DEFINITIONS, createServoComponent } from '../expansion-drafts/servo-components-v1.mjs';
 import { createServoArtwork } from '../expansion-drafts/servo-components-artwork-v1.mjs';
 import { DC_MOTOR_L298N_DEFINITIONS, createDcMotorL298nComponent } from '../expansion-drafts/dc-motor-l298n-v1.mjs';
+import { COMPACT_DC_DRIVER_DEFINITIONS, createCompactDcDriverComponent } from '../expansion-drafts/dc-motor-compact-drivers-v1.mjs';
+import { createCompactDcDriverArtwork } from '../expansion-drafts/dc-motor-compact-drivers-artwork-v1.mjs';
 import { DC_MOTOR_ENCODER_DEFINITION, DC_MOTOR_ENCODER_TYPE, createDcMotorEncoderComponent } from '../expansion-drafts/dc-motor-encoder-v1.mjs';
 import { createDcMotorEncoderArtwork } from '../expansion-drafts/dc-motor-encoder-artwork-v1.mjs';
 import { BIPOLAR_STEPPER_DRIVER_DEFINITIONS, createBipolarStepperComponent } from '../expansion-drafts/bipolar-stepper-drivers-v1.mjs';
@@ -306,6 +308,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [SPEAKER_SIGNAL_TYPE]: SPEAKER_SIGNAL_DEFINITION,
   ...SERVO_DEFINITIONS,
   ...DC_MOTOR_L298N_DEFINITIONS,
+  ...COMPACT_DC_DRIVER_DEFINITIONS,
   [DC_MOTOR_ENCODER_TYPE]: DC_MOTOR_ENCODER_DEFINITION,
   ...BIPOLAR_STEPPER_DRIVER_DEFINITIONS,
   ...UNIPOLAR_STEPPER_DEFINITIONS,
@@ -388,6 +391,7 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (component?.type === SPEAKER_SIGNAL_TYPE) return createSpeakerSignalArtwork(documentObject, definition, component, options);
   if (SERVO_DEFINITIONS[component?.type]) return createServoArtwork(documentObject, definition, component, options);
   if (DC_MOTOR_L298N_DEFINITIONS[component?.type]) return createDcMotorL298nArtwork(documentObject, definition, component, options);
+  if (COMPACT_DC_DRIVER_DEFINITIONS[component?.type]) return createCompactDcDriverArtwork(documentObject, definition, component, options);
   if (component?.type === DC_MOTOR_ENCODER_TYPE) return createDcMotorEncoderArtwork(documentObject, definition, component, options);
   if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[component?.type]) return createBipolarStepperArtwork(documentObject, definition, component, options);
   if (UNIPOLAR_STEPPER_DEFINITIONS[component?.type]) return createUnipolarStepperArtwork(documentObject, definition, component, options);
@@ -495,6 +499,7 @@ export function createCandidateUiComponent(type, id) {
   if (type === SPEAKER_SIGNAL_TYPE) return createSpeakerSignalComponent(id);
   if (SERVO_DEFINITIONS[type]) return createServoComponent(type, id);
   if (DC_MOTOR_L298N_DEFINITIONS[type]) return createDcMotorL298nComponent(type, id);
+  if (COMPACT_DC_DRIVER_DEFINITIONS[type]) return createCompactDcDriverComponent(type, id);
   if (type === DC_MOTOR_ENCODER_TYPE) return createDcMotorEncoderComponent(id);
   if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[type]) return createBipolarStepperComponent(type, id);
   if (UNIPOLAR_STEPPER_DEFINITIONS[type]) return createUnipolarStepperComponent(type, id);

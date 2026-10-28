@@ -163,6 +163,8 @@ import { SPEAKER_SIGNAL_DEFINITION, SPEAKER_SIGNAL_TYPE, projectSpeakerSignals, 
 import { SERVO_DEFINITIONS, projectServoComponents, validateServoComponent } from './servo-components-v1.mjs';
 import { DC_MOTOR_L298N_DEFINITIONS, DC_MOTOR_TYPE, L298N_DRIVER_TYPE,
   projectDcMotorL298n, validateDcMotorL298nComponent } from './dc-motor-l298n-v1.mjs';
+import { COMPACT_DC_DRIVER_DEFINITIONS, TB6612FNG_TYPE, DRV8833_TYPE,
+  projectCompactDcDrivers, validateCompactDcDriverComponent } from './dc-motor-compact-drivers-v1.mjs';
 import { DC_MOTOR_ENCODER_DEFINITION, DC_MOTOR_ENCODER_TYPE,
   projectDcMotorEncoders, validateDcMotorEncoderComponent } from './dc-motor-encoder-v1.mjs';
 import { A4988_TYPE, BIPOLAR_STEPPER_DRIVER_DEFINITIONS, BIPOLAR_STEPPER_TYPE, DRV8825_TYPE,
@@ -369,6 +371,8 @@ function pinIds(component) {
   if (SERVO_DEFINITIONS[component.type]) return ['SIGNAL', 'VCC', 'GND'];
   if (component.type === DC_MOTOR_TYPE) return ['A', 'B'];
   if (component.type === L298N_DRIVER_TYPE) return ['IN1', 'IN2', 'ENA', 'VCC', 'GND', 'OUT1', 'OUT2'];
+  if (component.type === TB6612FNG_TYPE) return ['AIN1', 'AIN2', 'PWMA', 'STBY', 'VCC', 'GND', 'AO1', 'AO2'];
+  if (component.type === DRV8833_TYPE) return ['AIN1', 'AIN2', 'VCC', 'GND', 'AOUT1', 'AOUT2'];
   if (component.type === DC_MOTOR_ENCODER_TYPE) return ['M1', 'M2', 'EA', 'ECOM', 'EB'];
   if (component.type === BIPOLAR_STEPPER_TYPE) return ['A1', 'A2', 'B1', 'B2'];
   if ([A4988_TYPE, DRV8825_TYPE].includes(component.type)) return ['STEP', 'DIR', 'ENABLE', 'VCC', 'GND', 'A1', 'A2', 'B1', 'B2'];
@@ -427,6 +431,7 @@ function componentPins(component) {
   if (component.type === SPEAKER_SIGNAL_TYPE) return SPEAKER_SIGNAL_DEFINITION.pins;
   if (SERVO_DEFINITIONS[component.type]) return SERVO_DEFINITIONS[component.type].pins;
   if (DC_MOTOR_L298N_DEFINITIONS[component.type]) return DC_MOTOR_L298N_DEFINITIONS[component.type].pins;
+  if (COMPACT_DC_DRIVER_DEFINITIONS[component.type]) return COMPACT_DC_DRIVER_DEFINITIONS[component.type].pins;
   if (component.type === DC_MOTOR_ENCODER_TYPE) return DC_MOTOR_ENCODER_DEFINITION.pins;
   if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[component.type]) return BIPOLAR_STEPPER_DRIVER_DEFINITIONS[component.type].pins;
   if (UNIPOLAR_STEPPER_DEFINITIONS[component.type]) return UNIPOLAR_STEPPER_DEFINITIONS[component.type].pins;
@@ -572,6 +577,8 @@ function validateCandidateComponent(component) {
     if (!validateServoComponent(component)) fail('PROJECT_CONTACT_SERVO_STATE', [component.id]);
   } else if (DC_MOTOR_L298N_DEFINITIONS[component.type]) {
     if (!validateDcMotorL298nComponent(component)) fail('PROJECT_CONTACT_DC_MOTOR_L298N_STATE', [component.id]);
+  } else if (COMPACT_DC_DRIVER_DEFINITIONS[component.type]) {
+    if (!validateCompactDcDriverComponent(component)) fail('PROJECT_CONTACT_COMPACT_DC_DRIVER_STATE', [component.id]);
   } else if (component.type === DC_MOTOR_ENCODER_TYPE) {
     if (!validateDcMotorEncoderComponent(component)) fail('PROJECT_CONTACT_DC_MOTOR_ENCODER_STATE', [component.id]);
   } else if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[component.type]) {
@@ -652,7 +659,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
         DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
-        ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, ...Object.keys(BIPOLAR_STEPPER_DRIVER_DEFINITIONS), ...Object.keys(UNIPOLAR_STEPPER_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+        ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), ...Object.keys(COMPACT_DC_DRIVER_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, ...Object.keys(BIPOLAR_STEPPER_DRIVER_DEFINITIONS), ...Object.keys(UNIPOLAR_STEPPER_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
         CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
       ].includes(component.type))) {
@@ -1427,11 +1434,24 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       : { direction: 'stopped', command: 0, pulseUs: 1500 }, runtimeProjection: clone(servo) })));
   for (const servo of servoProjection.servos) production(implementation, servo.type,
     { periodCycles: 320000, highCycles: 24000 }, [servo.componentId]);
-  const motorEncoderProjection = projectDcMotorEncoders(servoProjection.runtimeGraph);
+  const compactMotorProjection = projectCompactDcDrivers(servoProjection.runtimeGraph);
+  if (!compactMotorProjection.ok) fail(`PROJECT_CONTACT_${compactMotorProjection.code}`, compactMotorProjection.details);
+  contacts.push(...compactMotorProjection.motors.map((motor) => ({ componentId: motor.componentId, type: DC_MOTOR_TYPE,
+    state: { state: 'coast', command: 0, enable: 0 }, runtimeProjection: clone(motor) })));
+  contacts.push(...compactMotorProjection.drivers.map((driver) => ({ componentId: driver.componentId, type: driver.driverType,
+    state: { state: 'coast', command: 0, enable: 0 }, runtimeProjection: clone(driver) })));
+  for (const pair of compactMotorProjection.motors) {
+    const input = pair.driverType === TB6612FNG_TYPE
+      ? { in1: false, in2: false, enable: 0, standby: false }
+      : { in1: false, in2: false, enable: 0 };
+    production(implementation, DC_MOTOR_TYPE, { in1: false, in2: false, enable: 0 }, [pair.componentId]);
+    production(implementation, pair.driverType, input, [pair.driverId]);
+  }
+  const motorEncoderProjection = projectDcMotorEncoders(compactMotorProjection.runtimeGraph);
   if (!motorEncoderProjection.ok) fail(`PROJECT_CONTACT_${motorEncoderProjection.code}`, motorEncoderProjection.details);
   const motorProjection = motorEncoderProjection.assemblies.length
     ? motorEncoderProjection
-    : projectDcMotorL298n(servoProjection.runtimeGraph);
+    : projectDcMotorL298n(motorEncoderProjection.runtimeGraph);
   if (!motorProjection.ok) fail(`PROJECT_CONTACT_${motorProjection.code}`, motorProjection.details);
   contacts.push(...motorEncoderProjection.assemblies.map((assembly) => ({
     componentId: assembly.componentId, type: DC_MOTOR_ENCODER_TYPE,
@@ -1965,7 +1985,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
-      ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, ...Object.keys(BIPOLAR_STEPPER_DRIVER_DEFINITIONS), ...Object.keys(UNIPOLAR_STEPPER_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+      ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), ...Object.keys(COMPACT_DC_DRIVER_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, ...Object.keys(BIPOLAR_STEPPER_DRIVER_DEFINITIONS), ...Object.keys(UNIPOLAR_STEPPER_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
       CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,
     ].includes(component.type),

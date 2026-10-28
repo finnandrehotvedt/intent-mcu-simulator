@@ -31,6 +31,8 @@ import { esp32C3RuntimeCircuit, validateEsp32C3Circuit } from './esp32c3-public-
 import { validateStm32Circuit } from './stm32-public-circuit.mjs';
 import { SERVO_DEFINITIONS, evaluateServoIntent } from '../expansion-drafts/servo-components-v1.mjs';
 import { DC_MOTOR_L298N_DEFINITIONS, evaluateDcMotorCommand } from '../expansion-drafts/dc-motor-l298n-v1.mjs';
+import { COMPACT_DC_DRIVER_DEFINITIONS, TB6612FNG_TYPE,
+  evaluateCompactDcDriverCommand } from '../expansion-drafts/dc-motor-compact-drivers-v1.mjs';
 import { DC_MOTOR_ENCODER_TYPE } from '../expansion-drafts/dc-motor-encoder-v1.mjs';
 import { BIPOLAR_STEPPER_DRIVER_DEFINITIONS, evaluateStepperCommand } from '../expansion-drafts/bipolar-stepper-drivers-v1.mjs';
 import { UNIPOLAR_STEPPER_DEFINITIONS, evaluateUnipolarSequence } from '../expansion-drafts/unipolar-stepper-uln2003-v1.mjs';
@@ -126,6 +128,12 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     return failure('MODEL_LIBRARY_REFERENCE_UNAVAILABLE', [componentType]);
   },
   evaluateProduction(componentType, input) {
+    if (COMPACT_DC_DRIVER_DEFINITIONS[componentType]) {
+      const keys = componentType === TB6612FNG_TYPE ? ['in1', 'in2', 'enable', 'standby'] : ['in1', 'in2', 'enable'];
+      if (!exactInput(input, keys)) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      const result = evaluateCompactDcDriverCommand(componentType, input);
+      return result.ok ? { ok: true, code: 'OK', result } : failure(result.code);
+    }
     if (UNIPOLAR_STEPPER_DEFINITIONS[componentType]) {
       if (!exactInput(input, ['phaseSnapshots'])) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
       const result = evaluateUnipolarSequence(input);

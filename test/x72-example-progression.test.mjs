@@ -54,6 +54,8 @@ const expectedNext = Object.freeze({
   'avr-hobby-servo': 'Load Continuous rotation servo to compare direction intent.',
   'avr-continuous-servo': 'Load Hobby servo to compare position intent.',
   'avr-dc-motor-l298n': 'Load Hobby servo to compare pulse-position intent with bridge direction control.',
+  'avr-dc-motor-tb6612fng': 'Load DC motor through DRV8833 to compare two-input PWM control.',
+  'avr-dc-motor-drv8833': 'Load DC motor through TB6612FNG to compare standby and dedicated PWM.',
   'avr-bipolar-stepper-a4988': 'Load Bipolar stepper through DRV8825 to compare microstep capability.',
   'avr-bipolar-stepper-drv8825': 'Load Bipolar stepper through A4988 to compare supported microstep names.',
   'avr-unipolar-stepper-uln2003': 'Load Bipolar stepper through A4988 to compare STEP/DIR control.',
@@ -93,6 +95,8 @@ const baselineProjectHashes = Object.freeze({
   'avr-hobby-servo': '3cef0d4c8a31003f6c4ac921fa9c233291d511d5febc98c92f0865c1e7dc26af',
   'avr-continuous-servo': '9b08a0aaf8ff0e27187cbf77ad8d511747206a68ccb0c9e6778163df20304704',
   'avr-dc-motor-l298n': 'f64e37176b9f86d9a06fd89088cb05c26e40176457cd80d60e16a1055d2d4284',
+  'avr-dc-motor-tb6612fng': '2a1e6ee5c668cb0e42885b83483447c6de01ff58a08a9e44c44b0a17e7cdd0ee',
+  'avr-dc-motor-drv8833': 'c28525b6f39b72f033315516d282a85ede78e3f8d713d4cc5d2a20d12fb0a0a0',
   'avr-bipolar-stepper-a4988': 'bd94eb865729f621af26b485545187fca695b14c43c742bbf32f67fe98cb7eeb',
   'avr-bipolar-stepper-drv8825': '35fef347bb03a4ce1cacce4dc6dcd5f4150aed9263a38ec35fba8e0ea8cbc66a',
   'avr-traffic-light': 'b0bf4f28a757bf9e5ec89f8b4401638971add650761db1c9248fc28c67389e59',
@@ -109,10 +113,10 @@ const baselineProjectHashes = Object.freeze({
 });
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-test('X72 exposes one concise five-part learning progression for all 37 examples', () => {
+test('X72 exposes one concise five-part learning progression for all 39 examples', () => {
   const catalog = cards();
-  assert.equal(catalog.length, 37);
-  assert.equal(new Set(catalog.map(({ id }) => id)).size, 37);
+  assert.equal(catalog.length, 39);
+  assert.equal(new Set(catalog.map(({ id }) => id)).size, 39);
   assert.deepEqual(Object.fromEntries(catalog.map(({ id, next }) => [id, next])), expectedNext);
   for (const card of catalog) {
     for (const field of ['learn', 'try', 'limits', 'next']) assert.match(card[field], /\S/u, `${card.id}.${field}`);

@@ -109,6 +109,8 @@ const referenceBindings = deepFreeze({
     'output.continuous-servo-v1': { starters: ['avr-continuous-servo'], tests: ['test/servo-components.test.mjs', 'test/servo-components-browser.cjs'] },
     'output.dc-motor-v1': { starters: ['avr-dc-motor-l298n'], tests: ['test/dc-motor-l298n.test.mjs', 'test/dc-motor-l298n-browser.cjs'] },
     'driver.l298n-single-channel-v1': { starters: ['avr-dc-motor-l298n'], tests: ['test/dc-motor-l298n.test.mjs', 'test/dc-motor-l298n-browser.cjs'] },
+    'driver.tb6612fng-single-channel-v1': { starters: ['avr-dc-motor-tb6612fng'], tests: ['test/dc-motor-compact-drivers.test.mjs', 'test/dc-motor-compact-drivers-browser.cjs'] },
+    'driver.drv8833-single-channel-v1': { starters: ['avr-dc-motor-drv8833'], tests: ['test/dc-motor-compact-drivers.test.mjs', 'test/dc-motor-compact-drivers-browser.cjs'] },
     'output.dc-motor-encoder-v1': { starters: ['avr-dc-motor-encoder'], tests: ['test/dc-motor-encoder.test.mjs', 'test/dc-motor-encoder-browser.cjs'] },
     'output.bipolar-stepper-v1': { starters: ['avr-bipolar-stepper-a4988'], tests: ['test/bipolar-stepper-drivers.test.mjs', 'test/bipolar-stepper-drivers-browser.cjs'] },
     'driver.a4988-step-dir-v1': { starters: ['avr-bipolar-stepper-a4988'], tests: ['test/bipolar-stepper-drivers.test.mjs', 'test/bipolar-stepper-drivers-browser.cjs'] },

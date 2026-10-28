@@ -352,6 +352,8 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/bipolar-stepper-drivers-artwork-v1.mjs',
   '../expansion-drafts/unipolar-stepper-uln2003-v1.mjs',
   '../expansion-drafts/unipolar-stepper-uln2003-artwork-v1.mjs',
+  '../expansion-drafts/dc-motor-compact-drivers-v1.mjs',
+  '../expansion-drafts/dc-motor-compact-drivers-artwork-v1.mjs',
 ]);
 
 async function implementationClosure(paths) {
