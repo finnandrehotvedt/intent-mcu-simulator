@@ -1,0 +1,213 @@
+{
+  "schema": "intent-mcu-dc-motor-encoder-example@1",
+  "requirementIds": [
+    "CMP-069"
+  ],
+  "profile": "board.atmega328p-16mhz-v1",
+  "title": "DC motor command with independent encoder detents",
+  "graph": {
+    "components": [
+      {
+        "id": "board",
+        "type": "board.atmega328p-16mhz-v1"
+      },
+      {
+        "id": "dc-motor-encoder-1",
+        "type": "output.dc-motor-encoder-v1",
+        "label": "DC motor with encoder",
+        "properties": {
+          "encoding": "gray-2bit",
+          "pullMode": "input-pullup"
+        },
+        "controls": {
+          "detent": 0
+        }
+      },
+      {
+        "id": "l298n-1",
+        "type": "driver.l298n-single-channel-v1",
+        "label": "L298N motor driver",
+        "properties": {},
+        "controls": {}
+      }
+    ],
+    "nets": [
+      {
+        "id": "in1",
+        "endpoints": [
+          {
+            "component": "l298n-1",
+            "pin": "IN1"
+          },
+          {
+            "component": "board",
+            "pin": "D7"
+          }
+        ]
+      },
+      {
+        "id": "in2",
+        "endpoints": [
+          {
+            "component": "l298n-1",
+            "pin": "IN2"
+          },
+          {
+            "component": "board",
+            "pin": "D8"
+          }
+        ]
+      },
+      {
+        "id": "ena",
+        "endpoints": [
+          {
+            "component": "l298n-1",
+            "pin": "ENA"
+          },
+          {
+            "component": "board",
+            "pin": "D9"
+          }
+        ]
+      },
+      {
+        "id": "vcc",
+        "endpoints": [
+          {
+            "component": "l298n-1",
+            "pin": "VCC"
+          },
+          {
+            "component": "board",
+            "pin": "5V"
+          }
+        ]
+      },
+      {
+        "id": "gnd",
+        "endpoints": [
+          {
+            "component": "l298n-1",
+            "pin": "GND"
+          },
+          {
+            "component": "board",
+            "pin": "GND1"
+          }
+        ]
+      },
+      {
+        "id": "out1",
+        "endpoints": [
+          {
+            "component": "l298n-1",
+            "pin": "OUT1"
+          },
+          {
+            "component": "dc-motor-encoder-1",
+            "pin": "M1"
+          }
+        ]
+      },
+      {
+        "id": "out2",
+        "endpoints": [
+          {
+            "component": "l298n-1",
+            "pin": "OUT2"
+          },
+          {
+            "component": "dc-motor-encoder-1",
+            "pin": "M2"
+          }
+        ]
+      },
+      {
+        "id": "encoder-a",
+        "endpoints": [
+          {
+            "component": "dc-motor-encoder-1",
+            "pin": "EA"
+          },
+          {
+            "component": "board",
+            "pin": "D2"
+          }
+        ]
+      },
+      {
+        "id": "encoder-b",
+        "endpoints": [
+          {
+            "component": "dc-motor-encoder-1",
+            "pin": "EB"
+          },
+          {
+            "component": "board",
+            "pin": "D3"
+          }
+        ]
+      },
+      {
+        "id": "encoder-common",
+        "endpoints": [
+          {
+            "component": "dc-motor-encoder-1",
+            "pin": "ECOM"
+          },
+          {
+            "component": "board",
+            "pin": "GND2"
+          }
+        ]
+      }
+    ],
+    "junctions": []
+  },
+  "model": {
+    "schema": "intent-mcu-model-entry@1",
+    "componentType": "output.dc-motor-encoder-v1",
+    "modelId": "model.dc-motor-encoder-command-quadrature-v1",
+    "renderer": "output-dc-motor-encoder",
+    "controls": [
+      {
+        "key": "detent",
+        "kind": "integer",
+        "min": -999,
+        "max": 999,
+        "default": 0
+      }
+    ],
+    "runtimeAuthority": "independent-user-authored-quadrature-only",
+    "forbiddenInferences": [
+      "pwm-to-encoder",
+      "direction-to-encoder",
+      "artwork-to-encoder",
+      "elapsed-time-to-rpm"
+    ]
+  },
+  "interaction": {
+    "control": "detent",
+    "values": [
+      -2,
+      0,
+      2
+    ],
+    "expectedCwSequence": [
+      "11",
+      "01",
+      "00",
+      "10",
+      "11"
+    ],
+    "expectedCcwSequence": [
+      "11",
+      "10",
+      "00",
+      "01",
+      "11"
+    ]
+  },
+  "limitations": "Encoder detents are explicit user-authored quadrature events and are never inferred from PWM, direction, artwork, elapsed time or claimed RPM."
+}

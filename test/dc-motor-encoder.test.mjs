@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import test from 'node:test'; import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { L298N_DRIVER_TYPE, createDcMotorL298nComponent } from '../expansion-drafts/dc-motor-l298n-v1.mjs';
-import { DC_MOTOR_ENCODER_DEFINITION, createDcMotorEncoderComponent,
+import { DC_MOTOR_ENCODER_DEFINITION, DC_MOTOR_ENCODER_MODEL_ENTRY, DcMotorEncoderEditor, createDcMotorEncoderComponent,
   projectDcMotorEncoders } from '../expansion-drafts/dc-motor-encoder-v1.mjs';
 import { createDcMotorEncoderArtwork } from '../expansion-drafts/dc-motor-encoder-artwork-v1.mjs';
 class N { constructor(name) { this.name = name; this.attributes = {}; this.children = []; this.textContent = ''; }
@@ -28,3 +29,20 @@ test('CMP-069 rejects inferred, shorted or unsupported encoder wiring', () => { 
   assert.equal(projectDcMotorEncoders(wrong).code, 'ROTARY_ENCODER_B_REQUIRES_D2_OR_D3');
   const component = createDcMotorEncoderComponent('x'); component.controls.detent = 1000;
   assert.equal(projectDcMotorEncoders({ components: [component], nets: [], junctions: [] }).code, 'DC_MOTOR_ENCODER_STATE'); });
+test('CMP-069 editor persists independent detents with atomic rejection and exact Undo/Redo', () => {
+  const editor = new DcMotorEncoderEditor(createDcMotorEncoderComponent('assembly', 'Motor encoder', 4));
+  const before = editor.saveText(); assert.equal(editor.setDetent(1000).code, 'DC_MOTOR_ENCODER_DETENT_RANGE');
+  assert.equal(editor.saveText(), before); assert.equal(editor.step('cw').component.controls.detent, 5);
+  assert.equal(editor.undo().component.controls.detent, 4); assert.equal(editor.redo().component.controls.detent, 5);
+  const opened = DcMotorEncoderEditor.openText(editor.saveText()); assert.equal(opened.ok, true);
+  assert.equal(opened.editor.saveText(), editor.saveText()); assert.equal(opened.editor.undo().code, 'UNDO_EMPTY');
+  assert.deepEqual(DC_MOTOR_ENCODER_MODEL_ENTRY.forbiddenInferences,
+    ['pwm-to-encoder','direction-to-encoder','artwork-to-encoder','elapsed-time-to-rpm']);
+});
+test('CMP-069 canonical example preserves explicit independent encoder authority', async () => {
+  const value = JSON.parse(await readFile(new URL('../examples/indicators-actuators/avr-dc-motor-encoder.intent-mcu.json', import.meta.url)));
+  assert.equal(value.schema, 'intent-mcu-dc-motor-encoder-example@1'); assert.deepEqual(value.requirementIds, ['CMP-069']);
+  assert.deepEqual(value.interaction.expectedCwSequence, ['11','01','00','10','11']);
+  assert.match(value.limitations, /never inferred from PWM, direction, artwork, elapsed time/u);
+  assert.equal(projectDcMotorEncoders(value.graph).ok, true);
+});

@@ -40,6 +40,13 @@ export const DC_MOTOR_ENCODER_DEFINITION = freeze({
     'Motor command and encoder feedback are intentionally independent; no RPM, torque, current, load, inertia, missed pulse or physical coupling is claimed.',
   ] },
 });
+export const DC_MOTOR_ENCODER_MODEL_ENTRY = freeze({
+  schema: 'intent-mcu-model-entry@1', componentType: DC_MOTOR_ENCODER_TYPE,
+  modelId: DC_MOTOR_ENCODER_MODEL, renderer: DC_MOTOR_ENCODER_RENDERER,
+  controls: [{ key: 'detent', kind: 'integer', min: -999, max: 999, default: 0 }],
+  runtimeAuthority: 'independent-user-authored-quadrature-only',
+  forbiddenInferences: ['pwm-to-encoder', 'direction-to-encoder', 'artwork-to-encoder', 'elapsed-time-to-rpm'],
+});
 
 export function createDcMotorEncoderComponent(id, label = 'DC motor with encoder', detent = 0) {
   const component = { id, type: DC_MOTOR_ENCODER_TYPE, label,
@@ -54,6 +61,34 @@ export function validateDcMotorEncoderComponent(component) {
     && component.properties.encoding === 'gray-2bit' && component.properties.pullMode === 'input-pullup'
     && exactKeys(component.controls, ['detent']) && Number.isInteger(component.controls.detent)
     && component.controls.detent >= -999 && component.controls.detent <= 999;
+}
+
+export class DcMotorEncoderEditor {
+  #component; #undo = []; #redo = [];
+  constructor(component = createDcMotorEncoderComponent('dc-motor-encoder-1')) {
+    if (!validateDcMotorEncoderComponent(component)) throw new TypeError('DC_MOTOR_ENCODER_STATE');
+    this.#component = structuredClone(component);
+  }
+  snapshot() { return structuredClone(this.#component); }
+  setDetent(value) {
+    if (!Number.isInteger(value) || value < -999 || value > 999) return { ok: false, code: 'DC_MOTOR_ENCODER_DETENT_RANGE' };
+    if (value === this.#component.controls.detent) return { ok: true, code: 'NO_CHANGE', component: this.snapshot() };
+    this.#undo.push(this.snapshot()); this.#redo = []; this.#component.controls.detent = value;
+    return { ok: true, code: 'OK', component: this.snapshot() };
+  }
+  step(direction) {
+    if (!['cw', 'ccw'].includes(direction)) return { ok: false, code: 'DC_MOTOR_ENCODER_DIRECTION' };
+    return this.setDetent(this.#component.controls.detent + (direction === 'cw' ? 1 : -1));
+  }
+  undo() { if (!this.#undo.length) return { ok: false, code: 'UNDO_EMPTY' }; this.#redo.push(this.snapshot());
+    this.#component = this.#undo.pop(); return { ok: true, code: 'OK', component: this.snapshot() }; }
+  redo() { if (!this.#redo.length) return { ok: false, code: 'REDO_EMPTY' }; this.#undo.push(this.snapshot());
+    this.#component = this.#redo.pop(); return { ok: true, code: 'OK', component: this.snapshot() }; }
+  saveText() { return `${JSON.stringify({ schema: 'intent-mcu-dc-motor-encoder@1', component: this.#component })}\n`; }
+  static openText(text) { let value; try { value = JSON.parse(text); } catch { return { ok: false, code: 'DC_MOTOR_ENCODER_JSON' }; }
+    if (!exactKeys(value, ['schema', 'component']) || value.schema !== 'intent-mcu-dc-motor-encoder@1'
+        || !validateDcMotorEncoderComponent(value.component)) return { ok: false, code: 'DC_MOTOR_ENCODER_DOCUMENT' };
+    return { ok: true, code: 'OK', editor: new DcMotorEncoderEditor(value.component) }; }
 }
 
 export function projectDcMotorEncoders(value) {
