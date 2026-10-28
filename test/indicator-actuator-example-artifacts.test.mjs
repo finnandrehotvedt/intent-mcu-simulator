@@ -19,10 +19,10 @@ const adapters = Object.freeze({ 'board.atmega328p-16mhz-v1': Object.freeze({
   },
 }) });
 
-test('CMP-038/041/042/043/063–067 artifacts are canonical, hashed and profile-bounded', async () => {
+test('indicator and actuator artifacts through CMP-075 are canonical, hashed and profile-bounded', async () => {
   const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
   assert.deepEqual(manifest.entries.flatMap((entry) => entry.requirementIds), [
-    'CMP-038', 'CMP-041', 'CMP-042', 'CMP-043', 'CMP-064', 'CMP-063', 'CMP-065', 'CMP-066', 'CMP-067',
+    'CMP-038', 'CMP-041', 'CMP-042', 'CMP-043', 'CMP-064', 'CMP-063', 'CMP-065', 'CMP-066', 'CMP-067', 'CMP-068', 'CMP-075',
   ]);
   for (const entry of manifest.entries) {
     const bytes = await readFile(new URL(entry.file, ROOT), 'utf8');
@@ -40,5 +40,7 @@ test('indicator examples contain the exact qualified component models', async ()
   for (const entry of manifest.entries) {
     const parsed = JSON.parse(await readFile(new URL(entry.file, ROOT), 'utf8'));
     assert(parsed.project.candidateCircuit.components.some((component) => component.type === entry.componentType), entry.id);
+    if (entry.pairedComponentType) assert(parsed.project.candidateCircuit.components.some(
+      (component) => component.type === entry.pairedComponentType), `${entry.id}:pair`);
   }
 });

@@ -91,6 +91,8 @@ import { SPEAKER_SIGNAL_DEFINITION, SPEAKER_SIGNAL_TYPE, createSpeakerSignalComp
 import { createSpeakerSignalArtwork } from '../expansion-drafts/speaker-signal-artwork-v1.mjs';
 import { SERVO_DEFINITIONS, createServoComponent } from '../expansion-drafts/servo-components-v1.mjs';
 import { createServoArtwork } from '../expansion-drafts/servo-components-artwork-v1.mjs';
+import { DC_MOTOR_L298N_DEFINITIONS, createDcMotorL298nComponent } from '../expansion-drafts/dc-motor-l298n-v1.mjs';
+import { createDcMotorL298nArtwork } from '../expansion-drafts/dc-motor-l298n-artwork-v1.mjs';
 import {
   SEVEN_SEGMENT_DEFINITION,
   SEVEN_SEGMENT_TYPE,
@@ -297,6 +299,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   [PASSIVE_PIEZO_TYPE]: PASSIVE_PIEZO_DEFINITION,
   [SPEAKER_SIGNAL_TYPE]: SPEAKER_SIGNAL_DEFINITION,
   ...SERVO_DEFINITIONS,
+  ...DC_MOTOR_L298N_DEFINITIONS,
   [SEVEN_SEGMENT_TYPE]: SEVEN_SEGMENT_DEFINITION,
   [FOUR_DIGIT_SEVEN_SEGMENT_TYPE]: FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION,
   [CHARACTER_LCD_TYPE]: CHARACTER_LCD_DEFINITION,
@@ -375,6 +378,7 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (component?.type === PASSIVE_PIEZO_TYPE) return createPassivePiezoArtwork(documentObject, definition, component, options);
   if (component?.type === SPEAKER_SIGNAL_TYPE) return createSpeakerSignalArtwork(documentObject, definition, component, options);
   if (SERVO_DEFINITIONS[component?.type]) return createServoArtwork(documentObject, definition, component, options);
+  if (DC_MOTOR_L298N_DEFINITIONS[component?.type]) return createDcMotorL298nArtwork(documentObject, definition, component, options);
   if (component?.type === SEVEN_SEGMENT_TYPE) {
     return createSevenSegmentArtwork(documentObject, definition, component, options);
   }
@@ -478,6 +482,7 @@ export function createCandidateUiComponent(type, id) {
   if (type === PASSIVE_PIEZO_TYPE) return createPassivePiezoComponent(id);
   if (type === SPEAKER_SIGNAL_TYPE) return createSpeakerSignalComponent(id);
   if (SERVO_DEFINITIONS[type]) return createServoComponent(type, id);
+  if (DC_MOTOR_L298N_DEFINITIONS[type]) return createDcMotorL298nComponent(type, id);
   if (type === SEVEN_SEGMENT_TYPE) return createSevenSegmentComponent(id);
   if (type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) return createFourDigitSevenSegmentComponent(id);
   if (type === CHARACTER_LCD_TYPE) return createCharacterLcdComponent(id);

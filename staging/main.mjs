@@ -487,6 +487,7 @@ import { ACTIVE_BUZZER_TYPE } from '../expansion-drafts/active-buzzer-module-v1.
 import { PASSIVE_PIEZO_TYPE } from '../expansion-drafts/passive-piezo-v1.mjs';
 import { SPEAKER_SIGNAL_TYPE } from '../expansion-drafts/speaker-signal-v1.mjs';
 import { SERVO_DEFINITIONS } from '../expansion-drafts/servo-components-v1.mjs';
+import { DC_MOTOR_TYPE, L298N_DRIVER_TYPE } from '../expansion-drafts/dc-motor-l298n-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { FOUR_DIGIT_SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import {
@@ -14691,6 +14692,20 @@ function renderSpeakerSignalRuntime(message) {
     artwork.dataset.command = value; artwork.setAttribute('aria-label', `${support.componentId}, ${value}; visual command intent only`);
     const indicator = artwork.querySelector('[data-servo-indicator]');
     if (indicator && Number.isFinite(result.angleDegrees)) indicator.style.transform = `rotate(${result.angleDegrees - 90}deg)`;
+  }
+  const motorPairs = (Array.isArray(editor.runtimeSupport) ? editor.runtimeSupport : []).filter((item) => item.type === DC_MOTOR_TYPE && item.runtimeProjection);
+  for (const support of motorPairs) {
+    const projection = support.runtimeProjection, in1 = pins.get(projection.in1Pin), in2 = pins.get(projection.in2Pin), ena = pins.get(projection.enablePin);
+    const level = (pin) => (pin?.mode === 'OUTPUT' || pin?.mode === 'DIGITAL_PWM') && Boolean(pin.level);
+    const enable = Number.isFinite(ena?.pwm?.duty) ? Math.max(0, Math.min(1, ena.pwm.duty)) : level(ena) ? 1 : 0;
+    const observed = modelLibraryImplementationFor(AVR_PROFILE).evaluateProduction(DC_MOTOR_TYPE, { in1: level(in1), in2: level(in2), enable });
+    if (!observed.ok) continue; const value = observed.result;
+    for (const [id, key] of [[projection.motorId, 'output-dc-motor'], [projection.driverId, 'driver-l298n-single-channel']]) {
+      const artwork = elements.componentlayer.querySelector(`[data-component-id="${CSS.escape(id)}"] [data-artwork-key="${key}"]`); if (!artwork) continue;
+      artwork.dataset.commandState = value.state; artwork.dataset.command = String(value.command);
+      artwork.setAttribute('aria-label', `${id}, ${value.state}, relative command ${value.command.toFixed(3)}; visual intent only`);
+      artwork.querySelector('[data-motor-direction]')?.classList.toggle('reverse', value.command < 0);
+    }
   }
 }
 

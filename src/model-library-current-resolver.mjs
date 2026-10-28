@@ -30,6 +30,7 @@ import { observeRp2040PicoCircuit, validateRp2040PicoCircuit } from './rp2040-pi
 import { esp32C3RuntimeCircuit, validateEsp32C3Circuit } from './esp32c3-public-circuit.mjs';
 import { validateStm32Circuit } from './stm32-public-circuit.mjs';
 import { SERVO_DEFINITIONS, evaluateServoIntent } from '../expansion-drafts/servo-components-v1.mjs';
+import { DC_MOTOR_L298N_DEFINITIONS, evaluateDcMotorCommand } from '../expansion-drafts/dc-motor-l298n-v1.mjs';
 
 const entries = new Map(CURRENT_MODEL_LIBRARY_MANIFEST.entries.map((entry) =>
   [`${entry.profile}\u0000${entry.componentType}`, entry]));
@@ -122,6 +123,11 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     return failure('MODEL_LIBRARY_REFERENCE_UNAVAILABLE', [componentType]);
   },
   evaluateProduction(componentType, input) {
+    if (DC_MOTOR_L298N_DEFINITIONS[componentType]) {
+      if (!exactInput(input, ['in1', 'in2', 'enable'])) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      const result = evaluateDcMotorCommand(input);
+      return result.ok ? { ok: true, code: 'OK', result } : failure(result.code);
+    }
     if (SERVO_DEFINITIONS[componentType]) {
       if (!exactInput(input, ['periodCycles', 'highCycles'])) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
       const result = evaluateServoIntent(componentType, input);

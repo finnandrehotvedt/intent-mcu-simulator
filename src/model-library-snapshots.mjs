@@ -238083,6 +238083,127 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "cb9bc81e9f71035bc83c12d40c15cd0a0b73f39b5bffc7857dd3a9d8fe213a8e",
+      "componentType": "driver.l298n-single-channel-v1",
+      "componentVersion": 1,
+      "modelId": "model.l298n-single-channel-command-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "driver.l298n-single-channel-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 110,
+        "cssWidth": 180,
+        "renderer": "driver-l298n-single-channel",
+        "thumbnail": "driver-l298n-single-channel",
+        "viewBox": [
+          0,
+          0,
+          180,
+          110
+        ]
+      },
+      "rendererContractSha256": "3bfd02c7182f4a7f55596c9c7f1315fa120963378382be6835881fc2e7667994",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.l298n-single-channel-command-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "IN1",
+            "role": "digital-in",
+            "signals": [
+              "digital.input"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "IN2",
+            "role": "digital-in",
+            "signals": [
+              "digital.input"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "ENA",
+            "role": "digital-in",
+            "signals": [
+              "pwm.input"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 5
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT1",
+            "role": "power-out",
+            "signals": [
+              "motor.bridge-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT2",
+            "role": "power-out",
+            "signals": [
+              "motor.bridge-output"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "AVR-only direct IN1/IN2 digital outputs, direct ENA PWM-capable output, shared 5 V logic and ground.",
+            "OUT1/OUT2 must connect to one bounded DC motor; standalone electrical output is not simulated.",
+            "Command-intent model only; no motor supply rail, bridge voltage drop, shoot-through, current, heat, protection or physical L298N accuracy is modelled."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "cf4f3f51c38abbc898369205624ffbff6bb046ada080333c6951943132b8bb3d",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "b13c293e6859638dcfd5fa64e9d95f8d9c4c3bf9562255e6b9b0626949f2470f",
       "componentType": "input.analog-joystick-2axis-v1",
       "componentVersion": 1,
@@ -239399,6 +239520,74 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         }
       },
       "semanticSha256": "71becf67466db02102cc1aecb0255be3931d725ebdd337947dfa4dcb09438e1e",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "dca96f19751706bfbb02f6299afc8359826af2dc0eae5a19f34108ffc204ca36",
+      "componentType": "output.dc-motor-v1",
+      "componentVersion": 1,
+      "modelId": "model.dc-motor-command-intent-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "output.dc-motor-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 110,
+        "cssWidth": 130,
+        "renderer": "output-dc-motor",
+        "thumbnail": "output-dc-motor",
+        "viewBox": [
+          0,
+          0,
+          130,
+          110
+        ]
+      },
+      "rendererContractSha256": "6c9330b82d4a89b59c4da6c365475c876d698fd83742bca38be7c45b149fa6a6",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.dc-motor-command-intent-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A",
+            "role": "power-in",
+            "signals": [
+              "motor.bridge-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "B",
+            "role": "power-in",
+            "signals": [
+              "motor.bridge-output"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "Runs only when A/B connect directly to OUT1/OUT2 of the bounded L298N single-channel command model.",
+            "Displays stopped, forward, reverse or brake command intent and relative enable only.",
+            "No voltage drop, back EMF, RPM, torque, current, heat, inertia, load, stall, noise or physical motor accuracy is modelled."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "4550b58286ff748ff6a4cec317919cc45bd50ed2b602173d127c8abd985a2173",
       "supportStatus": "partial"
     },
     {
@@ -245486,7 +245675,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "bed25eb45a59a2dd5280e399d3b86909e9ffd04cb1d55021a0fb1c1f3bdfb247"
+      "sha256": "019120010f768611b4a01e9b58870d5b26d16a4a945244ef70c3398baa549b6b"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -245518,7 +245707,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "b310e00e672fca789802238fe0beafbf1f88b750c31bdc06a073c9ec74f2dd40"
+      "sha256": "843ef57b32dfcc4e6f7e2dccab3798a4e4c98d71ed4c17d656b161f2480cae10"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -245526,7 +245715,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "728daa459e566848c20347a138a96652f982300d3229d2952f01c6552c644bda"
+      "sha256": "4dec02099eed54b5f07c8aa8627610c9b2f1366b99f3bc0bce72a73c983444f8"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -245582,7 +245771,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "d412c244b0a636ea589a8027fa50cbce3136955d86617fba976ac128d818f2b2"
+      "sha256": "56019a03f4ed7171a76f28965930d82dd7620d79a3aa80860145c0787dc987fa"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -245850,10 +246039,10 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "ae7c26969e493c3c0cc2b550e0f0b70f087b035aa39410b9f3d3e48b840be253"
+      "sha256": "1b07c35341014aab922886d85b6ae10d652024ccb3c29dece17802410760394e"
     }
   ],
-  "implementationSha256": "c4000bb42249661fe505f52022dfea5e218bbf3a4f35abde1f2cd142854768e1",
+  "implementationSha256": "fa8146ebd4e8dbc53a2f14719826a9d2d9a3b6d9188e58b8bf5aa8e86615380a",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only",
@@ -245863,7 +246052,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-visible-runtime-controls.1-current",
     "semanticDisposition": "retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change"
   },
-  "manifestSha256": "807479d1c624719af0c2d706230c0a098496982d399ff8b6ee700e6889a09a59",
+  "manifestSha256": "2d49c59fd197bebe61a313d6f9cb7d86329d7502cdb3b019dbc7a1700559b7c5",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
