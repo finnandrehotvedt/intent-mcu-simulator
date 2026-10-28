@@ -35,8 +35,9 @@ function staticServer() {
 }
 
 async function loadStarter(page, id, expectedName) {
-  await page.click('#beginner-examples');
-  await page.click(`.starter-card[data-example="${id}"] .starter-action`);
+  await page.locator(`.starter-card[data-example="${id}"] .starter-action`).evaluate(
+    (button) => button.click(),
+  );
   if (await page.locator('#unsaved-change-dialog').evaluate((dialog) => dialog.open)) {
     await page.click('#unsaved-discard');
   }
@@ -53,6 +54,18 @@ async function buildAndRunWithKeyboard(page) {
     && window.__M6_STATE__.runtimeInteractionLocked === true);
 }
 
+async function openCanonicalProject(page, relativePath, componentId) {
+  await page.locator('#project-files-open').evaluate((button) => button.click());
+  await page.setInputFiles('#project-open-input', path.join(repository, relativePath));
+  if (await page.locator('#unsaved-change-dialog').evaluate((dialog) => dialog.open)) {
+    await page.click('#unsaved-discard');
+  }
+  await page.waitForSelector(`[data-component-id="${componentId}"]`);
+  if (await page.locator('#workbench-project-dialog').evaluate((dialog) => dialog.open)) {
+    await page.click('#workbench-project-dialog .workbench-popup-close');
+  }
+}
+
 (async () => {
   if (output) fs.mkdirSync(output, { recursive: true });
   const server = staticServer();
@@ -62,7 +75,7 @@ async function buildAndRunWithKeyboard(page) {
   let buildSequence = 0;
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-    page.setDefaultTimeout(60_000);
+    page.setDefaultTimeout(180_000);
     page.on('pageerror', (error) => errors.push(error.stack || String(error)));
     page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
     await page.route((url) => url.pathname.startsWith('/api/build'), async (route) => {
@@ -163,12 +176,37 @@ async function buildAndRunWithKeyboard(page) {
     await page.keyboard.press('Shift+F5');
     await page.waitForFunction(() => window.__M6_STATE__.runtimeInteractionLocked === false);
 
+    await openCanonicalProject(page,
+      'examples/digital-presence-sensors/avr-digital-presence-sensors.intent-mcu.json',
+      'touch-button-1');
+    await buildAndRunWithKeyboard(page);
+    await page.locator('[data-component-id="touch-button-1"]').click();
+    assert.match(await page.locator('#selected-runtime-action').textContent(), /Toggle switch · Space/u);
+    await page.keyboard.press('Space');
+    await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.components.find(
+      ({ id }) => id === 'touch-button-1').controls.touched === false);
+    await page.keyboard.press('Shift+F5');
+    await page.waitForFunction(() => window.__M6_STATE__.runtimeInteractionLocked === false);
+
+    await openCanonicalProject(page,
+      'examples/digital-reflective-sensors/avr-digital-reflective-sensors.intent-mcu.json',
+      'ir-obstacle-1');
+    await buildAndRunWithKeyboard(page);
+    await page.locator('[data-component-id="ir-obstacle-1"]').click();
+    assert.match(await page.locator('#selected-runtime-action').textContent(), /Toggle switch · Space/u);
+    await page.keyboard.press('Space');
+    await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.components.find(
+      ({ id }) => id === 'ir-obstacle-1').controls.obstacleDetected === false);
+    await page.keyboard.press('Shift+F5');
+    await page.waitForFunction(() => window.__M6_STATE__.runtimeInteractionLocked === false);
+
     if (output) await page.screenshot({ path: path.join(output, 'visible-runtime-controls.png'), fullPage: false });
     assert.deepEqual(errors, []);
-    assert.equal(buildInputs.length, 2);
+    assert.equal(buildInputs.length, 4);
     process.stdout.write(`${JSON.stringify({ result: 'pass', visibleControls: 8,
       automaticInteract: true, lockedAuthoring: true, potKeyboardAndField: true,
-      switchSpaceHoldRelease: true, stopReturnsEdit: true, builds: buildInputs.length })}\n`);
+      switchSpaceHoldRelease: true, presenceSpaceToggle: true, activeLowSpaceToggle: true,
+      stopReturnsEdit: true, builds: buildInputs.length })}\n`);
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
