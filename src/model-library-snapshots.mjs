@@ -246714,7 +246714,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "019120010f768611b4a01e9b58870d5b26d16a4a945244ef70c3398baa549b6b"
+      "sha256": "1bd68eea33aa6df8f11fc5c7a7bb4f560d68434c5949f3450446267bc1b3569d"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -246962,7 +246962,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/contact-sensors-artwork-v1.mjs",
-      "sha256": "158728f6daca68b1b476c2a9a035a07ff2d63d3d3d2ee7629eaf4339c22469b3"
+      "sha256": "97ef19d748d6347ab4ea1476aa66d4c54820cac6ad28f97940f03bd9be85745f"
     },
     {
       "path": "expansion-drafts/ground-reference-integration-v1.mjs",
@@ -247113,7 +247113,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "cc8ca03076c46047a5d06077880ccdfb1f59356d7dd3ee4ff9f26901a3026909"
     }
   ],
-  "implementationSha256": "175503e77a8594fa5322c308851c872aa02bb20f0ce998bd5e8835a727d2bdc1",
+  "implementationSha256": "5dd126c9a5fc3825608efc19d7d1ee18cf0f440e3f8e839c92dc6afc894be538",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only",
@@ -247123,7 +247123,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-visible-runtime-controls.1-current",
     "semanticDisposition": "retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change"
   },
-  "manifestSha256": "b14e9816c341afdc8c8de45434e80e91c9a410aa70f7f3a0713966cc1695ebc9",
+  "manifestSha256": "5379e32b4a73d6125a84282ce267c7c4a8e1a0440820312e9d5d45ad4467b7d1",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
