@@ -51,6 +51,8 @@ import { PASSIVE_PIEZO_TYPE } from '../expansion-drafts/passive-piezo-v1.mjs';
 import { SPEAKER_SIGNAL_TYPE } from '../expansion-drafts/speaker-signal-v1.mjs';
 import { SERVO_DEFINITIONS } from '../expansion-drafts/servo-components-v1.mjs';
 import { DC_MOTOR_L298N_DEFINITIONS } from '../expansion-drafts/dc-motor-l298n-v1.mjs';
+import { DC_MOTOR_ENCODER_TYPE } from '../expansion-drafts/dc-motor-encoder-v1.mjs';
+import { BIPOLAR_STEPPER_DRIVER_DEFINITIONS } from '../expansion-drafts/bipolar-stepper-drivers-v1.mjs';
 import { SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-common-cathode-v1.mjs';
 import { FOUR_DIGIT_SEVEN_SEGMENT_TYPE } from '../expansion-drafts/seven-segment-four-digit-common-cathode-v1.mjs';
 import { CHARACTER_LCD_TYPE } from '../expansion-drafts/character-lcd-16x2-4bit-v1.mjs';
@@ -125,6 +127,7 @@ const CANDIDATE_COMPONENT_TYPES = new Set([
   TRAFFIC_LIGHT_TYPE,
   ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
   ...Object.keys(DC_MOTOR_L298N_DEFINITIONS),
+  DC_MOTOR_ENCODER_TYPE, ...Object.keys(BIPOLAR_STEPPER_DRIVER_DEFINITIONS),
   CHARACTER_LCD_TYPE,
   CHARACTER_LCD_20X4_TYPE,
   PCF8574_LCD_TYPE,
@@ -318,6 +321,10 @@ function contactSupport(result) {
             ? 'avr-servo-pulse-observer-v1'
           : DC_MOTOR_L298N_DEFINITIONS[contact.type]
             ? 'avr-l298n-dc-motor-command-observer-v1'
+          : contact.type === DC_MOTOR_ENCODER_TYPE
+            ? 'avr-l298n-dc-motor-plus-independent-quadrature-observer-v1'
+          : BIPOLAR_STEPPER_DRIVER_DEFINITIONS[contact.type]
+            ? 'avr-step-dir-enable-command-observer-v1'
           : contact.type === SEVEN_SEGMENT_TYPE
             ? 'seven-independent-led.basic-v1'
           : contact.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE
@@ -385,6 +392,10 @@ function contactSupport(result) {
         ? 'Ideal AVR servo pulse command observer only; no physical motion, torque, load, current, inertia, speed or mechanical accuracy is modelled.'
         : DC_MOTOR_L298N_DEFINITIONS[contact.type]
         ? 'Ideal paired AVR L298N/DC-motor command observer only; no RPM, torque, current, heat, inertia, load or physical bridge/motor accuracy is modelled.'
+        : contact.type === DC_MOTOR_ENCODER_TYPE
+        ? 'Independent bounded motor-command and explicit quadrature-detent observer; encoder feedback is never inferred from PWM, direction, artwork or elapsed time.'
+        : BIPOLAR_STEPPER_DRIVER_DEFINITIONS[contact.type]
+        ? 'Ideal explicit STEP rising-edge, DIR and ENABLE command observer only; no position, torque, current, chopper, load, missed-step or physical motion accuracy.'
         : contact.type === SEVEN_SEGMENT_TYPE
         ? 'Ideal commanded on/off state through seven independently current-limited existing LED channels; no decimal point, multiplexing, driver IC, brightness, optical, package-current or physical display accuracy is modelled.'
         : contact.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE

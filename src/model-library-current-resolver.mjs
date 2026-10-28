@@ -32,6 +32,7 @@ import { validateStm32Circuit } from './stm32-public-circuit.mjs';
 import { SERVO_DEFINITIONS, evaluateServoIntent } from '../expansion-drafts/servo-components-v1.mjs';
 import { DC_MOTOR_L298N_DEFINITIONS, evaluateDcMotorCommand } from '../expansion-drafts/dc-motor-l298n-v1.mjs';
 import { DC_MOTOR_ENCODER_TYPE } from '../expansion-drafts/dc-motor-encoder-v1.mjs';
+import { BIPOLAR_STEPPER_DRIVER_DEFINITIONS, evaluateStepperCommand } from '../expansion-drafts/bipolar-stepper-drivers-v1.mjs';
 
 const entries = new Map(CURRENT_MODEL_LIBRARY_MANIFEST.entries.map((entry) =>
   [`${entry.profile}\u0000${entry.componentType}`, entry]));
@@ -124,6 +125,11 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     return failure('MODEL_LIBRARY_REFERENCE_UNAVAILABLE', [componentType]);
   },
   evaluateProduction(componentType, input) {
+    if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[componentType]) {
+      if (!exactInput(input, ['enabled', 'direction', 'stepRisingEdges'])) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      const result = evaluateStepperCommand(input);
+      return result.ok ? { ok: true, code: 'OK', result } : failure(result.code);
+    }
     if (componentType === DC_MOTOR_ENCODER_TYPE) {
       if (!exactInput(input, ['in1', 'in2', 'enable', 'encoderDirection', 'encoderDetents'])
           || !['cw', 'ccw'].includes(input.encoderDirection)

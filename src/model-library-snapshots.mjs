@@ -238083,6 +238083,319 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "simulated"
     },
     {
+      "behaviorContractSha256": "6645c5e10fe71b64c4a511477b8def0f83dde3b145997404e80d305150a775e4",
+      "componentType": "driver.a4988-step-dir-v1",
+      "componentVersion": 1,
+      "modelId": "model.a4988-step-dir-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "driver.a4988-step-dir-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 112,
+        "cssWidth": 190,
+        "renderer": "driver-a4988",
+        "thumbnail": "driver-a4988",
+        "viewBox": [
+          0,
+          0,
+          190,
+          112
+        ]
+      },
+      "rendererContractSha256": "a779d263d802c39507f979806958e29d2d8b67b3526af7da6b867bda65c83fdb",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.a4988-step-dir-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "STEP",
+            "role": "digital-in",
+            "signals": [
+              "digital.step"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "DIR",
+            "role": "digital-in",
+            "signals": [
+              "digital.direction"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "ENABLE",
+            "role": "digital-in",
+            "signals": [
+              "digital.enable-low"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A1",
+            "role": "power-out",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A2",
+            "role": "power-out",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "B1",
+            "role": "power-out",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "B2",
+            "role": "power-out",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          }
+        ],
+        "properties": {
+          "microstepMode": {
+            "default": "full",
+            "kind": "enum",
+            "values": [
+              "full",
+              "half",
+              "quarter",
+              "eighth",
+              "sixteenth"
+            ]
+          }
+        },
+        "support": {
+          "limitations": [
+            "STEP, DIR and ENABLE require distinct AVR digital outputs; STEP rising edges are counted explicitly.",
+            "No chopper current, decay mode, thermal, supply, protection, coil waveform or physical module accuracy."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "3203a6834a57b395c333d459b9ca2a47a5da286a5c5ca98304ffd456ac0332f9",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "8aec5bf5ef651705901eed5a612b765aa30853239c8eee18e7cff4e27f716eae",
+      "componentType": "driver.drv8825-step-dir-v1",
+      "componentVersion": 1,
+      "modelId": "model.drv8825-step-dir-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "driver.drv8825-step-dir-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 112,
+        "cssWidth": 190,
+        "renderer": "driver-drv8825",
+        "thumbnail": "driver-drv8825",
+        "viewBox": [
+          0,
+          0,
+          190,
+          112
+        ]
+      },
+      "rendererContractSha256": "962bffeb6c65ab3fe42573b78c230c5c144a2c7c399c61c086dcd0c50515ed54",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.drv8825-step-dir-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "STEP",
+            "role": "digital-in",
+            "signals": [
+              "digital.step"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "DIR",
+            "role": "digital-in",
+            "signals": [
+              "digital.direction"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "ENABLE",
+            "role": "digital-in",
+            "signals": [
+              "digital.enable-low"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "VCC",
+            "role": "power-in",
+            "signals": [
+              "power.5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "GND",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A1",
+            "role": "power-out",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A2",
+            "role": "power-out",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "B1",
+            "role": "power-out",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "B2",
+            "role": "power-out",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          }
+        ],
+        "properties": {
+          "microstepMode": {
+            "default": "full",
+            "kind": "enum",
+            "values": [
+              "full",
+              "half",
+              "quarter",
+              "eighth",
+              "sixteenth",
+              "thirty-second"
+            ]
+          }
+        },
+        "support": {
+          "limitations": [
+            "STEP, DIR and ENABLE require distinct AVR digital outputs; STEP rising edges are counted explicitly.",
+            "No chopper current, decay mode, thermal, supply, protection, coil waveform or physical module accuracy."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "0fd9198ad68ccb8145449d093680d48d4420e73fb8c79905cca3bb44058cbae7",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "cb9bc81e9f71035bc83c12d40c15cd0a0b73f39b5bffc7857dd3a9d8fe213a8e",
       "componentType": "driver.l298n-single-channel-v1",
       "componentVersion": 1,
@@ -239052,6 +239365,102 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
         }
       },
       "semanticSha256": "a2165819e146e0ed027e50c802ef5ca7f3e5c3c460868b94d68ee9a925e3d44e",
+      "supportStatus": "partial"
+    },
+    {
+      "behaviorContractSha256": "c45c9c8fcfa238380cf2c5ad699ba872c4bc3c6295f4ce38c0614153942e65b7",
+      "componentType": "output.bipolar-stepper-v1",
+      "componentVersion": 1,
+      "modelId": "model.bipolar-stepper-command-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "output.bipolar-stepper-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 112,
+        "cssWidth": 150,
+        "renderer": "output-bipolar-stepper",
+        "thumbnail": "output-bipolar-stepper",
+        "viewBox": [
+          0,
+          0,
+          150,
+          112
+        ]
+      },
+      "rendererContractSha256": "3518432ffc37b56a4a32b586a7c3f944d2a826e56ff1bf7e6c3d64062b79dbcb",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.bipolar-stepper-command-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A1",
+            "role": "power-in",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A2",
+            "role": "power-in",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "B1",
+            "role": "power-in",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "B2",
+            "role": "power-in",
+            "signals": [
+              "stepper.coil-output"
+            ]
+          }
+        ],
+        "properties": {
+          "fullStepsPerRevolution": {
+            "default": 200,
+            "kind": "integer",
+            "maximum": 10000,
+            "minimum": 1
+          }
+        },
+        "support": {
+          "limitations": [
+            "Requires exactly one bounded A4988 or DRV8825 command driver.",
+            "Visible step count comes only from explicit STEP rising edges; no position, torque, current, microstep accuracy, missed-step or physical motion claim."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "2c9d3aa3588239588519807d208349eb1010a2d71d2f97723ad5ce53570e96d8",
       "supportStatus": "partial"
     },
     {
@@ -245833,7 +246242,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "843ef57b32dfcc4e6f7e2dccab3798a4e4c98d71ed4c17d656b161f2480cae10"
+      "sha256": "2b8101ecdaf35fc3e264ed9cbf99d01927e26ee7f4d29069a669087c954eb6ba"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -245841,7 +246250,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "80b5306c0a74fbe2e53118e8ac39c06a8d3f5c86fefd9898abb85ad7f84a8df6"
+      "sha256": "590846c9ed9817f512a44b18c8de258d1b555f6fe84253b49d8c4ca5744367be"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -245897,7 +246306,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "9ed39dc907a6d90a3f28e234bd298d091580db6dd5c0b0cfbea96a51ca81b210"
+      "sha256": "e560af455313d8854d6c5fb7d2906e1ccd76129d4d6fe151e364e527d5a6ea70"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -246172,11 +246581,19 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "f857058f393afcceed351558b52cccb77c44f5494560b6c633bcad0038649508"
     },
     {
+      "path": "expansion-drafts/bipolar-stepper-drivers-v1.mjs",
+      "sha256": "0f1186db87d1a99a9a90ab85d880d473dbcb2f4cedbe4f72c0210ce4a025c344"
+    },
+    {
+      "path": "expansion-drafts/bipolar-stepper-drivers-artwork-v1.mjs",
+      "sha256": "e10a6412a831d1d9d16d86a3445bdcf48be4eecadefceacbf4a8661f55120f2f"
+    },
+    {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "d4c80240a43c9072aae8784a931d170c6c80a5b3a8e4139736c3372a58e3a2a9"
+      "sha256": "6b2a10f49844cefc4f3887c81700f54d60f52bd91b17408798811e15e9c97960"
     }
   ],
-  "implementationSha256": "0047ae0a9ee5d0fb9ad496ba9e26f544a2052350b00a76d3f7b4e71ba75ff9e5",
+  "implementationSha256": "74f4b2a7e893b3e171f638174b1d58f48935aed9564841ed75ddb8f2c1f0d62e",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only",
@@ -246186,7 +246603,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-visible-runtime-controls.1-current",
     "semanticDisposition": "retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change"
   },
-  "manifestSha256": "ac8d07bafb2302a195ca29551200dc41317a736c0e164f68d8f678b3a8ddd1a7",
+  "manifestSha256": "14b319b2bbdec109426d64b076006456c6909021037e3ea000e3c05dc1197473",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

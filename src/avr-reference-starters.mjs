@@ -147,6 +147,8 @@ const CARDS = Object.freeze([
   { id: 'avr-hobby-servo', name: 'Hobby servo position intent', model: 'output.hobby-servo-v1', focus: 'Servo pulse · D9', partsLabel: 'Controller · hobby servo', description: 'Map bounded 1–2 ms pulses to a visible 0–180 degree command.', learn: 'How pulse width encodes servo position intent.', try: 'Build and Run the 0, 90 and 180 degree sequence.', observe: 'The visual horn follows command intent when a valid frame is observed.', limits: 'AVR-only ideal command observer; no motion, torque, current, load or physical accuracy.', next: 'Load Continuous rotation servo to compare direction intent.' },
   { id: 'avr-continuous-servo', name: 'Continuous servo command intent', model: 'output.continuous-servo-v1', focus: 'Servo pulse · D10', partsLabel: 'Controller · continuous servo', description: 'Map bounded pulses to reverse, stopped and forward command intent.', learn: 'Why the same pulse widths mean direction rather than angle on a continuous servo.', try: 'Build and Run the reverse, stop and forward sequence.', observe: 'The visual arrow changes direction and stops around neutral.', limits: 'AVR-only ideal command observer; no RPM, torque, current, inertia or physical accuracy.', next: 'Load Hobby servo to compare position intent.' },
   { id: 'avr-dc-motor-l298n', name: 'DC motor through L298N', model: 'output.dc-motor-v1', focus: 'Direction D7/D8 · PWM D9', partsLabel: 'Controller · L298N command model · DC motor', description: 'Drive a bounded visual motor command through a required H-bridge model.', learn: 'Why a motor needs a driver rather than direct MCU wiring.', try: 'Build and Run forward, brake, reverse and coast commands.', observe: 'The motor and driver show the same direction and relative enable intent.', limits: 'AVR-only command observer; no motor supply, RPM, torque, current, heat, load or physical accuracy.', next: 'Load Hobby servo to compare pulse-position intent with bridge direction control.' },
+  { id: 'avr-bipolar-stepper-a4988', name: 'Bipolar stepper through A4988', model: 'output.bipolar-stepper-v1', focus: 'STEP D2 · DIR D3 · ENABLE D4', partsLabel: 'Controller · A4988 command model · bipolar stepper', description: 'Count explicit STEP rising edges through a bounded A4988 command model.', learn: 'How STEP, DIR and active-low ENABLE describe command intent.', try: 'Build and Run the clockwise and counter-clockwise edge sequence.', observe: 'The motor and driver report the same signed explicit edge count.', limits: 'No position, torque, current, chopper, load, missed-step or physical motion claim.', next: 'Load Bipolar stepper through DRV8825 to compare microstep capability.' },
+  { id: 'avr-bipolar-stepper-drv8825', name: 'Bipolar stepper through DRV8825', model: 'output.bipolar-stepper-v1', focus: 'STEP D2 · DIR D3 · ENABLE D4', partsLabel: 'Controller · DRV8825 command model · bipolar stepper', description: 'Count explicit STEP rising edges through a bounded DRV8825 command model.', learn: 'Why the DRV8825 identity exposes a distinct thirty-second microstep option.', try: 'Build and Run the same explicit direction and edge sequence.', observe: 'Only actual STEP rising edges change the signed command count.', limits: 'No position, torque, current, chopper, load, missed-step or physical motion claim.', next: 'Load Bipolar stepper through A4988 to compare supported microstep names.' },
   {
     id: 'avr-traffic-light', name: 'Traffic light sequence', model: 'output.traffic-light-module-v1',
     focus: 'Three current-limited outputs', partsLabel: 'Controller · traffic light · three resistors',
@@ -442,6 +444,12 @@ void setup(){actuator.attach(SIGNAL);Serial.begin(115200);} void loop(){for(byte
 void command(bool a,bool b,byte enable,const char* label){digitalWrite(IN1,a);digitalWrite(IN2,b);analogWrite(ENA,enable);Serial.println(label);delay(400);}
 void setup(){pinMode(IN1,OUTPUT);pinMode(IN2,OUTPUT);pinMode(ENA,OUTPUT);Serial.begin(115200);} void loop(){command(HIGH,LOW,128,"FORWARD 50");command(HIGH,HIGH,255,"BRAKE");command(LOW,HIGH,191,"REVERSE 75");command(LOW,LOW,0,"COAST");}
 `,
+  'avr-bipolar-stepper-a4988': `const byte STEP=2,DIR=3,ENABLE=4;
+void pulse(byte count){for(byte i=0;i<count;i++){digitalWrite(STEP,HIGH);delay(10);digitalWrite(STEP,LOW);delay(10);}} void setup(){pinMode(STEP,OUTPUT);pinMode(DIR,OUTPUT);pinMode(ENABLE,OUTPUT);digitalWrite(ENABLE,LOW);Serial.begin(115200);} void loop(){digitalWrite(DIR,HIGH);pulse(8);Serial.println("CW 8");digitalWrite(DIR,LOW);pulse(4);Serial.println("CCW 4");delay(400);}
+`,
+  'avr-bipolar-stepper-drv8825': `const byte STEP=2,DIR=3,ENABLE=4;
+void pulse(byte count){for(byte i=0;i<count;i++){digitalWrite(STEP,HIGH);delay(10);digitalWrite(STEP,LOW);delay(10);}} void setup(){pinMode(STEP,OUTPUT);pinMode(DIR,OUTPUT);pinMode(ENABLE,OUTPUT);digitalWrite(ENABLE,LOW);Serial.begin(115200);} void loop(){digitalWrite(DIR,HIGH);pulse(16);Serial.println("CW 16");digitalWrite(DIR,LOW);pulse(8);Serial.println("CCW 8");delay(400);}
+`,
   'avr-traffic-light': `const byte RED=3, AMBER=5, GREEN=6;
 void phase(bool red, bool amber, bool green, const char* label) { digitalWrite(RED, red); digitalWrite(AMBER, amber); digitalWrite(GREEN, green); Serial.println(label); delay(240); }
 void setup() { pinMode(RED, OUTPUT); pinMode(AMBER, OUTPUT); pinMode(GREEN, OUTPUT); Serial.begin(115200); }
@@ -583,6 +591,20 @@ function construct(card) {
     wire(session, 'net-starter-l298n-ena', driver, 'ENA', 'board-1', 'D9');
     wire(session, 'net-starter-l298n-out1', driver, 'OUT1', motor, 'A');
     wire(session, 'net-starter-l298n-out2', driver, 'OUT2', motor, 'B');
+  } else if (card.id === 'avr-bipolar-stepper-a4988' || card.id === 'avr-bipolar-stepper-drv8825') {
+    ['button-1', 'led-1', 'led-2', 'resistor-1', 'resistor-2'].forEach((componentId) => {
+      apply(session, { type: 'component.remove', componentId });
+    });
+    const motor='bipolar-stepper-1',driver=card.id.endsWith('a4988')?'a4988-1':'drv8825-1';
+    const driverType=card.id.endsWith('a4988')?'driver.a4988-step-dir-v1':'driver.drv8825-step-dir-v1';
+    add(session, createCandidateUiComponent('output.bipolar-stepper-v1', motor), { x: 0.83, y: 0.64 });
+    add(session, createCandidateUiComponent(driverType, driver), { x: 0.61, y: 0.68 });
+    branch(session, 'net-5v', driver, 'VCC', `junction-starter-${driver}-vcc`);
+    branch(session, 'net-ground-branch', driver, 'GND', `junction-starter-${driver}-ground`);
+    wire(session, `net-starter-${driver}-step`, driver, 'STEP', 'board-1', 'D2');
+    wire(session, `net-starter-${driver}-dir`, driver, 'DIR', 'board-1', 'D3');
+    wire(session, `net-starter-${driver}-enable`, driver, 'ENABLE', 'board-1', 'D4');
+    for (const pin of ['A1','A2','B1','B2']) wire(session, `net-starter-${driver}-${pin.toLowerCase()}`, driver, pin, motor, pin);
   } else if (card.id === 'avr-traffic-light') {
     add(session, createTrafficLightComponent('traffic-light-1', 'Workshop traffic light'), { x: 0.79, y: 0.68 });
     const channels = [['RED', 'D3'], ['AMBER', 'D5'], ['GREEN', 'D6']];
