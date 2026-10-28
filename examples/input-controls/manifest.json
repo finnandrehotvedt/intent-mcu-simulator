@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-configurable-shortcuts.1-current",
-    "manifestSha256": "2d49c59fd197bebe61a313d6f9cb7d86329d7502cdb3b019dbc7a1700559b7c5",
-    "implementationSha256": "fa8146ebd4e8dbc53a2f14719826a9d2d9a3b6d9188e58b8bf5aa8e86615380a"
+    "manifestSha256": "ac8d07bafb2302a195ca29551200dc41317a736c0e164f68d8f678b3a8ddd1a7",
+    "implementationSha256": "0047ae0a9ee5d0fb9ad496ba9e26f544a2052350b00a76d3f7b4e71ba75ff9e5"
   },
   "entries": [
     {
@@ -22,7 +22,7 @@
       "expectedBehavior": "Pressing the active-low button changes D2 and Serial from RELEASED to PRESSED.",
       "firmwareLimits": "Ideal normally-open contact with INPUT_PULLUP; no bounce, resistance, wear or physical timing model.",
       "sourceSha256": "1bf4ebdd58ce128405d2fecec4d8b0c2b10c3e744cc7dbab6b522353c5f3c581",
-      "projectSha256": "d15b01619b96a102ce5553f0f1c24b6103ea44268aae7b4d2502658ded6fb3a9",
+      "projectSha256": "97c73bacd399aacf059cbb734f4214edde0dab92c2a655e1c68e727fb31d745e",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
@@ -44,7 +44,7 @@
       "expectedBehavior": "The maintained Open/Closed control changes compiled D3 input, D13 and Serial output.",
       "firmwareLimits": "Ideal AVR-only maintained SPST contact; no bounce, resistance, current rating, arcing or wear.",
       "sourceSha256": "8077c43a7452edc47e82f79525a3322c588f7fc020773c35b279c0c7da101aa1",
-      "projectSha256": "8ac38bca18f72262c5449b67851502b837babbc3509bd16a72aed22ac3f94494",
+      "projectSha256": "78eb739afaacb4ffe430a8a405078b84e99f3964eb4e26d02826e46613b4eaa8",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
@@ -73,7 +73,7 @@
       "expectedBehavior": "One detent produces ordered 01→00→10→11 clockwise phases and the exact reverse counter-clockwise.",
       "firmwareLimits": "CMP-132 only: ideal AVR quadrature phases at fixed 1 ms spacing. This is not CMP-027; it has no push switch, bounce, acceleration or physical detents.",
       "sourceSha256": "f0a3e2f6a9856762285b21ee4e3d51e95c76f9549c2b0dfcdc3c4a9ec98806e3",
-      "projectSha256": "fce5ff7bed34a7b1fd9c2111819f0eb65800a1b26cb68535126d206019e00a4c",
+      "projectSha256": "33d153f868f1e03a028e7a4262146b59d633a009904b33216078cf1c4e83c9dd",
       "provenance": "Original project-owned component, artwork, circuit factory and canonical project envelope."
     },
     {
@@ -97,7 +97,7 @@
       "expectedBehavior": "Slide selection changes D4, pressing the normally-closed button opens D5, and actuating the limit switch changes D6 from NC to NO.",
       "firmwareLimits": "Ideal AVR contact models only; no bounce, resistance, force, travel, current rating, arcing or wear.",
       "sourceSha256": "83de9735067bc9065b69ba247ba52cebadd7b3d3571d0ebae27273f0885353b4",
-      "projectSha256": "28e3dd8c9c3d685ca95f19770f3aafb7890752be2b3379ca0c0354e6cb68ffc3",
+      "projectSha256": "47bd792e632ed2df6967932279a49f3b96905af962400f8afb18c5ae7ecf102d",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
@@ -129,7 +129,7 @@
       "expectedBehavior": "Turning and pressing the encoder changes D2–D4, four DIP positions change D5–D8, and the changeover contact selects GND or 5 V on D9.",
       "firmwareLimits": "Ideal AVR contact models only; no bounce, acceleration, resistance, missed edges, force, travel, arcing or wear.",
       "sourceSha256": "b1bd1a93e2a6d66a0112a07e7f6ac6ed91a063f05e5604592d5e47e1e04ad681",
-      "projectSha256": "608ecd703b2504455ec420c265f28280fef64ede8dbfe2d6b993e70a690845e8",
+      "projectSha256": "7ff8081613b238a0075894b295169ec73d3f2d95785c13966917cfc04ea6ec48",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",
@@ -155,7 +155,7 @@
       "expectedBehavior": "Magnet presence closes D7, latching the instructional emergency stop opens D8, and pressing the foot pedal closes D9.",
       "firmwareLimits": "Instructional ideal contacts only; the emergency-stop model is not safety-rated and no contact includes physical bounce, force, resistance or certification behavior.",
       "sourceSha256": "7af3c87cc2244bc3b1fd0ac6802b4ff542a079d02c26be644d614576b4e0ff35",
-      "projectSha256": "f168f87853c2bf126cd5faf6691f255c2bb23c7f5048c8e1ec324e38def73b41",
+      "projectSha256": "552c9709bc09b59ae57c8aafeae01be543ceadc1ae5d217399d4dee6f1defc36",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",

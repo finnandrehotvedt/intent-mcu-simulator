@@ -163,6 +163,8 @@ import { SPEAKER_SIGNAL_DEFINITION, SPEAKER_SIGNAL_TYPE, projectSpeakerSignals, 
 import { SERVO_DEFINITIONS, projectServoComponents, validateServoComponent } from './servo-components-v1.mjs';
 import { DC_MOTOR_L298N_DEFINITIONS, DC_MOTOR_TYPE, L298N_DRIVER_TYPE,
   projectDcMotorL298n, validateDcMotorL298nComponent } from './dc-motor-l298n-v1.mjs';
+import { DC_MOTOR_ENCODER_DEFINITION, DC_MOTOR_ENCODER_TYPE,
+  projectDcMotorEncoders, validateDcMotorEncoderComponent } from './dc-motor-encoder-v1.mjs';
 import {
   SEVEN_SEGMENT_DEFINITION,
   SEVEN_SEGMENT_TYPE,
@@ -363,6 +365,7 @@ function pinIds(component) {
   if (SERVO_DEFINITIONS[component.type]) return ['SIGNAL', 'VCC', 'GND'];
   if (component.type === DC_MOTOR_TYPE) return ['A', 'B'];
   if (component.type === L298N_DRIVER_TYPE) return ['IN1', 'IN2', 'ENA', 'VCC', 'GND', 'OUT1', 'OUT2'];
+  if (component.type === DC_MOTOR_ENCODER_TYPE) return ['M1', 'M2', 'EA', 'ECOM', 'EB'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
   if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
     return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp', 'DIG1', 'DIG2', 'DIG3', 'DIG4'];
@@ -416,6 +419,7 @@ function componentPins(component) {
   if (component.type === SPEAKER_SIGNAL_TYPE) return SPEAKER_SIGNAL_DEFINITION.pins;
   if (SERVO_DEFINITIONS[component.type]) return SERVO_DEFINITIONS[component.type].pins;
   if (DC_MOTOR_L298N_DEFINITIONS[component.type]) return DC_MOTOR_L298N_DEFINITIONS[component.type].pins;
+  if (component.type === DC_MOTOR_ENCODER_TYPE) return DC_MOTOR_ENCODER_DEFINITION.pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
   if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
     return FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION.pins;
@@ -558,6 +562,8 @@ function validateCandidateComponent(component) {
     if (!validateServoComponent(component)) fail('PROJECT_CONTACT_SERVO_STATE', [component.id]);
   } else if (DC_MOTOR_L298N_DEFINITIONS[component.type]) {
     if (!validateDcMotorL298nComponent(component)) fail('PROJECT_CONTACT_DC_MOTOR_L298N_STATE', [component.id]);
+  } else if (component.type === DC_MOTOR_ENCODER_TYPE) {
+    if (!validateDcMotorEncoderComponent(component)) fail('PROJECT_CONTACT_DC_MOTOR_ENCODER_STATE', [component.id]);
   } else if (component.type === SEVEN_SEGMENT_TYPE) {
     if (!validateSevenSegmentComponent(component)) {
       fail('PROJECT_CONTACT_SEVEN_SEGMENT_STATE', [component.id]);
@@ -632,7 +638,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
         DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
-        ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+        ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
         CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
       ].includes(component.type))) {
@@ -1407,8 +1413,23 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       : { direction: 'stopped', command: 0, pulseUs: 1500 }, runtimeProjection: clone(servo) })));
   for (const servo of servoProjection.servos) production(implementation, servo.type,
     { periodCycles: 320000, highCycles: 24000 }, [servo.componentId]);
-  const motorProjection = projectDcMotorL298n(servoProjection.runtimeGraph);
+  const motorEncoderProjection = projectDcMotorEncoders(servoProjection.runtimeGraph);
+  if (!motorEncoderProjection.ok) fail(`PROJECT_CONTACT_${motorEncoderProjection.code}`, motorEncoderProjection.details);
+  const motorProjection = motorEncoderProjection.assemblies.length
+    ? motorEncoderProjection
+    : projectDcMotorL298n(servoProjection.runtimeGraph);
   if (!motorProjection.ok) fail(`PROJECT_CONTACT_${motorProjection.code}`, motorProjection.details);
+  contacts.push(...motorEncoderProjection.assemblies.map((assembly) => ({
+    componentId: assembly.componentId, type: DC_MOTOR_ENCODER_TYPE,
+    state: { state: 'coast', command: 0, enable: 0, detent: assembly.detent },
+    runtimeProjection: clone(assembly),
+  })));
+  for (const assembly of motorEncoderProjection.assemblies) production(
+    implementation,
+    DC_MOTOR_ENCODER_TYPE,
+    { in1: false, in2: false, enable: 0, encoderDirection: 'cw', encoderDetents: 0 },
+    [assembly.componentId],
+  );
   contacts.push(...motorProjection.motors.map((motor) => ({ componentId: motor.componentId, type: DC_MOTOR_TYPE,
     state: { state: 'coast', command: 0, enable: 0 }, runtimeProjection: clone(motor) })));
   contacts.push(...motorProjection.drivers.map((driver) => ({ componentId: driver.componentId, type: L298N_DRIVER_TYPE,
@@ -1519,6 +1540,7 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       ...barProjection.runtimePositionSources,
       ...sevenSegmentProjection.runtimePositionSources,
       ...fourDigitProjection.runtimePositionSources,
+      ...motorEncoderProjection.runtimePositionSources,
       ...rotaryEncoderProjection.runtimePositionSources,
       ...joystickKeypadProjection.runtimePositionSources,
     }),
@@ -1907,7 +1929,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
-      ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+      ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
       CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,
     ].includes(component.type),

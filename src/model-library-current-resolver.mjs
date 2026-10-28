@@ -31,6 +31,7 @@ import { esp32C3RuntimeCircuit, validateEsp32C3Circuit } from './esp32c3-public-
 import { validateStm32Circuit } from './stm32-public-circuit.mjs';
 import { SERVO_DEFINITIONS, evaluateServoIntent } from '../expansion-drafts/servo-components-v1.mjs';
 import { DC_MOTOR_L298N_DEFINITIONS, evaluateDcMotorCommand } from '../expansion-drafts/dc-motor-l298n-v1.mjs';
+import { DC_MOTOR_ENCODER_TYPE } from '../expansion-drafts/dc-motor-encoder-v1.mjs';
 
 const entries = new Map(CURRENT_MODEL_LIBRARY_MANIFEST.entries.map((entry) =>
   [`${entry.profile}\u0000${entry.componentType}`, entry]));
@@ -123,6 +124,20 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     return failure('MODEL_LIBRARY_REFERENCE_UNAVAILABLE', [componentType]);
   },
   evaluateProduction(componentType, input) {
+    if (componentType === DC_MOTOR_ENCODER_TYPE) {
+      if (!exactInput(input, ['in1', 'in2', 'enable', 'encoderDirection', 'encoderDetents'])
+          || !['cw', 'ccw'].includes(input.encoderDirection)
+          || !Number.isInteger(input.encoderDetents) || input.encoderDetents < 0 || input.encoderDetents > 999) {
+        return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      }
+      const motor = evaluateDcMotorCommand({ in1: input.in1, in2: input.in2, enable: input.enable });
+      if (!motor.ok) return failure(motor.code);
+      const cycle = input.encoderDirection === 'cw' ? ['11', '01', '00', '10', '11'] : ['11', '10', '00', '01', '11'];
+      return { ok: true, code: 'OK', result: {
+        motor, encoder: { direction: input.encoderDirection, detents: input.encoderDetents,
+          grayStates: Array.from({ length: input.encoderDetents }, () => cycle).flat() },
+      } };
+    }
     if (DC_MOTOR_L298N_DEFINITIONS[componentType]) {
       if (!exactInput(input, ['in1', 'in2', 'enable'])) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
       const result = evaluateDcMotorCommand(input);

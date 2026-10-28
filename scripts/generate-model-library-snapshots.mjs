@@ -346,6 +346,8 @@ const CURRENT_CLOSURE = Object.freeze([
   '../expansion-drafts/pcf8574-lcd-backpack-artwork-v1.mjs',
   '../expansion-drafts/pcf8574-lcd-hello-example-v1.mjs',
   '../expansion-drafts/rotary-encoder-quadrature-v1.mjs',
+  '../expansion-drafts/dc-motor-encoder-v1.mjs',
+  '../expansion-drafts/dc-motor-encoder-artwork-v1.mjs',
 ]);
 
 async function implementationClosure(paths) {

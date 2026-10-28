@@ -109,6 +109,7 @@ const referenceBindings = deepFreeze({
     'output.continuous-servo-v1': { starters: ['avr-continuous-servo'], tests: ['test/servo-components.test.mjs', 'test/servo-components-browser.cjs'] },
     'output.dc-motor-v1': { starters: ['avr-dc-motor-l298n'], tests: ['test/dc-motor-l298n.test.mjs', 'test/dc-motor-l298n-browser.cjs'] },
     'driver.l298n-single-channel-v1': { starters: ['avr-dc-motor-l298n'], tests: ['test/dc-motor-l298n.test.mjs', 'test/dc-motor-l298n-browser.cjs'] },
+    'output.dc-motor-encoder-v1': { starters: ['avr-dc-motor-encoder'], tests: ['test/dc-motor-encoder.test.mjs', 'test/dc-motor-encoder-browser.cjs'] },
     'output.seven-segment-common-cathode-v1': { starters: ['avr-seven-segment'], tests: ['test/seven-segment-common-cathode-candidate.test.mjs', 'test/seven-segment-common-cathode-ui-candidate.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
     'output.seven-segment-four-digit-common-cathode-v1': { starters: ['avr-four-digit-seven-segment'], tests: ['test/four-digit-seven-segment.test.mjs', 'test/four-digit-seven-segment-browser.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
     'output.character-lcd-16x2-4bit-v1': { starters: ['temperature-lcd-threshold'], tests: ['test/character-lcd-16x2-4bit-candidate.test.mjs', 'test/character-lcd-16x2-4bit-ui-candidate.cjs'] },

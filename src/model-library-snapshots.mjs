@@ -239523,6 +239523,132 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
+      "behaviorContractSha256": "db6c2d4b3795e5ca6fd9aaa908ba8d0d8e2eb378f6417b53b8d7773c4aed39b4",
+      "componentType": "output.dc-motor-encoder-v1",
+      "componentVersion": 1,
+      "modelId": "model.dc-motor-encoder-command-quadrature-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "output.dc-motor-encoder-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 112,
+        "cssWidth": 176,
+        "renderer": "output-dc-motor-encoder",
+        "thumbnail": "output-dc-motor-encoder",
+        "viewBox": [
+          0,
+          0,
+          176,
+          112
+        ]
+      },
+      "rendererContractSha256": "2dd5bbd4e6c71272813682e4518d8437f5ca26881e7593f0f17d47f13284a2cb",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {
+          "detent": {
+            "default": 0,
+            "kind": "integer",
+            "maximum": 999,
+            "minimum": -999,
+            "mutability": "transition-only",
+            "unit": "detent"
+          }
+        },
+        "internalTerminalGroups": [],
+        "modelId": "model.dc-motor-encoder-command-quadrature-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "M1",
+            "role": "power-in",
+            "signals": [
+              "motor.bridge-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "M2",
+            "role": "power-in",
+            "signals": [
+              "motor.bridge-output"
+            ]
+          },
+          {
+            "constraints": {
+              "pullMode": "input-pullup",
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "EA",
+            "role": "digital-out",
+            "signals": [
+              "digital.quadrature-contact"
+            ]
+          },
+          {
+            "constraints": {
+              "voltage": 0
+            },
+            "id": "ECOM",
+            "role": "ground",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "pullMode": "input-pullup",
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "EB",
+            "role": "digital-out",
+            "signals": [
+              "digital.quadrature-contact"
+            ]
+          }
+        ],
+        "properties": {
+          "encoding": {
+            "default": "gray-2bit",
+            "kind": "enum",
+            "values": [
+              "gray-2bit"
+            ]
+          },
+          "pullMode": {
+            "default": "input-pullup",
+            "kind": "enum",
+            "values": [
+              "input-pullup"
+            ]
+          }
+        },
+        "support": {
+          "limitations": [
+            "M1/M2 require the bounded L298N command model; EA/EB require unique AVR D2/D3 inputs and ECOM requires ground.",
+            "Encoder detents produce the real bounded ideal Gray sequence through the existing quadrature runtime; they are never inferred from motor artwork, PWM, direction or elapsed time.",
+            "Motor command and encoder feedback are intentionally independent; no RPM, torque, current, load, inertia, missed pulse or physical coupling is claimed."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "2b9208a4d743c42cce833c41a411ba7a6741539d1fd26cb908c98d78078d5beb",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "dca96f19751706bfbb02f6299afc8359826af2dc0eae5a19f34108ffc204ca36",
       "componentType": "output.dc-motor-v1",
       "componentVersion": 1,
@@ -245667,7 +245793,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/model-control-contracts.mjs",
-      "sha256": "d2bd3f653df5868ca237af1e67cdb238cbf4e0cc58db8b17e188ee1316367470"
+      "sha256": "cefc8599af7c20a8d2efa702acde952645fb592cbd03f641e22c6c0132ddd368"
     },
     {
       "path": "src/simulator.worker.mjs",
@@ -245715,7 +245841,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "4dec02099eed54b5f07c8aa8627610c9b2f1366b99f3bc0bce72a73c983444f8"
+      "sha256": "80b5306c0a74fbe2e53118e8ac39c06a8d3f5c86fefd9898abb85ad7f84a8df6"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -245771,7 +245897,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "56019a03f4ed7171a76f28965930d82dd7620d79a3aa80860145c0787dc987fa"
+      "sha256": "9ed39dc907a6d90a3f28e234bd298d091580db6dd5c0b0cfbea96a51ca81b210"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -246038,11 +246164,19 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "0671974cb26e5447db07266f2e6a85a1f4fdd2fb8463453aa274987177167ac8"
     },
     {
+      "path": "expansion-drafts/dc-motor-encoder-v1.mjs",
+      "sha256": "8cd1742f62809b92a573a466f1ed37e7e92eac957c968da906c70480dfb5add0"
+    },
+    {
+      "path": "expansion-drafts/dc-motor-encoder-artwork-v1.mjs",
+      "sha256": "f857058f393afcceed351558b52cccb77c44f5494560b6c633bcad0038649508"
+    },
+    {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "1b07c35341014aab922886d85b6ae10d652024ccb3c29dece17802410760394e"
+      "sha256": "d4c80240a43c9072aae8784a931d170c6c80a5b3a8e4139736c3372a58e3a2a9"
     }
   ],
-  "implementationSha256": "fa8146ebd4e8dbc53a2f14719826a9d2d9a3b6d9188e58b8bf5aa8e86615380a",
+  "implementationSha256": "0047ae0a9ee5d0fb9ad496ba9e26f544a2052350b00a76d3f7b4e71ba75ff9e5",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only",
@@ -246052,7 +246186,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-visible-runtime-controls.1-current",
     "semanticDisposition": "retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change"
   },
-  "manifestSha256": "2d49c59fd197bebe61a313d6f9cb7d86329d7502cdb3b019dbc7a1700559b7c5",
+  "manifestSha256": "ac8d07bafb2302a195ca29551200dc41317a736c0e164f68d8f678b3a8ddd1a7",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

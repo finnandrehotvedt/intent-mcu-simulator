@@ -52,6 +52,7 @@ const rows = [
   ['sensor.light-threshold-digital-v1', 'hysteresisPercentagePoints', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'outputActive', 'derived state · emitted as control pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed-derived'],
   ['input.rotary-encoder-quadrature-v1', 'detent', 'digital-sequence · four ordered phases', 'D2/D3 inputs → executed firmware → USART', 'actual-executed'],
+  ['output.dc-motor-encoder-v1', 'detent', 'digital-sequence · independent four-phase feedback', 'EA/EB inputs → bounded quadrature projection', 'model-projected'],
   ['input.analog-joystick-2axis-v1', 'x', 'control · X position', 'A0 ADC → executed firmware → USART', 'actual-executed'],
   ['input.analog-joystick-2axis-v1', 'y', 'control · Y position', 'A1 ADC → executed firmware → USART', 'actual-executed'],
   ['input.analog-joystick-2axis-v1', 'pressed', 'contact projection · shaft button', 'D2 input → executed firmware → USART', 'actual-executed'],
@@ -110,6 +111,8 @@ const rows = [
       ? 'test/contact-sensors-browser.cjs'
     : ['touched', 'motionDetected', 'magnetPresent'].includes(field)
       ? 'test/digital-presence-sensors-browser.cjs'
+    : model === 'output.dc-motor-encoder-v1'
+      ? 'test/dc-motor-encoder-browser.cjs'
     : ['thresholdPercent', 'hysteresisPercentagePoints', 'outputActive'].includes(field)
       ? 'test/control-runtime-evidence-browser.cjs'
       : 'test/control-persistence-browser.cjs',

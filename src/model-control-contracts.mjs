@@ -215,6 +215,10 @@ export const MODEL_CONTROL_CONTRACTS = freeze({
     detent: { kind: 'integer', minimum: -999, maximum: 999, default: 0,
       unit: 'detent', mutability: 'transition-only' },
   },
+  'output.dc-motor-encoder-v1': {
+    detent: { kind: 'integer', minimum: -999, maximum: 999, default: 0,
+      unit: 'detent', mutability: 'transition-only' },
+  },
 });
 
 export function controlContractsFor(type, controlKeys = []) {
