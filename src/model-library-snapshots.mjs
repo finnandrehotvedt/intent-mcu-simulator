@@ -246714,7 +246714,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "1bd68eea33aa6df8f11fc5c7a7bb4f560d68434c5949f3450446267bc1b3569d"
+      "sha256": "c996815f9a7b69f0c825a78d720b9f0f63e0b408ee51191f61fab39c3788e6c9"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -247113,7 +247113,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "cc8ca03076c46047a5d06077880ccdfb1f59356d7dd3ee4ff9f26901a3026909"
     }
   ],
-  "implementationSha256": "5dd126c9a5fc3825608efc19d7d1ee18cf0f440e3f8e839c92dc6afc894be538",
+  "implementationSha256": "16f07e6b070524598954ea6bc6e25ccf8e2aaa00828eb615a35e576ed66a1b28",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only",
@@ -247123,7 +247123,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-visible-runtime-controls.1-current",
     "semanticDisposition": "retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change"
   },
-  "manifestSha256": "5379e32b4a73d6125a84282ce267c7c4a8e1a0440820312e9d5d45ad4467b7d1",
+  "manifestSha256": "bab5958ef190e912748e8eabdba3382f79c1e077873bfee437b1f523b74f993f",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

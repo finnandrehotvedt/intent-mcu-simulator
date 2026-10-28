@@ -14407,7 +14407,7 @@ function renderRuntimeControls() {
       const renderValue = () => {
         const percent = Number(input.value);
         const volts = percent * 0.05;
-        const adc = Math.round(percent * 10.23);
+        const adc = Math.min(1023, Math.round(percent * 10.24));
         output.value = `${percent}% · ideal ${volts.toFixed(2)} V · ADC ${adc}`;
         output.textContent = output.value;
       };

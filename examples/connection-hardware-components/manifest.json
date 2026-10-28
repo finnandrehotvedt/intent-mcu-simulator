@@ -4,8 +4,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-configurable-shortcuts.1-current",
-    "manifestSha256": "5379e32b4a73d6125a84282ce267c7c4a8e1a0440820312e9d5d45ad4467b7d1",
-    "implementationSha256": "5dd126c9a5fc3825608efc19d7d1ee18cf0f440e3f8e839c92dc6afc894be538"
+    "manifestSha256": "bab5958ef190e912748e8eabdba3382f79c1e077873bfee437b1f523b74f993f",
+    "implementationSha256": "16f07e6b070524598954ea6bc6e25ccf8e2aaa00828eb615a35e576ed66a1b28"
   },
   "requirementIds": [
     "CMP-017",
@@ -148,7 +148,7 @@
       },
       "limitations": "Explicit contact-group authoring only. No breadboard rails, continuity solver, contact resistance, current/voltage rating, heating, parasitics, insertion mechanics, wear, creepage, clearance, certification, Build/Run authority, safety protection or physical equivalence.",
       "sourceSha256": "5de09c385f62242bdd71e2130e92e0101f9e1d6b24d05eeb9dd615df16c69d7e",
-      "projectSha256": "de45ec274ac6035aa1249a22ed0f30bcd7d397ec8079ce8f28f2c6e6d4e340ea",
+      "projectSha256": "6bf854dc5797abad3c8af4f93f8fc84dab601c23df9592d5a88ba0bd653aea44",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -281,7 +281,7 @@
       },
       "limitations": "Explicit contact-group authoring only. No breadboard rails, continuity solver, contact resistance, current/voltage rating, heating, parasitics, insertion mechanics, wear, creepage, clearance, certification, Build/Run authority, safety protection or physical equivalence.",
       "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
-      "projectSha256": "01e706a50196d692a1d1a2e8d8cd3b75053214ceffd98805f7b49398f004b0f3",
+      "projectSha256": "cb821818329c491f39288895bfb2b8e1a90260e6d2122b80873c704fd2a88b1b",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -414,7 +414,7 @@
       },
       "limitations": "Explicit contact-group authoring only. No breadboard rails, continuity solver, contact resistance, current/voltage rating, heating, parasitics, insertion mechanics, wear, creepage, clearance, certification, Build/Run authority, safety protection or physical equivalence.",
       "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
-      "projectSha256": "cd5e89924131e922f4b7177af8c4a3ff56ec92c27d051f0e511f2632e1afd239",
+      "projectSha256": "8bec7244bf5b354d4e26c1fbec0aa4be655efd90393922f959bbcdbe269d7ba6",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {
@@ -547,7 +547,7 @@
       },
       "limitations": "Explicit contact-group authoring only. No breadboard rails, continuity solver, contact resistance, current/voltage rating, heating, parasitics, insertion mechanics, wear, creepage, clearance, certification, Build/Run authority, safety protection or physical equivalence.",
       "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
-      "projectSha256": "a17fea8b47ea098f75faffe1351823f82f00b9c7539150236ca9d1914cf19dcb",
+      "projectSha256": "1e7e8f4b1eba87b3bf735896ef02e1f42122644921cd50c10de79d03cde2cb5a",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     }
   ]

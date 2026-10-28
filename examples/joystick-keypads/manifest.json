@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-configurable-shortcuts.1-current",
-    "manifestSha256": "5379e32b4a73d6125a84282ce267c7c4a8e1a0440820312e9d5d45ad4467b7d1",
-    "implementationSha256": "5dd126c9a5fc3825608efc19d7d1ee18cf0f440e3f8e839c92dc6afc894be538"
+    "manifestSha256": "bab5958ef190e912748e8eabdba3382f79c1e077873bfee437b1f523b74f993f",
+    "implementationSha256": "16f07e6b070524598954ea6bc6e25ccf8e2aaa00828eb615a35e576ed66a1b28"
   },
   "entries": [
     {
@@ -23,7 +23,7 @@
         "VRY": "A1",
         "SW": "D2"
       },
-      "projectSha256": "021527866129d574bdfe14edce831e1110d9c8af18072a6d892c6048bb31e9df",
+      "projectSha256": "a512d357cf4b69af68a1c498142a8ce4e4869f575f7a144c37fb9ef37fab6c84",
       "sourceSha256": "5a5f5bb333df911fefc01420d7536c1c72f14103fb15b3ebbe4168982d9520ff",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
@@ -44,7 +44,7 @@
         "rows": "R1–R4 → D2–D5",
         "columns": "C1–C3 → D6–D8"
       },
-      "projectSha256": "a4a60571f93d0c829b1774a8d698d84d6a5503c9c6979259b09da97fadb28999",
+      "projectSha256": "fa296e40eb98ecaa5bac099724901a1e5bf0721543d18d14cce90171902667ab",
       "sourceSha256": "03b48b59570d505554dbc5f09832c77fdad40c506cae8914b747f0e9cef30df4",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
@@ -65,7 +65,7 @@
         "rows": "R1–R4 → D2–D5",
         "columns": "C1–C4 → D6–D9"
       },
-      "projectSha256": "203afa1e7817e506af86587460285f023ca6c22a41d3ed4e69b870a1c5e95eca",
+      "projectSha256": "67accd54022771b48be31c74283446df8589959fc1d1719c7dcf059e2a5bb495",
       "sourceSha256": "a0124b38860823ba5a1a14cd8144fcdac5e41b5df088b92e78e59ab99ff422ac",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
