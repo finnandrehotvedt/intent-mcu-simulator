@@ -104,7 +104,7 @@ const referenceBindings = deepFreeze({
     'output.led-bar-graph-10-v1': { starters: ['avr-led-bar-graph'], tests: ['test/rotary-selector-indicators-candidate.test.mjs'] },
     'output.active-buzzer-module-v1': { starters: ['avr-active-buzzer'], tests: ['test/active-buzzer-candidate.test.mjs', 'test/active-buzzer-ui-candidate.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
     'output.passive-piezo-v1': { starters: ['avr-passive-piezo'], tests: ['test/passive-piezo-candidate.test.mjs', 'test/passive-piezo-artwork.test.mjs', 'test/passive-piezo-browser.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
-    'output.speaker-signal-v1': { starters: ['avr-speaker-signal'], tests: ['test/speaker-signal-candidate.test.mjs'] },
+    'output.speaker-signal-v1': { starters: ['avr-speaker-signal'], tests: ['test/speaker-signal-candidate.test.mjs', 'test/speaker-signal-browser.cjs'] },
     'output.seven-segment-common-cathode-v1': { starters: ['avr-seven-segment'], tests: ['test/seven-segment-common-cathode-candidate.test.mjs', 'test/seven-segment-common-cathode-ui-candidate.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
     'output.seven-segment-four-digit-common-cathode-v1': { starters: ['avr-four-digit-seven-segment'], tests: ['test/four-digit-seven-segment.test.mjs', 'test/four-digit-seven-segment-browser.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
     'output.character-lcd-16x2-4bit-v1': { starters: ['temperature-lcd-threshold'], tests: ['test/character-lcd-16x2-4bit-candidate.test.mjs', 'test/character-lcd-16x2-4bit-ui-candidate.cjs'] },
