@@ -155,9 +155,17 @@ test('the exact public rc142 model lock opens as data-only and reports DHT11 plu
   assert.deepEqual(preview.semanticChanges.map(({ profile, componentType, kind }) => ({
     profile, componentType, kind,
   })), [
+    { profile: 'board.atmega328p-16mhz-v1', componentType: 'driver.l298n-single-channel-v1', kind: 'added' },
+    { profile: 'board.atmega328p-16mhz-v1', componentType: 'output.continuous-servo-v1', kind: 'added' },
+    { profile: 'board.atmega328p-16mhz-v1', componentType: 'output.dc-motor-v1', kind: 'added' },
+    { profile: 'board.atmega328p-16mhz-v1', componentType: 'output.hobby-servo-v1', kind: 'added' },
+    { profile: 'board.atmega328p-16mhz-v1', componentType: 'output.passive-piezo-v1', kind: 'added' },
+    { profile: 'board.atmega328p-16mhz-v1', componentType: 'output.speaker-signal-v1', kind: 'added' },
+    { profile: 'board.atmega328p-16mhz-v1', componentType: 'sensor.bme280-environment-v1', kind: 'added' },
     { profile: 'board.atmega328p-16mhz-v1', componentType: DHT11_TYPE, kind: 'added' },
     { profile: 'board.atmega328p-16mhz-v1', componentType: 'sensor.dht22-temperature-humidity-v1', kind: 'added' },
     { profile: 'board.atmega328p-16mhz-v1', componentType: 'sensor.ds18b20-temperature-v1', kind: 'added' },
+    { profile: 'board.atmega328p-16mhz-v1', componentType: 'sensor.force-sensitive-resistor-divider-v1', kind: 'added' },
   ]);
   assert.deepEqual(preview.rendererChanges, []);
   assert.equal(preview.unchanged.length, 71);
