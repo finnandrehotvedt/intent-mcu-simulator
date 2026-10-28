@@ -165,6 +165,8 @@ import { DC_MOTOR_L298N_DEFINITIONS, DC_MOTOR_TYPE, L298N_DRIVER_TYPE,
   projectDcMotorL298n, validateDcMotorL298nComponent } from './dc-motor-l298n-v1.mjs';
 import { DC_MOTOR_ENCODER_DEFINITION, DC_MOTOR_ENCODER_TYPE,
   projectDcMotorEncoders, validateDcMotorEncoderComponent } from './dc-motor-encoder-v1.mjs';
+import { A4988_TYPE, BIPOLAR_STEPPER_DRIVER_DEFINITIONS, BIPOLAR_STEPPER_TYPE, DRV8825_TYPE,
+  projectBipolarStepperDrivers, validateBipolarStepperComponent } from './bipolar-stepper-drivers-v1.mjs';
 import {
   SEVEN_SEGMENT_DEFINITION,
   SEVEN_SEGMENT_TYPE,
@@ -366,6 +368,8 @@ function pinIds(component) {
   if (component.type === DC_MOTOR_TYPE) return ['A', 'B'];
   if (component.type === L298N_DRIVER_TYPE) return ['IN1', 'IN2', 'ENA', 'VCC', 'GND', 'OUT1', 'OUT2'];
   if (component.type === DC_MOTOR_ENCODER_TYPE) return ['M1', 'M2', 'EA', 'ECOM', 'EB'];
+  if (component.type === BIPOLAR_STEPPER_TYPE) return ['A1', 'A2', 'B1', 'B2'];
+  if ([A4988_TYPE, DRV8825_TYPE].includes(component.type)) return ['STEP', 'DIR', 'ENABLE', 'VCC', 'GND', 'A1', 'A2', 'B1', 'B2'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
   if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
     return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp', 'DIG1', 'DIG2', 'DIG3', 'DIG4'];
@@ -420,6 +424,7 @@ function componentPins(component) {
   if (SERVO_DEFINITIONS[component.type]) return SERVO_DEFINITIONS[component.type].pins;
   if (DC_MOTOR_L298N_DEFINITIONS[component.type]) return DC_MOTOR_L298N_DEFINITIONS[component.type].pins;
   if (component.type === DC_MOTOR_ENCODER_TYPE) return DC_MOTOR_ENCODER_DEFINITION.pins;
+  if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[component.type]) return BIPOLAR_STEPPER_DRIVER_DEFINITIONS[component.type].pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
   if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
     return FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION.pins;
@@ -564,6 +569,8 @@ function validateCandidateComponent(component) {
     if (!validateDcMotorL298nComponent(component)) fail('PROJECT_CONTACT_DC_MOTOR_L298N_STATE', [component.id]);
   } else if (component.type === DC_MOTOR_ENCODER_TYPE) {
     if (!validateDcMotorEncoderComponent(component)) fail('PROJECT_CONTACT_DC_MOTOR_ENCODER_STATE', [component.id]);
+  } else if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[component.type]) {
+    if (!validateBipolarStepperComponent(component)) fail('PROJECT_CONTACT_BIPOLAR_STEPPER_STATE', [component.id]);
   } else if (component.type === SEVEN_SEGMENT_TYPE) {
     if (!validateSevenSegmentComponent(component)) {
       fail('PROJECT_CONTACT_SEVEN_SEGMENT_STATE', [component.id]);
@@ -638,7 +645,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
         DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
-        ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+        ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, ...Object.keys(BIPOLAR_STEPPER_DRIVER_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
         CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
       ].includes(component.type))) {
@@ -1438,7 +1445,18 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     production(implementation, DC_MOTOR_TYPE, { in1: false, in2: false, enable: 0 }, [pair.componentId]);
     production(implementation, L298N_DRIVER_TYPE, { in1: false, in2: false, enable: 0 }, [pair.driverId]);
   }
-  const sevenSegmentProjection = projectSevenSegmentDisplays(motorProjection.runtimeGraph);
+  const stepperProjection = projectBipolarStepperDrivers(motorProjection.runtimeGraph);
+  if (!stepperProjection.ok) fail(`PROJECT_CONTACT_${stepperProjection.code}`, stepperProjection.details);
+  contacts.push(...stepperProjection.motors.map((motor) => ({ componentId: motor.componentId, type: BIPOLAR_STEPPER_TYPE,
+    state: { enabled: false, direction: 'cw', signedSteps: 0, observedRisingEdges: 0 }, runtimeProjection: clone(motor) })));
+  contacts.push(...stepperProjection.drivers.map((driver) => ({ componentId: driver.componentId, type: driver.driverType,
+    state: { enabled: false, direction: 'cw', signedSteps: 0, observedRisingEdges: 0 }, runtimeProjection: clone(driver) })));
+  for (const pair of stepperProjection.motors) {
+    const input = { enabled: false, direction: 'cw', stepRisingEdges: 0 };
+    production(implementation, BIPOLAR_STEPPER_TYPE, input, [pair.componentId]);
+    production(implementation, pair.driverType, input, [pair.driverId]);
+  }
+  const sevenSegmentProjection = projectSevenSegmentDisplays(stepperProjection.runtimeGraph);
   if (!sevenSegmentProjection.ok) {
     fail(`PROJECT_CONTACT_${sevenSegmentProjection.code}`, sevenSegmentProjection.details);
   }
@@ -1929,7 +1947,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
-      ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+      ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, ...Object.keys(BIPOLAR_STEPPER_DRIVER_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
       CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,
     ].includes(component.type),
