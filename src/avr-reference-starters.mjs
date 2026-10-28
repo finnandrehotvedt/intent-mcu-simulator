@@ -149,6 +149,7 @@ const CARDS = Object.freeze([
   { id: 'avr-dc-motor-l298n', name: 'DC motor through L298N', model: 'output.dc-motor-v1', focus: 'Direction D7/D8 · PWM D9', partsLabel: 'Controller · L298N command model · DC motor', description: 'Drive a bounded visual motor command through a required H-bridge model.', learn: 'Why a motor needs a driver rather than direct MCU wiring.', try: 'Build and Run forward, brake, reverse and coast commands.', observe: 'The motor and driver show the same direction and relative enable intent.', limits: 'AVR-only command observer; no motor supply, RPM, torque, current, heat, load or physical accuracy.', next: 'Load Hobby servo to compare pulse-position intent with bridge direction control.' },
   { id: 'avr-bipolar-stepper-a4988', name: 'Bipolar stepper through A4988', model: 'output.bipolar-stepper-v1', focus: 'STEP D2 · DIR D3 · ENABLE D4', partsLabel: 'Controller · A4988 command model · bipolar stepper', description: 'Count explicit STEP rising edges through a bounded A4988 command model.', learn: 'How STEP, DIR and active-low ENABLE describe command intent.', try: 'Build and Run the clockwise and counter-clockwise edge sequence.', observe: 'The motor and driver report the same signed explicit edge count.', limits: 'No position, torque, current, chopper, load, missed-step or physical motion claim.', next: 'Load Bipolar stepper through DRV8825 to compare microstep capability.' },
   { id: 'avr-bipolar-stepper-drv8825', name: 'Bipolar stepper through DRV8825', model: 'output.bipolar-stepper-v1', focus: 'STEP D2 · DIR D3 · ENABLE D4', partsLabel: 'Controller · DRV8825 command model · bipolar stepper', description: 'Count explicit STEP rising edges through a bounded DRV8825 command model.', learn: 'Why the DRV8825 identity exposes a distinct thirty-second microstep option.', try: 'Build and Run the same explicit direction and edge sequence.', observe: 'Only actual STEP rising edges change the signed command count.', limits: 'No position, torque, current, chopper, load, missed-step or physical motion claim.', next: 'Load Bipolar stepper through A4988 to compare supported microstep names.' },
+  { id: 'avr-unipolar-stepper-uln2003', name: '28BYJ-48 through ULN2003', model: 'output.28byj48-unipolar-stepper-v1', focus: 'Four phases · D2–D5', partsLabel: 'Controller · ULN2003 command model · 28BYJ-48', description: 'Observe an explicit eight-state half-step sequence through the required four-channel driver.', learn: 'How four ordered phase commands advance or reverse a unipolar stepper intent.', try: 'Build and Run one clockwise and one counter-clockwise half-step cycle.', observe: 'The motor and driver report the same signed adjacent phase transitions.', limits: 'AVR-only command observer; no position, gearing, torque, current, heat, load, missed-step or physical-motion claim.', next: 'Load Bipolar stepper through A4988 to compare STEP/DIR control.' },
   {
     id: 'avr-traffic-light', name: 'Traffic light sequence', model: 'output.traffic-light-module-v1',
     focus: 'Three current-limited outputs', partsLabel: 'Controller · traffic light · three resistors',
@@ -450,6 +451,10 @@ void pulse(byte count){for(byte i=0;i<count;i++){digitalWrite(STEP,HIGH);delay(1
   'avr-bipolar-stepper-drv8825': `const byte STEP=2,DIR=3,ENABLE=4;
 void pulse(byte count){for(byte i=0;i<count;i++){digitalWrite(STEP,HIGH);delay(10);digitalWrite(STEP,LOW);delay(10);}} void setup(){pinMode(STEP,OUTPUT);pinMode(DIR,OUTPUT);pinMode(ENABLE,OUTPUT);digitalWrite(ENABLE,LOW);Serial.begin(115200);} void loop(){digitalWrite(DIR,HIGH);pulse(16);Serial.println("CW 16");digitalWrite(DIR,LOW);pulse(8);Serial.println("CCW 8");delay(400);}
 `,
+  'avr-unipolar-stepper-uln2003': `const byte PHASES[4]={2,3,4,5};
+const byte HALF[8][4]={{1,0,0,0},{1,1,0,0},{0,1,0,0},{0,1,1,0},{0,0,1,0},{0,0,1,1},{0,0,0,1},{1,0,0,1}};
+void phase(byte index){for(byte i=0;i<4;i++)digitalWrite(PHASES[i],HALF[index][i]);delay(20);} void setup(){for(byte i=0;i<4;i++)pinMode(PHASES[i],OUTPUT);Serial.begin(115200);} void loop(){for(byte i=0;i<8;i++)phase(i);Serial.println("CW HALF-STEPS=7");for(byte i=7;i>0;i--)phase(i-1);Serial.println("CCW HALF-STEPS=7");delay(400);}
+`,
   'avr-traffic-light': `const byte RED=3, AMBER=5, GREEN=6;
 void phase(bool red, bool amber, bool green, const char* label) { digitalWrite(RED, red); digitalWrite(AMBER, amber); digitalWrite(GREEN, green); Serial.println(label); delay(240); }
 void setup() { pinMode(RED, OUTPUT); pinMode(AMBER, OUTPUT); pinMode(GREEN, OUTPUT); Serial.begin(115200); }
@@ -605,6 +610,20 @@ function construct(card) {
     wire(session, `net-starter-${driver}-dir`, driver, 'DIR', 'board-1', 'D3');
     wire(session, `net-starter-${driver}-enable`, driver, 'ENABLE', 'board-1', 'D4');
     for (const pin of ['A1','A2','B1','B2']) wire(session, `net-starter-${driver}-${pin.toLowerCase()}`, driver, pin, motor, pin);
+  } else if (card.id === 'avr-unipolar-stepper-uln2003') {
+    ['button-1', 'led-1', 'led-2', 'resistor-1', 'resistor-2'].forEach((componentId) => {
+      apply(session, { type: 'component.remove', componentId });
+    });
+    const motor='unipolar-stepper-1',driver='uln2003-1';
+    add(session, createCandidateUiComponent('output.28byj48-unipolar-stepper-v1', motor), { x: 0.83, y: 0.64 });
+    add(session, createCandidateUiComponent('driver.uln2003-four-channel-v1', driver), { x: 0.61, y: 0.68 });
+    branch(session, 'net-5v', driver, 'VCC', 'junction-starter-uln2003-vcc');
+    branch(session, 'net-5v', motor, 'COM', 'junction-starter-unipolar-common');
+    branch(session, 'net-ground-branch', driver, 'GND', 'junction-starter-uln2003-ground');
+    ['1','2','3','4'].forEach((channel,index) => {
+      wire(session, `net-starter-uln2003-in${channel}`, driver, `IN${channel}`, 'board-1', `D${index+2}`);
+      wire(session, `net-starter-uln2003-out${channel}`, driver, `OUT${channel}`, motor, ['A','B','C','D'][index]);
+    });
   } else if (card.id === 'avr-traffic-light') {
     add(session, createTrafficLightComponent('traffic-light-1', 'Workshop traffic light'), { x: 0.79, y: 0.68 });
     const channels = [['RED', 'D3'], ['AMBER', 'D5'], ['GREEN', 'D6']];

@@ -96,6 +96,8 @@ import { DC_MOTOR_ENCODER_DEFINITION, DC_MOTOR_ENCODER_TYPE, createDcMotorEncode
 import { createDcMotorEncoderArtwork } from '../expansion-drafts/dc-motor-encoder-artwork-v1.mjs';
 import { BIPOLAR_STEPPER_DRIVER_DEFINITIONS, createBipolarStepperComponent } from '../expansion-drafts/bipolar-stepper-drivers-v1.mjs';
 import { createBipolarStepperArtwork } from '../expansion-drafts/bipolar-stepper-drivers-artwork-v1.mjs';
+import { UNIPOLAR_STEPPER_DEFINITIONS, createUnipolarStepperComponent } from '../expansion-drafts/unipolar-stepper-uln2003-v1.mjs';
+import { createUnipolarStepperArtwork } from '../expansion-drafts/unipolar-stepper-uln2003-artwork-v1.mjs';
 import { createDcMotorL298nArtwork } from '../expansion-drafts/dc-motor-l298n-artwork-v1.mjs';
 import {
   SEVEN_SEGMENT_DEFINITION,
@@ -306,6 +308,7 @@ export const CANDIDATE_UI_COMPONENTS = Object.freeze({
   ...DC_MOTOR_L298N_DEFINITIONS,
   [DC_MOTOR_ENCODER_TYPE]: DC_MOTOR_ENCODER_DEFINITION,
   ...BIPOLAR_STEPPER_DRIVER_DEFINITIONS,
+  ...UNIPOLAR_STEPPER_DEFINITIONS,
   [SEVEN_SEGMENT_TYPE]: SEVEN_SEGMENT_DEFINITION,
   [FOUR_DIGIT_SEVEN_SEGMENT_TYPE]: FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION,
   [CHARACTER_LCD_TYPE]: CHARACTER_LCD_DEFINITION,
@@ -387,6 +390,7 @@ export function createCandidateUiArtwork(documentObject, definition, component, 
   if (DC_MOTOR_L298N_DEFINITIONS[component?.type]) return createDcMotorL298nArtwork(documentObject, definition, component, options);
   if (component?.type === DC_MOTOR_ENCODER_TYPE) return createDcMotorEncoderArtwork(documentObject, definition, component, options);
   if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[component?.type]) return createBipolarStepperArtwork(documentObject, definition, component, options);
+  if (UNIPOLAR_STEPPER_DEFINITIONS[component?.type]) return createUnipolarStepperArtwork(documentObject, definition, component, options);
   if (component?.type === SEVEN_SEGMENT_TYPE) {
     return createSevenSegmentArtwork(documentObject, definition, component, options);
   }
@@ -493,6 +497,7 @@ export function createCandidateUiComponent(type, id) {
   if (DC_MOTOR_L298N_DEFINITIONS[type]) return createDcMotorL298nComponent(type, id);
   if (type === DC_MOTOR_ENCODER_TYPE) return createDcMotorEncoderComponent(id);
   if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[type]) return createBipolarStepperComponent(type, id);
+  if (UNIPOLAR_STEPPER_DEFINITIONS[type]) return createUnipolarStepperComponent(type, id);
   if (type === SEVEN_SEGMENT_TYPE) return createSevenSegmentComponent(id);
   if (type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) return createFourDigitSevenSegmentComponent(id);
   if (type === CHARACTER_LCD_TYPE) return createCharacterLcdComponent(id);

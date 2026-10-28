@@ -167,6 +167,8 @@ import { DC_MOTOR_ENCODER_DEFINITION, DC_MOTOR_ENCODER_TYPE,
   projectDcMotorEncoders, validateDcMotorEncoderComponent } from './dc-motor-encoder-v1.mjs';
 import { A4988_TYPE, BIPOLAR_STEPPER_DRIVER_DEFINITIONS, BIPOLAR_STEPPER_TYPE, DRV8825_TYPE,
   projectBipolarStepperDrivers, validateBipolarStepperComponent } from './bipolar-stepper-drivers-v1.mjs';
+import { UNIPOLAR_STEPPER_TYPE, ULN2003_TYPE, UNIPOLAR_STEPPER_DEFINITIONS,
+  projectUnipolarStepperUln2003, validateUnipolarStepperComponent } from './unipolar-stepper-uln2003-v1.mjs';
 import {
   SEVEN_SEGMENT_DEFINITION,
   SEVEN_SEGMENT_TYPE,
@@ -370,6 +372,8 @@ function pinIds(component) {
   if (component.type === DC_MOTOR_ENCODER_TYPE) return ['M1', 'M2', 'EA', 'ECOM', 'EB'];
   if (component.type === BIPOLAR_STEPPER_TYPE) return ['A1', 'A2', 'B1', 'B2'];
   if ([A4988_TYPE, DRV8825_TYPE].includes(component.type)) return ['STEP', 'DIR', 'ENABLE', 'VCC', 'GND', 'A1', 'A2', 'B1', 'B2'];
+  if (component.type === UNIPOLAR_STEPPER_TYPE) return ['COM', 'A', 'B', 'C', 'D'];
+  if (component.type === ULN2003_TYPE) return ['IN1', 'IN2', 'IN3', 'IN4', 'VCC', 'GND', 'OUT1', 'OUT2', 'OUT3', 'OUT4'];
   if (component.type === SEVEN_SEGMENT_TYPE) return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'COM'];
   if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
     return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp', 'DIG1', 'DIG2', 'DIG3', 'DIG4'];
@@ -425,6 +429,7 @@ function componentPins(component) {
   if (DC_MOTOR_L298N_DEFINITIONS[component.type]) return DC_MOTOR_L298N_DEFINITIONS[component.type].pins;
   if (component.type === DC_MOTOR_ENCODER_TYPE) return DC_MOTOR_ENCODER_DEFINITION.pins;
   if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[component.type]) return BIPOLAR_STEPPER_DRIVER_DEFINITIONS[component.type].pins;
+  if (UNIPOLAR_STEPPER_DEFINITIONS[component.type]) return UNIPOLAR_STEPPER_DEFINITIONS[component.type].pins;
   if (component.type === SEVEN_SEGMENT_TYPE) return SEVEN_SEGMENT_DEFINITION.pins;
   if (component.type === FOUR_DIGIT_SEVEN_SEGMENT_TYPE) {
     return FOUR_DIGIT_SEVEN_SEGMENT_DEFINITION.pins;
@@ -571,6 +576,8 @@ function validateCandidateComponent(component) {
     if (!validateDcMotorEncoderComponent(component)) fail('PROJECT_CONTACT_DC_MOTOR_ENCODER_STATE', [component.id]);
   } else if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[component.type]) {
     if (!validateBipolarStepperComponent(component)) fail('PROJECT_CONTACT_BIPOLAR_STEPPER_STATE', [component.id]);
+  } else if (UNIPOLAR_STEPPER_DEFINITIONS[component.type]) {
+    if (!validateUnipolarStepperComponent(component)) fail('PROJECT_CONTACT_UNIPOLAR_STEPPER_STATE', [component.id]);
   } else if (component.type === SEVEN_SEGMENT_TYPE) {
     if (!validateSevenSegmentComponent(component)) {
       fail('PROJECT_CONTACT_SEVEN_SEGMENT_STATE', [component.id]);
@@ -645,7 +652,7 @@ function normalizeCandidateCircuit(value, { requireCandidate = true } = {}) {
         ...Object.keys(SEMICONDUCTOR_ACTIVE_DEFINITIONS),
         IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
         DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
-        ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, ...Object.keys(BIPOLAR_STEPPER_DRIVER_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+        ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, ...Object.keys(BIPOLAR_STEPPER_DRIVER_DEFINITIONS), ...Object.keys(UNIPOLAR_STEPPER_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
         CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
         ROTARY_ENCODER_TYPE,
       ].includes(component.type))) {
@@ -1456,7 +1463,18 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
     production(implementation, BIPOLAR_STEPPER_TYPE, input, [pair.componentId]);
     production(implementation, pair.driverType, input, [pair.driverId]);
   }
-  const sevenSegmentProjection = projectSevenSegmentDisplays(stepperProjection.runtimeGraph);
+  const unipolarProjection = projectUnipolarStepperUln2003(stepperProjection.runtimeGraph);
+  if (!unipolarProjection.ok) fail(`PROJECT_CONTACT_${unipolarProjection.code}`, unipolarProjection.details);
+  contacts.push(...unipolarProjection.motors.map((motor) => ({ componentId: motor.componentId, type: UNIPOLAR_STEPPER_TYPE,
+    state: { signedHalfSteps: 0, observedTransitions: 0 }, runtimeProjection: clone(motor) })));
+  contacts.push(...unipolarProjection.drivers.map((driver) => ({ componentId: driver.componentId, type: ULN2003_TYPE,
+    state: { signedHalfSteps: 0, observedTransitions: 0 }, runtimeProjection: clone(driver) })));
+  for (const pair of unipolarProjection.motors) {
+    const input = { phaseSnapshots: [] };
+    production(implementation, UNIPOLAR_STEPPER_TYPE, input, [pair.componentId]);
+    production(implementation, ULN2003_TYPE, input, [pair.driverId]);
+  }
+  const sevenSegmentProjection = projectSevenSegmentDisplays(unipolarProjection.runtimeGraph);
   if (!sevenSegmentProjection.ok) {
     fail(`PROJECT_CONTACT_${sevenSegmentProjection.code}`, sevenSegmentProjection.details);
   }
@@ -1947,7 +1965,7 @@ export function validateContactPersistenceProject(value, options = {}) {
       IR_OBSTACLE_SENSOR_TYPE, LINE_TRACKING_SENSOR_TYPE,
       DHT11_TYPE, DHT22_TYPE, DS18B20_TYPE, BME280_TYPE,
       ROTARY_SELECTOR_TYPE, RGB_COMMON_ANODE_TYPE, LED_BAR_GRAPH_TYPE,
-      ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, ...Object.keys(BIPOLAR_STEPPER_DRIVER_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
+      ACTIVE_BUZZER_TYPE, PASSIVE_PIEZO_TYPE, SPEAKER_SIGNAL_TYPE, ...Object.keys(SERVO_DEFINITIONS), ...Object.keys(DC_MOTOR_L298N_DEFINITIONS), DC_MOTOR_ENCODER_TYPE, ...Object.keys(BIPOLAR_STEPPER_DRIVER_DEFINITIONS), ...Object.keys(UNIPOLAR_STEPPER_DEFINITIONS), SEVEN_SEGMENT_TYPE, FOUR_DIGIT_SEVEN_SEGMENT_TYPE,
       CHARACTER_LCD_TYPE, CHARACTER_LCD_20X4_TYPE,
       ROTARY_ENCODER_TYPE,
     ].includes(component.type),

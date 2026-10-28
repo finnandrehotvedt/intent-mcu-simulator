@@ -238517,6 +238517,161 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "supportStatus": "partial"
     },
     {
+      "behaviorContractSha256": "4b57443ee7252d665e8b4cafacc327280f4c923256dabd05b87921e8d9cffa4f",
+      "componentType": "driver.uln2003-four-channel-v1",
+      "componentVersion": 1,
+      "modelId": "model.uln2003-four-channel-command-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "driver.uln2003-four-channel-v1-state-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 112,
+        "cssWidth": 200,
+        "renderer": "driver-uln2003-four-channel",
+        "thumbnail": "driver-uln2003-four-channel",
+        "viewBox": [
+          0,
+          0,
+          200,
+          112
+        ]
+      },
+      "rendererContractSha256": "b6408cc4d8e69fab20699f7cce7ffe9faa4f8a56fe67c6527498c6374680c3a5",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.uln2003-four-channel-command-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "IN1",
+            "role": "digital.input",
+            "signals": [
+              "digital.input"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "IN2",
+            "role": "digital.input",
+            "signals": [
+              "digital.input"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "IN3",
+            "role": "digital.input",
+            "signals": [
+              "digital.input"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "IN4",
+            "role": "digital.input",
+            "signals": [
+              "digital.input"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "VCC",
+            "role": "power.5v",
+            "signals": [
+              "power.5v"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "GND",
+            "role": "ground.reference",
+            "signals": [
+              "ground.reference"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT1",
+            "role": "stepper.phase-output",
+            "signals": [
+              "stepper.phase-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT2",
+            "role": "stepper.phase-output",
+            "signals": [
+              "stepper.phase-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT3",
+            "role": "stepper.phase-output",
+            "signals": [
+              "stepper.phase-output"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "OUT4",
+            "role": "stepper.phase-output",
+            "signals": [
+              "stepper.phase-output"
+            ]
+          }
+        ],
+        "properties": {},
+        "support": {
+          "limitations": [
+            "IN1–IN4 require four distinct AVR digital outputs.",
+            "No transistor drop, flyback, current, heat, protection or physical module accuracy."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "1e38444d919fcd83bc45d31a805d610803d9d1666103fe7a5df528f815479569",
+      "supportStatus": "partial"
+    },
+    {
       "behaviorContractSha256": "b13c293e6859638dcfd5fa64e9d95f8d9c4c3bf9562255e6b9b0626949f2470f",
       "componentType": "input.analog-joystick-2axis-v1",
       "componentVersion": 1,
@@ -239288,6 +239443,113 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       },
       "semanticSha256": "679cda6c79868cad75a8f062b6e87f99fd991f3249760c018293890c967ca1fe",
       "supportStatus": "simulated"
+    },
+    {
+      "behaviorContractSha256": "8326dbdb65b17d81f965b62a4fe74bfc8c9c5e68561f58589e2b16cb3e77d17b",
+      "componentType": "output.28byj48-unipolar-stepper-v1",
+      "componentVersion": 1,
+      "modelId": "model.28byj48-four-phase-command-v1",
+      "modelVersion": 1,
+      "owner": {
+        "implementationId": "intent-mcu-model-bundle-current-configurable-shortcuts-1@64",
+        "observerId": "output.28byj48-unipolar-stepper-v1-observer-v1",
+        "pipelineId": "avr-candidate-reconstruction-ordered-v1"
+      },
+      "profile": "board.atmega328p-16mhz-v1",
+      "renderer": {
+        "cssHeight": 112,
+        "cssWidth": 160,
+        "renderer": "output-28byj48-stepper",
+        "thumbnail": "output-28byj48-stepper",
+        "viewBox": [
+          0,
+          0,
+          160,
+          112
+        ]
+      },
+      "rendererContractSha256": "3ab9776e6384970ddbbf4ad3d321611b5c27090bbba062e1ce0c61a8322f861b",
+      "semantic": {
+        "componentVersion": 1,
+        "controls": {},
+        "internalTerminalGroups": [],
+        "modelId": "model.28byj48-four-phase-command-v1",
+        "modelVersion": 1,
+        "pins": [
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "COM",
+            "role": "power.common",
+            "signals": [
+              "power.common"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "A",
+            "role": "stepper.phase-input",
+            "signals": [
+              "stepper.phase-input"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "B",
+            "role": "stepper.phase-input",
+            "signals": [
+              "stepper.phase-input"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "C",
+            "role": "stepper.phase-input",
+            "signals": [
+              "stepper.phase-input"
+            ]
+          },
+          {
+            "constraints": {
+              "voltageMax": 5,
+              "voltageMin": 0
+            },
+            "id": "D",
+            "role": "stepper.phase-input",
+            "signals": [
+              "stepper.phase-input"
+            ]
+          }
+        ],
+        "properties": {
+          "stepsPerRevolution": {
+            "default": 2048,
+            "kind": "integer",
+            "maximum": 10000,
+            "minimum": 1
+          }
+        },
+        "support": {
+          "limitations": [
+            "Requires one bounded ULN2003 four-channel command driver.",
+            "Sequence state comes only from explicit IN1–IN4 snapshots; no position, speed, torque, current, gearing, missed-step or physical motion claim."
+          ],
+          "status": "partial"
+        }
+      },
+      "semanticSha256": "85926ffc357bfd05f82e0eab6bfe9d49289c7597c6838105c06f4641fc9e6f1a",
+      "supportStatus": "partial"
     },
     {
       "behaviorContractSha256": "f66fda0760e059bee8156803a693a80f0b8b9572a3470cc623f3adb935622afd",
@@ -246242,7 +246504,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-project-session.mjs",
-      "sha256": "2b8101ecdaf35fc3e264ed9cbf99d01927e26ee7f4d29069a669087c954eb6ba"
+      "sha256": "5314d8cdf26484c551028721200e354c0a815deadba784a478826386814be35f"
     },
     {
       "path": "src/candidate-spdt-runtime.mjs",
@@ -246250,7 +246512,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/candidate-existing-ui-adapter.mjs",
-      "sha256": "590846c9ed9817f512a44b18c8de258d1b555f6fe84253b49d8c4ca5744367be"
+      "sha256": "c5b78c0b7218127ab8b8ef12df111b8056a4a1dd0ba99e39e49e12387bd27c95"
     },
     {
       "path": "src/rp2040-pico-circuit.mjs",
@@ -246306,7 +246568,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "expansion-drafts/project-v3-contact-persistence.mjs",
-      "sha256": "e560af455313d8854d6c5fb7d2906e1ccd76129d4d6fe151e364e527d5a6ea70"
+      "sha256": "51f539e1062dea39e59b488f1f4e7fb39e7a8c1dc36e46d0ff1c81ba072f977a"
     },
     {
       "path": "expansion-drafts/joystick-keypads-v1.mjs",
@@ -246589,11 +246851,19 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "e10a6412a831d1d9d16d86a3445bdcf48be4eecadefceacbf4a8661f55120f2f"
     },
     {
+      "path": "expansion-drafts/unipolar-stepper-uln2003-v1.mjs",
+      "sha256": "ce0326864c1557792534fcfe74bbd603d5d30a37a33f542aadce9eb4e60f1fd1"
+    },
+    {
+      "path": "expansion-drafts/unipolar-stepper-uln2003-artwork-v1.mjs",
+      "sha256": "2eddcdd6aca5067d552da973dbe1b65bc780808c30a5d4588b8dd45f4c09e5cc"
+    },
+    {
       "path": "src/model-library-current-resolver.mjs",
-      "sha256": "6b2a10f49844cefc4f3887c81700f54d60f52bd91b17408798811e15e9c97960"
+      "sha256": "8cc1cfcc2e4722857585553be33f266e1ff5d13eac10db68305b3b855fa75099"
     }
   ],
-  "implementationSha256": "74f4b2a7e893b3e171f638174b1d58f48935aed9564841ed75ddb8f2c1f0d62e",
+  "implementationSha256": "711380dd36999f6cdd4aa0de33f20fec44a7312da9439217ba18cf5d684a1fa9",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "rc148 commit 4c7f88d and every earlier identity remain immutable migration-only anchors; this P1 candidate is source and isolated-test only",
@@ -246603,7 +246873,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-visible-runtime-controls.1-current",
     "semanticDisposition": "retains every BME280 and prior component, electrical, protocol and runtime contract without semantic change"
   },
-  "manifestSha256": "14b319b2bbdec109426d64b076006456c6909021037e3ea000e3c05dc1197473",
+  "manifestSha256": "2068a208e738ee57921a784ec04bb9597ff86497bcf19aeb91d17917d7fabff1",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

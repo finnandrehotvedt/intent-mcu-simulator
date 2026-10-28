@@ -56,6 +56,7 @@ const expectedNext = Object.freeze({
   'avr-dc-motor-l298n': 'Load Hobby servo to compare pulse-position intent with bridge direction control.',
   'avr-bipolar-stepper-a4988': 'Load Bipolar stepper through DRV8825 to compare microstep capability.',
   'avr-bipolar-stepper-drv8825': 'Load Bipolar stepper through A4988 to compare supported microstep names.',
+  'avr-unipolar-stepper-uln2003': 'Load Bipolar stepper through A4988 to compare STEP/DIR control.',
   'avr-traffic-light': 'Load Seven-segment digits to coordinate a larger group of outputs.',
   'avr-seven-segment': 'Load Four-digit multiplex to coordinate shared segments and digit selection.',
   'avr-four-digit-seven-segment': 'Load PWM pulse to compare switched outputs with duty-cycle output.',
@@ -98,6 +99,7 @@ const baselineProjectHashes = Object.freeze({
   'avr-seven-segment': 'b8bbdca870e92d26026eef5ceb1219a1771f62422eb789fb8652180360b88733',
   'avr-four-digit-seven-segment': '988b1f6762ae2e43d0ac4048c850b19e4c574db2e3c8447c9819eb7c2a4f18df',
   'avr-rotary-encoder': 'b86effd37b2593b7740c903cb0916a821f826f32ce5e0723d7539f382478a817',
+  'avr-unipolar-stepper-uln2003': 'bf4bfe64bea397d8aaee3ed0c4a95dd2fec4f5f1a9ab28064ada12b2be419b8d',
   'pico-led-on': 'e2e4f928148c45041ee6d2cba1deba6b60436425800add0cd8069607e9f47d3e',
   'pico-led-off': '5197b7127bb70e224f707da86bf6d55619ce309f79764733a782c58345da14de',
   'c3-led-on': '579a0a7c617498531b5b2338ae250911bfafbb491f28757fc6a026b926f77dbc',
@@ -107,10 +109,10 @@ const baselineProjectHashes = Object.freeze({
 });
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-test('X72 exposes one concise five-part learning progression for all 36 examples', () => {
+test('X72 exposes one concise five-part learning progression for all 37 examples', () => {
   const catalog = cards();
-  assert.equal(catalog.length, 36);
-  assert.equal(new Set(catalog.map(({ id }) => id)).size, 36);
+  assert.equal(catalog.length, 37);
+  assert.equal(new Set(catalog.map(({ id }) => id)).size, 37);
   assert.deepEqual(Object.fromEntries(catalog.map(({ id, next }) => [id, next])), expectedNext);
   for (const card of catalog) {
     for (const field of ['learn', 'try', 'limits', 'next']) assert.match(card[field], /\S/u, `${card.id}.${field}`);

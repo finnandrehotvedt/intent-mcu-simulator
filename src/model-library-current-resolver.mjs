@@ -33,6 +33,7 @@ import { SERVO_DEFINITIONS, evaluateServoIntent } from '../expansion-drafts/serv
 import { DC_MOTOR_L298N_DEFINITIONS, evaluateDcMotorCommand } from '../expansion-drafts/dc-motor-l298n-v1.mjs';
 import { DC_MOTOR_ENCODER_TYPE } from '../expansion-drafts/dc-motor-encoder-v1.mjs';
 import { BIPOLAR_STEPPER_DRIVER_DEFINITIONS, evaluateStepperCommand } from '../expansion-drafts/bipolar-stepper-drivers-v1.mjs';
+import { UNIPOLAR_STEPPER_DEFINITIONS, evaluateUnipolarSequence } from '../expansion-drafts/unipolar-stepper-uln2003-v1.mjs';
 
 const entries = new Map(CURRENT_MODEL_LIBRARY_MANIFEST.entries.map((entry) =>
   [`${entry.profile}\u0000${entry.componentType}`, entry]));
@@ -125,6 +126,11 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     return failure('MODEL_LIBRARY_REFERENCE_UNAVAILABLE', [componentType]);
   },
   evaluateProduction(componentType, input) {
+    if (UNIPOLAR_STEPPER_DEFINITIONS[componentType]) {
+      if (!exactInput(input, ['phaseSnapshots'])) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
+      const result = evaluateUnipolarSequence(input);
+      return result.ok ? { ok: true, code: 'OK', result } : failure(result.code, result.details);
+    }
     if (BIPOLAR_STEPPER_DRIVER_DEFINITIONS[componentType]) {
       if (!exactInput(input, ['enabled', 'direction', 'stepRisingEdges'])) return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
       const result = evaluateStepperCommand(input);

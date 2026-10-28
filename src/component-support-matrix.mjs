@@ -113,6 +113,8 @@ const referenceBindings = deepFreeze({
     'output.bipolar-stepper-v1': { starters: ['avr-bipolar-stepper-a4988'], tests: ['test/bipolar-stepper-drivers.test.mjs', 'test/bipolar-stepper-drivers-browser.cjs'] },
     'driver.a4988-step-dir-v1': { starters: ['avr-bipolar-stepper-a4988'], tests: ['test/bipolar-stepper-drivers.test.mjs', 'test/bipolar-stepper-drivers-browser.cjs'] },
     'driver.drv8825-step-dir-v1': { starters: ['avr-bipolar-stepper-drv8825'], tests: ['test/bipolar-stepper-drivers.test.mjs', 'test/bipolar-stepper-drivers-browser.cjs'] },
+    'output.28byj48-unipolar-stepper-v1': { starters: ['avr-unipolar-stepper-uln2003'], tests: ['test/unipolar-stepper-uln2003.test.mjs', 'test/unipolar-stepper-uln2003-browser.cjs'] },
+    'driver.uln2003-four-channel-v1': { starters: ['avr-unipolar-stepper-uln2003'], tests: ['test/unipolar-stepper-uln2003.test.mjs', 'test/unipolar-stepper-uln2003-browser.cjs'] },
     'output.seven-segment-common-cathode-v1': { starters: ['avr-seven-segment'], tests: ['test/seven-segment-common-cathode-candidate.test.mjs', 'test/seven-segment-common-cathode-ui-candidate.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
     'output.seven-segment-four-digit-common-cathode-v1': { starters: ['avr-four-digit-seven-segment'], tests: ['test/four-digit-seven-segment.test.mjs', 'test/four-digit-seven-segment-browser.cjs', 'test/indicator-actuator-example-artifacts.test.mjs'] },
     'output.character-lcd-16x2-4bit-v1': { starters: ['temperature-lcd-threshold'], tests: ['test/character-lcd-16x2-4bit-candidate.test.mjs', 'test/character-lcd-16x2-4bit-ui-candidate.cjs'] },

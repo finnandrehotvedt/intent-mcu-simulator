@@ -32,7 +32,7 @@ let browser;
   await page.waitForFunction(() => window.__M11_READY__ === true);
   const cards = page.locator('.starter-card');
   const dialog = page.locator('#example-picker-dialog');
-  assert(await cards.count() === 22, 'example picker does not expose all twenty-two validated examples');
+  assert(await cards.count() === 23, 'example picker does not expose all twenty-three validated examples');
   assert(!(await dialog.evaluate((node) => node.open)), 'example picker is open by default');
   assert(await cards.filter({ visible: true }).count() === 0, 'inline starter gallery remains visible by default');
   const initialProject = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
@@ -148,7 +148,7 @@ let browser;
     }));
     assert(layout.overflow <= 1, `example picker overflows the page at ${viewport.width}px`);
     assert(layout.dialogOverflow <= 1, `example card grid overflows at ${viewport.width}px`);
-    assert(layout.visibleCards === 22, `starter cards disappear at ${viewport.width}px`);
+    assert(layout.visibleCards === 23, `starter cards disappear at ${viewport.width}px`);
   }
   await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -175,7 +175,7 @@ let browser;
     fs.mkdirSync(path.dirname(process.env.STARTER_SCREENSHOT), { recursive: true });
     await page.screenshot({ path: process.env.STARTER_SCREENSHOT, fullPage: false });
   }
-  console.log(JSON.stringify({ browser: browserName, result: 'pass', cards: 22,
+  console.log(JSON.stringify({ browser: browserName, result: 'pass', cards: 23,
     pickerJourneys: examples.length + 1, unsavedKeepAndDiscard: true,
     finalProject: await projectName(), serverProjectWrites: 0 }));
   await context.close();

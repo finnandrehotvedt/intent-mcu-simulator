@@ -30,15 +30,16 @@ const expected = Object.freeze({
   'avr-dc-motor-l298n': 'output.dc-motor-v1',
   'avr-bipolar-stepper-a4988': 'output.bipolar-stepper-v1',
   'avr-bipolar-stepper-drv8825': 'output.bipolar-stepper-v1',
+  'avr-unipolar-stepper-uln2003': 'output.28byj48-unipolar-stepper-v1',
   'avr-traffic-light': 'output.traffic-light-module-v1',
   'avr-seven-segment': 'output.seven-segment-common-cathode-v1',
   'avr-four-digit-seven-segment': 'output.seven-segment-four-digit-common-cathode-v1',
   'avr-rotary-encoder': 'input.rotary-encoder-quadrature-v1',
 });
 
-test('L06 publishes exactly twenty-two clear existing-capability AVR references', () => {
+test('L06 publishes exactly twenty-three clear existing-capability AVR references', () => {
   const cards = avrReferenceStarterCatalog();
-  assert.equal(cards.length, 22);
+  assert.equal(cards.length, 23);
   assert.deepEqual(Object.fromEntries(cards.map((card) => [card.id, card.model])), expected);
   for (const card of cards) {
     for (const field of ['learn', 'try', 'observe', 'limits']) {
@@ -47,7 +48,7 @@ test('L06 publishes exactly twenty-two clear existing-capability AVR references'
   }
 });
 
-test('all twenty-two reference projects are canonical runnable candidate-v3 projects', () => {
+test('all twenty-three reference projects are canonical runnable candidate-v3 projects', () => {
   for (const card of avrReferenceStarterCatalog()) {
     const created = createAvrReferenceStarter(card.id);
     const opened = openCandidateUiSession(created.text);
@@ -81,9 +82,10 @@ test('every available matrix cell now resolves to a real starter id', () => {
     'avr-contact-sensors',
     'avr-dc-motor-encoder',
     'avr-bipolar-stepper-a4988', 'avr-bipolar-stepper-drv8825',
+    'avr-unipolar-stepper-uln2003',
   ]);
   const inventory = componentReferenceInventory();
-  assert.equal(inventory.length, 86);
+  assert.equal(inventory.length, 88);
   for (const item of inventory) {
     assert.equal(item.hasPositiveReference, true, `${item.profile}:${item.model}`);
     assert(item.starters.every((id) => ids.has(id)), `${item.model}:${item.starters.join(',')}`);
