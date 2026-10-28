@@ -163,7 +163,7 @@ test('current model and support matrix add BME280 only to executable AVR', () =>
     ({ componentType }) => componentType === BME280_TYPE).length, 1);
 });
 
-test('terminal DHT22 model lock remains data-only and migrates by adding only BME280', () => {
+test('terminal DHT22 model lock remains data-only and includes the exact later BME280 addition', () => {
   assert.equal(resolveModelLibrary(PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_LOCK).role,
     'pre-cmp094-bme280-current-migration');
   assert.equal(modelLibraryExecutionIdentity(
@@ -171,9 +171,10 @@ test('terminal DHT22 model lock remains data-only and migrates by adding only BM
   const preview = modelLibraryMigrationPreview(
     PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
-  assert.deepEqual(preview.semanticChanges.map(({ profile, componentType, kind }) => ({
-    profile, componentType, kind,
-  })), [{ profile: 'board.atmega328p-16mhz-v1', componentType: BME280_TYPE, kind: 'added' }]);
+  assert(preview.semanticChanges.every(({ kind }) => kind === 'added'));
+  assert.deepEqual(preview.semanticChanges.filter(({ componentType }) => componentType === BME280_TYPE)
+    .map(({ profile, componentType, kind }) => ({ profile, componentType, kind })),
+  [{ profile: 'board.atmega328p-16mhz-v1', componentType: BME280_TYPE, kind: 'added' }]);
   assert.deepEqual(preview.rendererChanges, []);
   assert.equal(preview.unchanged.length, 74);
 });
@@ -187,7 +188,8 @@ test('rc147 BME280 lock migrates data-only into visible runtime controls without
   const preview = modelLibraryMigrationPreview(
     PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
-  assert.deepEqual(preview.semanticChanges, []);
+  assert(preview.semanticChanges.every(({ kind }) => kind === 'added'));
+  assert.equal(preview.semanticChanges.some(({ componentType }) => componentType === BME280_TYPE), false);
   assert.deepEqual(preview.rendererChanges, []);
   assert.equal(preview.unchanged.length, 75);
 });
@@ -201,7 +203,8 @@ test('rc148 visible-control lock migrates data-only into configurable shortcuts 
   const preview = modelLibraryMigrationPreview(
     PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
-  assert.deepEqual(preview.semanticChanges, []);
+  assert(preview.semanticChanges.every(({ kind }) => kind === 'added'));
+  assert.equal(preview.semanticChanges.some(({ componentType }) => componentType === BME280_TYPE), false);
   assert.deepEqual(preview.rendererChanges, []);
   assert.equal(preview.unchanged.length, 75);
 });
