@@ -123,6 +123,7 @@ ba95cec859a6c1d6019a39e896aa9d15bf847a4a2860e4a0cd967dbd830ad453  docs/CMP-007-C
 0bc891f7f9bc8975a5cf7cf469037278f04a22116aba6b0e6f7a9ed56ec3a98e  docs/CMP-038-CMP-042-CMP-064-INDICATORS-ACTUATORS.md
 3d2ac63c2ff688a747d3a02f58e4fc79d33b0e7108612ff6d5288467f84395f7  docs/CMP-050-CMP-051-LCD-END-TO-END.md
 157ba9bc64dcbc590b19107c0650f93fe3c9947add2629b516883030fab4800f  docs/CMP-052-CMP-062-LCD-20X4-CGRAM.md
+2115e8335cc3a87d323c45173468eb4d071a5dde3b3e36f57a7ccd71693c17e5  docs/CMP-063-PASSIVE-PIEZO.md
 781d894720f0706085111234e9f4244e4dc4cdbaf897da0dbcd6c42cbeedc0d9  docs/HEADLESS-EXPERIMENT.md
 c2fec61f1f8343ced8f75e54eb275b25bbd45e614321d8a172e40d311bbdfdf2  docs/MCP-ADAPTER.md
 aa24e17d1debf4a0bdc6284b9806173644adaa21b3b980337eb3f7c205de5948  docs/RC138-PRESERVED-DRAFT-RECOVERY.md
@@ -331,6 +332,7 @@ b4ae5113b88cdf4daaa19472857603afa47b67906b86db3ad0358930469aa6fe  expansion-draf
 639732f75f771c2cdcf4f1bcb2c94cf9ac45fbe1ac579fa0b6d1b7d32db99062  expansion-drafts/mechanical-inputs-v1.mjs
 4ff78022e6d4c5852dfa8fb0bb78e2a2229daeb0559f36d52036061afd1a6686  expansion-drafts/passive-energy-storage-components-artwork-v1.mjs
 aad2b3c26ddd00e3dbd0dbd440f3393d6872636e8903956868afdac336a0e830  expansion-drafts/passive-energy-storage-components-v1.mjs
+a5647b0b7e7be286b726faa4d0953ca54d1cad73aa26c8d104a51aca1239c580  expansion-drafts/passive-piezo-contract-v1.mjs
 03cb25ee2eb9df1d63c65bbb53086319cf220511956824d975b31d714a2df757  expansion-drafts/pcf8574-lcd-backpack-artwork-v1.mjs
 b46019e63908a2c4f3dfbdf3b9b497b814d9b3fb41945d3f0fe34b3e5d144170  expansion-drafts/pcf8574-lcd-backpack-v1.mjs
 0a5c6edc30f3548de7ecae151abfd7c1a1cc3a15d402b6f15e823fc23d283f98  expansion-drafts/pcf8574-lcd-hello-example-v1.mjs
@@ -949,6 +951,7 @@ c8afdc7d68e673573233f603b5209425f8044eba3c743626bf3a4d934944425e  test/page-view
 68251065112c4380648e6462a744ee2176431858e566d744f9ae746f7442a6ab  test/passive-energy-storage-browser.cjs
 3a8e77141d15392c5948d2cd1e6ee6b3777e87186f66a9991451dd2e2a4bf1c8  test/passive-energy-storage-components.test.mjs
 fc28816057d79ee4305e5d8c5827395d0d8ee31c6f0306e21348371dff200179  test/passive-energy-storage-example-artifacts.test.mjs
+391f6b540119ea82fd60dbd1675128e80d360a1df286954d803f34124edfe393  test/passive-piezo-contract.test.mjs
 5b11269728e4888412283bb18ba95cab00402ac18affa2c7488385815c76ab28  test/pcf8574-lcd-backpack.test.mjs
 491fbc87afdf0d2ed047635d1bd900e0e8045c59cb8bed5be55ef0f238216076  test/pcf8574-lcd-compiled-fixture.mjs
 f1d78b6e74df80bc4fea590c1e5db01aa5a1910961ca2112db0d1188a8ce806e  test/pcf8574-lcd-end-to-end-browser.cjs
