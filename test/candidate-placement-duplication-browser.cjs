@@ -78,6 +78,9 @@ async function exactGeometry(page) {
     await page.waitForFunction(() => window.__M11_READY__ === true);
     await page.click('#workbench-view-advanced');
     await openProject(page, await preparedProject());
+    if (await page.locator('#workbench-project-dialog').evaluate((dialog) => dialog.open)) {
+      await page.click('#workbench-project-dialog .workbench-popup-close');
+    }
     stage('opened');
 
     const existingBefore = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__().candidateCircuit.nets));
@@ -159,7 +162,11 @@ async function exactGeometry(page) {
     assert(keyboardMoved.position.x > pointerMoved.position.x);
     stage('keyboard-move-rotate');
 
-    await page.keyboard.press('Delete');
+    if (await page.locator('#simple-parts-drawer').getAttribute('aria-hidden') === 'false') {
+      await page.click('#simple-parts-close');
+    }
+    await page.click('#toggle-inspector');
+    await page.click('#delete-component');
     await page.waitForFunction((id) => !window.__M6_PROJECT__().candidateCircuit.components.some(
       (component) => component.id === id), targetId);
     if (coreEditOnly) await page.keyboard.press('Control+z'); else await page.click('#undo');

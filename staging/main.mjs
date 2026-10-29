@@ -17872,6 +17872,10 @@ document.addEventListener('keyup', (event) => {
     releaseActiveKeyboardSwitch('Space shortcut release');
   }
 });
+window.addEventListener('blur', () => {
+  if (activeKeyboardSwitch) releaseActiveKeyboardSwitch('window blur release');
+  if (activeCanvasButton) releaseCanvasButton('window blur release');
+});
 window.addEventListener('resize', () => requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires)));
 
 setInterval(() => {

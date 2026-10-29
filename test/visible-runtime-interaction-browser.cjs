@@ -13,6 +13,7 @@ const { chromium } = require(path.join(
 const repository = path.resolve(__dirname, '..');
 const dist = path.join(repository, 'dist');
 const output = process.env.VISIBLE_RUNTIME_OUTPUT || '';
+const coreOnly = process.env.VISIBLE_RUNTIME_CORE_ONLY === '1';
 const retainedHex = Buffer.from(fs.readFileSync(
   path.join(__dirname, 'fixtures', 'avr-thermostat-retained.hex.base64'), 'utf8',
 ).trim(), 'base64').toString('utf8');
@@ -60,10 +61,11 @@ async function openCanonicalProject(page, relativePath, componentId) {
   if (await page.locator('#unsaved-change-dialog').evaluate((dialog) => dialog.open)) {
     await page.click('#unsaved-discard');
   }
-  await page.waitForSelector(`[data-component-id="${componentId}"]`);
   if (await page.locator('#workbench-project-dialog').evaluate((dialog) => dialog.open)) {
     await page.click('#workbench-project-dialog .workbench-popup-close');
   }
+  await page.click('#workbench-view-advanced');
+  await page.waitForSelector(`[data-component-id="${componentId}"]`);
 }
 
 async function selectComponentCard(page, componentId) {
@@ -179,9 +181,17 @@ async function selectComponentCard(page, componentId) {
     await page.keyboard.up('Space');
     await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.find(
       ({ id }) => id === 'button-1').controls.pressed === false);
+    await page.keyboard.down('Space');
+    await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.find(
+      ({ id }) => id === 'button-1').controls.pressed === true);
+    await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+    await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.find(
+      ({ id }) => id === 'button-1').controls.pressed === false);
+    await page.keyboard.up('Space');
     await page.keyboard.press('Shift+F5');
     await page.waitForFunction(() => window.__M6_STATE__.runtimeInteractionLocked === false);
 
+    if (!coreOnly) {
     await openCanonicalProject(page,
       'examples/digital-presence-sensors/avr-digital-presence-sensors.intent-mcu.json',
       'touch-button-1');
@@ -212,13 +222,15 @@ async function selectComponentCard(page, componentId) {
       ({ id }) => id === 'ir-obstacle-1').controls.obstacleDetected === false);
     await page.keyboard.press('Shift+F5');
     await page.waitForFunction(() => window.__M6_STATE__.runtimeInteractionLocked === false);
+    }
 
     if (output) await page.screenshot({ path: path.join(output, 'visible-runtime-controls.png'), fullPage: false });
     assert.deepEqual(errors, []);
-    assert.equal(buildInputs.length, 4);
+    assert.equal(buildInputs.length, coreOnly ? 2 : 4);
     process.stdout.write(`${JSON.stringify({ result: 'pass', visibleControls: 8,
       automaticInteract: true, lockedAuthoring: true, potKeyboardAndField: true,
-      switchSpaceHoldRelease: true, presenceSpaceToggle: true, activeLowSpaceToggle: true,
+      switchSpaceHoldRelease: true, switchBlurRelease: true,
+      presenceSpaceToggle: coreOnly ? 'not-tested' : true, activeLowSpaceToggle: coreOnly ? 'not-tested' : true,
       selectionPreservedThroughBuildRun: true, staleSelectionClearedOnProjectReplace: true,
       stopReturnsEdit: true, builds: buildInputs.length })}\n`);
   } finally {
