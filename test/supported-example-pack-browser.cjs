@@ -6,6 +6,7 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 
 const base = process.env.SUPPORTED_EXAMPLES_URL || 'http://127.0.0.1:18788';
 const runtime = process.env.SUPPORTED_EXAMPLES_RUNTIME === '1';
+const skipAvrRuntime = process.env.SUPPORTED_EXAMPLES_SKIP_AVR_RUNTIME === '1';
 const screenshot = process.env.SUPPORTED_EXAMPLES_SCREENSHOT || null;
 const assert = (value, message) => { if (!value) throw new Error(message); };
 
@@ -38,7 +39,7 @@ const profiles = [
   await page.locator('.starter-card[data-example="pwm-pulse"] .starter-action').evaluate((node) => node.click());
   assert(await page.inputValue('#project-name') === 'PWM pulse', 'AVR PWM pair did not load');
   assert((await page.textContent('#project-message')).includes('same safety checks'), 'AVR example bypassed ordinary loader');
-  if (runtime) {
+  if (runtime && !skipAvrRuntime) {
     await page.click('#quick-build');
     await page.waitForFunction(() => ['succeeded', 'failed', 'cancelled', 'timeout'].includes(window.__M6_STATE__.buildState), null, { timeout: 40_000 });
     assert(await page.evaluate(() => window.__M6_STATE__.buildState) === 'succeeded', 'AVR PWM pair build failed');
@@ -66,18 +67,18 @@ const profiles = [
         `${id}: load retained executable authority`);
       assert(state.message.includes('Build fresh before Run'), `${id}: fresh-build boundary missing`);
       if (runtime) {
-        await page.click(`#${profile.prefix}-build`);
+        await page.click('#quick-build');
         await page.waitForFunction(({ name, prefix }) => {
           const phase = window[name].state().phase;
           return prefix === 'stm32' ? ['built', 'failed'].includes(phase) : ['built', 'failed', 'blocked'].includes(phase);
         }, { name: profile.api, prefix: profile.prefix }, { timeout: 190_000 });
         state = await page.evaluate((name) => window[name].state(), profile.api);
         assert(state.phase === 'built' && state.runnable, `${id}: build failed: ${state.message}`);
-        await page.click(`#${profile.prefix}-run`);
+        await page.click('#quick-run');
         if (profile.prefix === 'pico') {
           await page.waitForFunction(({ marker: text, led }) => document.querySelector('#pico-serial').textContent.includes(text)
             && document.querySelector('#pico-external-led').classList.contains('on') === led, { marker, led: expectedLed }, { timeout: 30_000 });
-          await page.click('#pico-pause');
+          await page.click('#quick-pause');
         } else {
           await page.waitForFunction((name) => ['complete', 'completed', 'failed'].includes(window[name].state().phase), profile.api, { timeout: 70_000 });
           state = await page.evaluate((name) => window[name].state(), profile.api);
@@ -88,7 +89,10 @@ const profiles = [
             `${id}: LED result mismatch`);
         }
       }
-      observed.push(id);
+      state = await page.evaluate((name) => window[name].state(), profile.api);
+      observed.push({ id, artifact: state.artifact?.artifactIdentity
+        ?? state.artifact?.sha256 ?? state.artifact?.uf2Sha256 ?? state.artifact?.flashSha256 ?? null,
+      source: state.artifact?.sourceSha256 ?? null });
     }
   }
 
