@@ -1587,11 +1587,17 @@ function renderBoundedComponentCatalog(options) {
     renderBoundedComponentCatalog(options);
   };
   search.oninput = () => rerender({ reset: true });
-  for (const node of [controls.category, controls.interface, controls.status, controls.supplyVoltage,
+  controls.status.value = catalogPreferences.status;
+  for (const node of [controls.category, controls.interface, controls.supplyVoltage,
     controls.pinVoltage, controls.favorites]) node.onchange = () => rerender({ reset: true });
+  controls.status.onchange = () => {
+    catalogPreferences.status = controls.status.value;
+    saveCatalogPreferences(); rerender({ reset: true });
+  };
   controls.clear.onclick = () => {
     search.value = ''; controls.category.value = 'all'; controls.interface.value = 'all';
-    controls.status.value = 'all'; controls.supplyVoltage.value = 'all'; controls.pinVoltage.value = 'all';
+    controls.status.value = 'all'; catalogPreferences.status = 'all'; saveCatalogPreferences();
+    controls.supplyVoltage.value = 'all'; controls.pinVoltage.value = 'all';
     controls.favorites.checked = false; rerender({ reset: true }); search.focus();
   };
   controls.supportOpen.onclick = () => openComponentSupportDialogFor(profile, controls.supportOpen);

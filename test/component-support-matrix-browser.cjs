@@ -8,16 +8,41 @@ const { chromium } = require(path.join(moduleRoot, 'playwright'));
 const base = process.env.COMPONENT_MATRIX_URL || 'http://127.0.0.1:18781';
 const screenshot = process.env.COMPONENT_MATRIX_SCREENSHOT || null;
 function assert(value, message) { if (!value) throw new Error(message); }
+async function openCatalogue(page) {
+  const drawer = page.locator('#simple-parts-drawer');
+  if (await drawer.getAttribute('aria-hidden') === 'true') await page.locator('#toggle-catalog').click();
+  await drawer.waitFor({ state: 'visible' });
+  await page.waitForTimeout(220);
+  return drawer;
+}
+async function closeCatalogue(page) {
+  const drawer = page.locator('#simple-parts-drawer');
+  if (await drawer.getAttribute('aria-hidden') === 'false') await drawer.locator('#simple-parts-close').click();
+  await page.waitForFunction(() => document.querySelector('#simple-parts-drawer').getAttribute('aria-hidden') === 'true');
+}
+async function activePickerWithFilters(page) {
+  const drawer = await openCatalogue(page);
+  const picker = drawer.locator('[data-component-picker-contract="intent-mcu-avr-catalog-picker@1"]');
+  assert(await picker.count() === 1, 'active drawer must contain exactly one component picker');
+  const filters = picker.locator('.catalog-advanced-filters');
+  if (await filters.getAttribute('open') === null) await filters.locator('summary').click();
+  await picker.locator('[data-picker-role="status"]').waitFor({ state: 'visible' });
+  return picker;
+}
 async function fullCatalogueTypes(page) {
-  if (!(await page.locator('#component-catalog').isVisible())) await page.click('#toggle-catalog');
-  assert(await page.locator('#catalog-status').inputValue() === 'all', 'ordinary catalogue status must be All statuses');
-  assert((await page.locator('#catalog-count').textContent()).includes('103 parts'), 'ordinary catalogue must report 103 parts');
-  const first = await page.locator('#catalog-list .catalog-item').evaluateAll((rows) => rows.map((row) => row.dataset.type));
+  const drawer = await openCatalogue(page);
+  const picker = drawer.locator('[data-component-picker-contract="intent-mcu-avr-catalog-picker@1"]');
+  assert(await picker.count() === 1, 'active drawer must contain exactly one component picker');
+  assert(await picker.locator('[data-picker-role="status"]').inputValue() === 'all', 'ordinary catalogue status must be All statuses');
+  assert((await picker.locator('[data-picker-role="count"]').textContent()).includes('103 parts'), 'ordinary catalogue must report 103 parts');
+  const first = await picker.locator('[data-picker-role="list"] .catalog-item').evaluateAll((rows) => rows.map((row) => row.dataset.type));
   assert(first.length === 80, 'ordinary catalogue first page must contain 80 models');
-  await page.locator('#catalog-next').evaluate((node) => node.click());
-  const second = await page.locator('#catalog-list .catalog-item').evaluateAll((rows) => rows.map((row) => row.dataset.type));
+  await picker.locator('[data-picker-role="next"]').click();
+  await picker.locator('[data-picker-role="page"]').filter({ hasText: '81–103' }).waitFor({ state: 'visible' });
+  const second = await picker.locator('[data-picker-role="list"] .catalog-item').evaluateAll((rows) => rows.map((row) => row.dataset.type));
   assert(second.length === 23, 'ordinary catalogue second page must contain 23 models');
-  await page.locator('#catalog-prev').evaluate((node) => node.click());
+  await picker.locator('[data-picker-role="prev"]').click();
+  await picker.locator('[data-picker-role="page"]').filter({ hasText: '1–80' }).waitFor({ state: 'visible' });
   return [...first, ...second];
 }
 
@@ -35,11 +60,11 @@ let browser;
 
   await page.goto(base, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  await page.click('#toggle-catalog');
   const sharedTypes = await fullCatalogueTypes(page);
-  await page.locator('#simple-parts-close').evaluate((node) => node.click());
+  await closeCatalogue(page);
   await page.click('#workbench-view-advanced');
   assert(JSON.stringify(await fullCatalogueTypes(page)) === JSON.stringify(sharedTypes), 'Advanced AVR catalogue differs from Simple');
+  await closeCatalogue(page);
   for (const profile of [
     'board.rp2040-pico-v1', 'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1',
     'board.atmega328p-16mhz-v1',
@@ -47,22 +72,31 @@ let browser;
     await page.selectOption('#board-select', profile);
     await page.waitForFunction((value) => document.querySelector('#board-select').value === value, profile);
     assert(JSON.stringify(await fullCatalogueTypes(page)) === JSON.stringify(sharedTypes), `${profile}: full ordinary list mismatch`);
+    await closeCatalogue(page);
   }
-  await page.locator('#catalog-status').evaluate((node) => { node.value = 'simulated'; node.dispatchEvent(new Event('change', { bubbles: true })); });
+  await page.selectOption('#board-select', 'board.rp2040-pico-v1');
+  await page.waitForFunction(() => document.querySelector('#board-select').value === 'board.rp2040-pico-v1');
+  let picker = await activePickerWithFilters(page);
+  await picker.locator('[data-picker-role="status"]').selectOption('simulated');
+  await closeCatalogue(page);
+  await page.selectOption('#board-select', 'board.esp32-c3-devmodule-v1');
+  await page.waitForFunction(() => document.querySelector('#board-select').value === 'board.esp32-c3-devmodule-v1');
+  picker = await activePickerWithFilters(page);
+  assert(await picker.locator('[data-picker-role="status"]').inputValue() === 'simulated', 'explicit status filter did not carry to another profile');
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  assert(await page.locator('#catalog-status').inputValue() === 'simulated', 'explicit status filter did not persist');
-  await page.locator('#catalog-status').evaluate((node) => { node.value = 'all'; node.dispatchEvent(new Event('change', { bubbles: true })); });
-  await page.waitForFunction(() => document.querySelector('#catalog-count').textContent.includes('103 parts'));
+  picker = await activePickerWithFilters(page);
+  assert(await picker.locator('[data-picker-role="status"]').inputValue() === 'simulated', 'explicit status filter did not persist after reload');
+  await picker.locator('[data-picker-role="status"]').selectOption('all');
+  await picker.locator('[data-picker-role="count"]').filter({ hasText: '103 parts' }).waitFor({ state: 'visible' });
+  await closeCatalogue(page);
 
   await page.locator('.starter-card[data-example="temperature-lcd-threshold"] .starter-action').evaluate((node) => node.click());
   await page.waitForFunction(() => window.__M6_PROJECT__().schema === 'intent-mcu-project-contact-persistence@1');
   await page.waitForFunction(() => document.querySelector('#catalog-count').textContent.includes('103 parts'));
   await page.click('#workbench-view-advanced');
-  if (await page.locator('#simple-parts-drawer').getAttribute('aria-hidden') === 'true') {
-    await page.click('#toggle-catalog');
-  }
-  await page.selectOption('#catalog-status', 'all', { force: true });
+  picker = await activePickerWithFilters(page);
+  await picker.locator('[data-picker-role="status"]').selectOption('all');
   await page.waitForFunction(() => document.querySelector('#catalog-count').textContent.includes('103 parts'));
 
   const beforeMatrix = await page.evaluate(() => ({
