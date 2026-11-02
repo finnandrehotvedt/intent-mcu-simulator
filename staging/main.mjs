@@ -12780,8 +12780,7 @@ function createSegmentInteraction(net, family, anchors, branch, segmentIndex, ca
     if (delta === undefined && !['Enter', ' '].includes(event.key)) return;
     event.preventDefault(); event.stopPropagation();
     if (delta === undefined) {
-      const candidates = wireTargetsAtPoint(...hit.routeInteraction.midpoint);
-      selectSegmentTarget(cycledWireTarget(candidates, ...hit.routeInteraction.midpoint) ?? hit);
+      select();
       return;
     }
     select();

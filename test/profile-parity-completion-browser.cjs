@@ -38,11 +38,44 @@ async function selectProfile(page, profile) {
 }
 
 async function selectWire(page, profile, netId) {
-  const exact = page.locator(`${profile.wireLayer} ${profile.wireHit}[data-net="${netId}"]`).first();
+  const selector = `${profile.wireLayer} ${profile.wireHit}[data-net="${netId}"]`;
+  const exact = page.locator(selector).first();
   await exact.waitFor({ state: 'attached' });
   assert.equal(await exact.count(), 1, `${profile.id}: no focusable wire for ${netId}`);
   await exact.focus();
-  if (profile.id !== 'avr') await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  const keyboardSelected = await page.evaluate((item) => {
+    if (item.id === 'avr') return window.__M6_STATE__.selection.netId;
+    const selection = window[item.api].state().circuitEditor.selection;
+    return selection.kind === 'net' ? selection.id : null;
+  }, profile);
+  assert.equal(keyboardSelected, netId, `${profile.id}: focus + Enter selected another wire before Delete`);
+}
+
+async function pointerSelectWire(page, profile, netId) {
+  const selector = `${profile.wireLayer} ${profile.wireHit}[data-net="${netId}"]`;
+  const pointerPoint = await page.evaluate(({ selector, netId }) => {
+    for (const target of document.querySelectorAll(selector)) {
+      let x; let y;
+      if (target.routeInteraction) [x, y] = target.routeInteraction.midpoint;
+      else {
+        const local = target.getPointAtLength(target.getTotalLength() / 2);
+        const screen = local.matrixTransform(target.getScreenCTM());
+        ({ x, y } = screen);
+      }
+      const hit = document.elementFromPoint(x, y)?.closest?.('[data-net]');
+      if (hit?.dataset.net === netId) return { x, y };
+    }
+    return null;
+  }, { selector, netId });
+  assert(pointerPoint, `${profile.id}: no ordinary pointer target for ${netId}`);
+  await page.mouse.click(pointerPoint.x, pointerPoint.y);
+  const pointerSelected = await page.evaluate((item) => {
+    if (item.id === 'avr') return window.__M6_STATE__.selection.netId;
+    const selection = window[item.api].state().circuitEditor.selection;
+    return selection.kind === 'net' ? selection.id : null;
+  }, profile);
+  assert.equal(pointerSelected, netId, `${profile.id}: pointer click selected another wire`);
 }
 
 async function activateEndpoint(page, profile, endpoint, key = null) {
@@ -166,8 +199,6 @@ async function activateEndpoint(page, profile, endpoint, key = null) {
       assert(series && series.endpoints.length === 2, `${profile.id}: supported resistor/LED wire missing`);
       const wireCount = wired.nets.length;
       await selectWire(page, profile, series.id);
-      if (profile.id === 'avr') assert.equal(await page.evaluate(() => window.__M6_STATE__.selection.netId), series.id,
-        'avr: exact wire focus selected another net');
       await page.keyboard.press('Delete');
       const disconnected = structuredClone(await circuit(page, profile));
       assert.notDeepEqual(disconnected, wired, `${profile.id}: wire disconnect failed`);
@@ -191,6 +222,7 @@ async function activateEndpoint(page, profile, endpoint, key = null) {
       assert.deepEqual(await circuit(page, profile), connected, `${profile.id}: wire connect Redo failed`);
       await page.keyboard.press('Control+z'); await page.keyboard.press('Control+z');
       assert.deepEqual(await circuit(page, profile), wired, `${profile.id}: wire test did not restore original topology`);
+      await pointerSelectWire(page, profile, series.id);
 
       if (!(await page.locator('#workbench-more').evaluate((node) => node.open))) await page.click('#workbench-more > summary');
       await page.click('#firmware-open'); await page.waitForSelector('#workbench-firmware-dialog[open]');
