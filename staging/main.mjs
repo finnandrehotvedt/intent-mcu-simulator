@@ -3150,8 +3150,9 @@ document.addEventListener('keydown', (event) => {
     event.preventDefault(); event.stopImmediatePropagation(); elements.redo.click(); return;
   }
   if (['Delete', 'Backspace'].includes(event.key)) {
-    if (selection.kind !== 'component') return;
-    event.preventDefault(); event.stopImmediatePropagation(); elements.deletecomponent.click(); return;
+    if (!['component', 'wire-segment'].includes(selection.kind)) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    (selection.kind === 'component' ? elements.deletecomponent : elements.deletebranch).click(); return;
   }
   if (!selectedComponentId) return;
   if (event.key.toLowerCase() === 'r') {
@@ -13073,6 +13074,10 @@ function renderComponents() {
         const endpoint = parseEndpoint(intended.dataset.endpoint);
         handlePin(endpoint, event.altKey);
         intended.focus();
+      });
+      anchor.addEventListener('keydown', (event) => {
+        if (!['Enter', ' '].includes(event.key) || event.repeat) return;
+        event.preventDefault(); event.stopPropagation(); anchor.click();
       });
       card.append(anchor);
     }

@@ -9,13 +9,17 @@ const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/
 const base = process.env.PROFILE_PARITY_URL || 'http://127.0.0.1:18891';
 const profiles = [
   { id: 'avr', option: 'board.atmega328p-16mhz-v1', layer: '#component-layer', source: '#source',
-    canvas: '#circuit-canvas', save: '#project-save', open: '#project-open-input', properties: '#property-editor', api: '__M6_PROJECT__' },
+    canvas: '#circuit-canvas', wireLayer: '#circuit-wires', wireHit: '.wire-segment-hit', endpointAttribute: 'data-endpoint',
+    freePin: 'D12', save: '#project-save', open: '#project-open-input', properties: '#property-editor', api: '__M6_PROJECT__' },
   { id: 'pico', option: 'board.rp2040-pico-v1', layer: '#pico-editor-components', source: '#pico-source',
-    canvas: '#pico-diagram', save: '#pico-save', open: '#pico-open-input', properties: '#pico-part-properties', api: '__RP2040_PUBLIC_WORKBENCH__' },
+    canvas: '#pico-diagram', wireLayer: '#pico-editor-wires', wireHit: '.pico-editor-wire-hit', endpointAttribute: 'data-pico-endpoint',
+    freePin: 'GP1', save: '#pico-save', open: '#pico-open-input', properties: '#pico-part-properties', api: '__RP2040_PUBLIC_WORKBENCH__' },
   { id: 'c3', option: 'board.esp32-c3-devmodule-v1', layer: '#c3-editor-components', source: '#c3-source',
-    canvas: '#c3-diagram', save: '#c3-save', open: '#c3-open-input', properties: '#c3-part-properties', api: '__ESP32C3_PUBLIC_WORKBENCH__' },
+    canvas: '#c3-diagram', wireLayer: '#c3-editor-wires', wireHit: '.pico-editor-wire-hit', endpointAttribute: 'data-c3-endpoint',
+    freePin: 'GPIO3', save: '#c3-save', open: '#c3-open-input', properties: '#c3-part-properties', api: '__ESP32C3_PUBLIC_WORKBENCH__' },
   { id: 'stm32', option: 'board.stm32f429zi-nucleo144-v1', layer: '#stm32-editor-components', source: '#stm32-source',
-    canvas: '#stm32-diagram', save: '#stm32-save', open: '#stm32-open-input', properties: '#stm32-part-properties', api: '__STM32_PUBLIC_WORKBENCH__' },
+    canvas: '#stm32-diagram', wireLayer: '#stm32-editor-wires', wireHit: '.pico-editor-wire-hit', endpointAttribute: 'data-stm32-endpoint',
+    freePin: 'PB1', save: '#stm32-save', open: '#stm32-open-input', properties: '#stm32-part-properties', api: '__STM32_PUBLIC_WORKBENCH__' },
 ];
 
 async function circuit(page, profile) {
@@ -31,6 +35,21 @@ async function circuit(page, profile) {
 async function selectProfile(page, profile) {
   await page.selectOption('#board-select', profile.option);
   await page.waitForFunction((option) => document.querySelector('#board-select').value === option, profile.option);
+}
+
+async function selectWire(page, profile, netId) {
+  const exact = page.locator(`${profile.wireLayer} ${profile.wireHit}[data-net="${netId}"]`).first();
+  await exact.waitFor({ state: 'attached' });
+  assert.equal(await exact.count(), 1, `${profile.id}: no focusable wire for ${netId}`);
+  await exact.focus();
+  if (profile.id !== 'avr') await page.keyboard.press('Enter');
+}
+
+async function activateEndpoint(page, profile, endpoint, key = null) {
+  const selector = `${profile.id === 'avr' ? '.pin-anchor' : ''}[${profile.endpointAttribute}="${endpoint.component}.${endpoint.pin}"]`;
+  const anchor = page.locator(selector);
+  assert.equal(await anchor.count(), 1, `${profile.id}: endpoint ${selector} missing`);
+  if (key) { await anchor.focus(); await page.keyboard.press(key); } else await anchor.click();
 }
 
 (async () => {
@@ -125,6 +144,54 @@ async function selectProfile(page, profile) {
       assert.deepEqual((await circuit(page, profile)).layout.positions['resistor-1'], editedPosition,
         `${profile.id}: exact movement redo failed`);
 
+      const beforeDrag = structuredClone((await circuit(page, profile)).layout.positions['resistor-1']);
+      const dragBox = await resistor.boundingBox();
+      assert(dragBox, `${profile.id}: resistor had no pointer target`);
+      await page.mouse.move(dragBox.x + dragBox.width / 2, dragBox.y + dragBox.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(dragBox.x + dragBox.width / 2 + 46, dragBox.y + dragBox.height / 2 + 28, { steps: 8 });
+      await page.mouse.up();
+      const afterDrag = structuredClone((await circuit(page, profile)).layout.positions['resistor-1']);
+      assert.notDeepEqual(afterDrag, beforeDrag, `${profile.id}: pointer drag did not move component`);
+      await page.keyboard.press('Control+z');
+      assert.deepEqual((await circuit(page, profile)).layout.positions['resistor-1'], beforeDrag,
+        `${profile.id}: drag Undo was not exact`);
+      await page.keyboard.press('Control+Shift+z');
+      assert.deepEqual((await circuit(page, profile)).layout.positions['resistor-1'], afterDrag,
+        `${profile.id}: drag Redo was not exact`);
+
+      const wired = await circuit(page, profile);
+      const series = wired.nets.find((net) => net.endpoints.some((endpoint) => endpoint.component === 'resistor-1')
+        && net.endpoints.some((endpoint) => endpoint.component === 'led-1'));
+      assert(series && series.endpoints.length === 2, `${profile.id}: supported resistor/LED wire missing`);
+      const wireCount = wired.nets.length;
+      await selectWire(page, profile, series.id);
+      if (profile.id === 'avr') assert.equal(await page.evaluate(() => window.__M6_STATE__.selection.netId), series.id,
+        'avr: exact wire focus selected another net');
+      await page.keyboard.press('Delete');
+      const disconnected = structuredClone(await circuit(page, profile));
+      assert.notDeepEqual(disconnected, wired, `${profile.id}: wire disconnect failed`);
+      await page.keyboard.press('Control+z');
+      assert.deepEqual(await circuit(page, profile), wired, `${profile.id}: wire disconnect Undo failed`);
+      await page.keyboard.press('Control+Shift+z');
+      assert.deepEqual(await circuit(page, profile), disconnected, `${profile.id}: wire disconnect Redo failed`);
+      await page.keyboard.press('Control+z');
+      await selectWire(page, profile, series.id);
+      await page.keyboard.press('Delete');
+      const disconnectedForConnect = structuredClone(await circuit(page, profile));
+      await activateEndpoint(page, profile, series.endpoints[0], 'Space');
+      await activateEndpoint(page, profile, series.endpoints[1]);
+      const connected = structuredClone(await circuit(page, profile));
+      assert(connected.nets.some((net) => series.endpoints.every((endpoint) => net.endpoints.some((candidate) => (
+        candidate.component === endpoint.component && candidate.pin === endpoint.pin
+      )))), `${profile.id}: Space named-pin connect failed`);
+      await page.keyboard.press('Control+z');
+      assert.deepEqual(await circuit(page, profile), disconnectedForConnect, `${profile.id}: wire connect Undo failed`);
+      await page.keyboard.press('Control+Shift+z');
+      assert.deepEqual(await circuit(page, profile), connected, `${profile.id}: wire connect Redo failed`);
+      await page.keyboard.press('Control+z'); await page.keyboard.press('Control+z');
+      assert.deepEqual(await circuit(page, profile), wired, `${profile.id}: wire test did not restore original topology`);
+
       if (!(await page.locator('#workbench-more').evaluate((node) => node.open))) await page.click('#workbench-more > summary');
       await page.click('#firmware-open'); await page.waitForSelector('#workbench-firmware-dialog[open]');
       const sourceBeforeShortcutCheck = await page.locator(profile.source).inputValue();
@@ -152,7 +219,14 @@ async function selectProfile(page, profile) {
       assert.equal((await circuit(page, profile)).components.find((component) => component.id === 'resistor-1').properties.ohms,
         330, `${profile.id}: visible property Apply failed`);
       await page.keyboard.press('Escape');
+      if (await page.locator('#workbench-inspector-dialog').evaluate((dialog) => dialog.open)) {
+        await page.locator('#workbench-inspector-dialog .workbench-popup-close').click();
+      }
 
+      const savedSnapshot = {
+        graph: structuredClone(await circuit(page, profile)),
+        source: await page.locator(profile.source).inputValue(),
+      };
       await page.click('#project-files-open');
       assert.equal(await page.locator(profile.save).isEnabled(), true, `${profile.id}: Save disabled`);
       const downloadPromise = page.waitForEvent('download', { timeout: 8_000 }).catch(() => null);
@@ -163,13 +237,22 @@ async function selectProfile(page, profile) {
       assert(savedPath && fs.statSync(savedPath).size > 0, `${profile.id}: Save produced no file`);
       await page.keyboard.press('Escape');
       await resistor.click(); await page.keyboard.press('ArrowDown');
+      const divergentGraph = structuredClone(await circuit(page, profile));
+      assert.notDeepEqual(divergentGraph, savedSnapshot.graph, `${profile.id}: pre-Open state was not observably different`);
       await page.click('#project-files-open'); await page.setInputFiles(profile.open, savedPath);
       if (await page.locator('#unsaved-change-dialog').isVisible()) await page.click('#unsaved-discard');
-      await page.waitForFunction(({ item }) => {
+      await page.waitForFunction(({ item, expectedGraph, expectedSource }) => {
         const project = item.id === 'avr' ? window.__M6_PROJECT__() : window[item.api].state();
-        const graph = item.id === 'avr' ? project.circuit : item.id === 'pico' ? project.circuit : project.project.circuit;
-        return graph.components.find((component) => component.id === 'resistor-1')?.properties?.ohms === 330;
-      }, { item: profile });
+        const graph = item.id === 'avr'
+          ? { ...project.circuit, layout: project.layout }
+          : item.id === 'pico' ? project.circuit : project.project.circuit;
+        const source = item.id === 'avr' ? project.source.files[0].content
+          : item.id === 'pico' ? project.source : project.project.source;
+        return JSON.stringify(graph) === JSON.stringify(expectedGraph) && source === expectedSource;
+      }, { item: profile, expectedGraph: savedSnapshot.graph, expectedSource: savedSnapshot.source });
+      assert.deepEqual(await circuit(page, profile), savedSnapshot.graph, `${profile.id}: Open did not restore exact saved graph`);
+      assert.equal(await page.locator(profile.source).inputValue(), savedSnapshot.source,
+        `${profile.id}: Open did not restore exact saved source`);
       assert.equal((await circuit(page, profile)).components.some((component) => component.id === added.id), true,
         `${profile.id}: Open lost the UI-added component`);
       await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForFunction(() => window.__M11_READY__ === true);
@@ -178,8 +261,12 @@ async function selectProfile(page, profile) {
         330, `${profile.id}: reload lost saved/opened property`);
       assert.equal((await circuit(page, profile)).components.some((component) => component.id === added.id), true,
         `${profile.id}: reload lost the UI-added component`);
+      assert.deepEqual(await circuit(page, profile), savedSnapshot.graph, `${profile.id}: reload lost exact saved graph`);
+      assert.equal(await page.locator(profile.source).inputValue(), savedSnapshot.source,
+        `${profile.id}: reload lost exact saved source`);
       report.push({ profile: profile.option, addSelect: 'pass', inspector: 'pass', propertyEdit: 'pass',
-        moveRotateDeleteUndoRedo: 'pass', keyboardAndTextFocus: 'pass', saveOpenReload: 'pass', unavailableFailClosed: 'pass' });
+        moveRotateDeleteUndoRedo: 'pass', pointerDrag: 'pass', namedPinSpaceWireUndoRedo: 'pass',
+        keyboardAndTextFocus: 'pass', exactSaveOpenReload: 'pass', unavailableFailClosed: 'pass' });
     }
     await selectProfile(page, profiles[0]);
     await page.click('#beginner-dht11');
