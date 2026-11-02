@@ -90,23 +90,23 @@ let browser;
   await picker.locator('[data-picker-role="status"]').selectOption('all');
   await picker.locator('[data-picker-role="count"]').filter({ hasText: '103 parts' }).waitFor({ state: 'visible' });
   await closeCatalogue(page);
+  await page.selectOption('#board-select', 'board.atmega328p-16mhz-v1');
+  await page.waitForFunction(() => document.querySelector('#board-select').value === 'board.atmega328p-16mhz-v1');
 
   await page.locator('#beginner-examples').click();
   await page.locator('#example-picker-dialog').waitFor({ state: 'visible' });
   await page.locator('#example-picker-dialog .starter-card[data-example="temperature-lcd-threshold"] .starter-action').click();
   await page.waitForFunction(() => window.__M6_PROJECT__().schema === 'intent-mcu-project-contact-persistence@1');
-  await page.waitForFunction(() => document.querySelector('#catalog-count').textContent.includes('103 parts'));
   await page.click('#workbench-view-advanced');
   picker = await activePickerWithFilters(page);
   await picker.locator('[data-picker-role="status"]').selectOption('all');
-  await page.waitForFunction(() => document.querySelector('#catalog-count').textContent.includes('103 parts'));
+  await picker.locator('[data-picker-role="count"]').filter({ hasText: '103 parts' }).waitFor({ state: 'visible' });
 
   const beforeMatrix = await page.evaluate(() => ({
     project: JSON.stringify(window.__M6_PROJECT__()), history: JSON.stringify(window.__M6_HISTORY__?.() ?? null),
     runtime: JSON.stringify(window.__M6_STATE__?.runtime ?? null),
   }));
-  await page.locator('#catalog-support-open').evaluate((node) => node.focus());
-  await page.keyboard.press('Enter');
+  await picker.locator('[data-picker-role="support-open"]').click();
   await page.locator('#component-support-dialog').waitFor({ state: 'visible' });
   assert(await page.locator('#component-support-body tr').count() === 103, 'AVR matrix must render all 103 models');
   assert((await page.locator('#component-support-summary').textContent()).includes('81 of 103 models available'), 'AVR matrix count mismatch');
@@ -123,7 +123,7 @@ let browser;
   if (screenshot) await page.screenshot({ path: screenshot, fullPage: false });
   await page.keyboard.press('Escape');
   await page.locator('#component-support-dialog').waitFor({ state: 'hidden' });
-  assert(await page.locator('#catalog-support-open').evaluate((node) => document.activeElement === node), 'matrix close must return keyboard focus');
+  assert(await picker.locator('[data-picker-role="support-open"]').evaluate((node) => document.activeElement === node), 'matrix close must return keyboard focus');
   const afterMatrix = await page.evaluate(() => ({
     project: JSON.stringify(window.__M6_PROJECT__()), history: JSON.stringify(window.__M6_HISTORY__?.() ?? null),
     runtime: JSON.stringify(window.__M6_STATE__?.runtime ?? null),
