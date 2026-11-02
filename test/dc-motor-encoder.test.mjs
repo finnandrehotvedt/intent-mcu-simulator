@@ -5,6 +5,7 @@ import { L298N_DRIVER_TYPE, createDcMotorL298nComponent } from '../expansion-dra
 import { DC_MOTOR_ENCODER_DEFINITION, DC_MOTOR_ENCODER_MODEL_ENTRY, DcMotorEncoderEditor, createDcMotorEncoderComponent,
   projectDcMotorEncoders } from '../expansion-drafts/dc-motor-encoder-v1.mjs';
 import { createDcMotorEncoderArtwork } from '../expansion-drafts/dc-motor-encoder-artwork-v1.mjs';
+import { candidateContactControl } from '../src/candidate-existing-ui-adapter.mjs';
 class N { constructor(name) { this.name = name; this.attributes = {}; this.children = []; this.textContent = ''; }
   setAttribute(key, value) { this.attributes[key] = String(value); } append(...children) { this.children.push(...children); }
   all(predicate, out = []) { if (predicate(this)) out.push(this); for (const child of this.children) child.all?.(predicate, out); return out; } }
@@ -38,6 +39,15 @@ test('CMP-069 editor persists independent detents with atomic rejection and exac
   assert.equal(opened.editor.saveText(), editor.saveText()); assert.equal(opened.editor.undo().code, 'UNDO_EMPTY');
   assert.deepEqual(DC_MOTOR_ENCODER_MODEL_ENTRY.forbiddenInferences,
     ['pwm-to-encoder','direction-to-encoder','artwork-to-encoder','elapsed-time-to-rpm']);
+});
+test('CMP-069 workbench adapter accepts exactly one bounded independent detent', () => {
+  const component = createDcMotorEncoderComponent('assembly', 'Motor encoder', 4);
+  const session = { kind: 'candidate-project-v3', visualProject: { circuit: { components: [component] } } };
+  assert.deepEqual(candidateContactControl(session, 'assembly', 'detent', 5), {
+    ok: true, command: { type: 'component.control.set', componentId: 'assembly', key: 'detent', value: 5 }, direction: 'cw',
+  });
+  assert.equal(candidateContactControl(session, 'assembly', 'detent', 6).code, 'CANDIDATE_UI_CONTROL');
+  assert.equal(candidateContactControl(session, 'assembly', 'detent', 1000).code, 'CANDIDATE_UI_CONTROL');
 });
 test('CMP-069 canonical example preserves explicit independent encoder authority', async () => {
   const value = JSON.parse(await readFile(new URL('../examples/indicators-actuators/avr-dc-motor-encoder.intent-mcu.json', import.meta.url)));

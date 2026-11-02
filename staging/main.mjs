@@ -576,6 +576,7 @@ import {
   ROTARY_ENCODER_TYPE,
   nextRotaryEncoderDetent,
 } from '../expansion-drafts/rotary-encoder-quadrature-v1.mjs';
+import { DC_MOTOR_ENCODER_TYPE } from '../expansion-drafts/dc-motor-encoder-v1.mjs';
 
 const uiComponentCatalog = Object.freeze({
   ...COMPONENT_CATALOG, ...CANDIDATE_UI_COMPONENTS,
@@ -13533,6 +13534,7 @@ function candidateComponentPrefix(type) {
       [DHT22_TYPE]: 'dht22',
       [DS18B20_TYPE]: 'ds18b20',
       [BME280_TYPE]: 'bme280',
+      [DC_MOTOR_ENCODER_TYPE]: 'dc-motor-encoder',
       [ROTARY_ENCODER_TYPE]: 'rotary-encoder',
       [NONPOLAR_CAPACITOR_TYPE]: 'capacitor',
       [ELECTROLYTIC_CAPACITOR_TYPE]: 'electrolytic-capacitor',
@@ -13591,6 +13593,7 @@ function addComponent(type, point = null) {
       [TILT_SWITCH_TYPE]: { x: 0.72, y: 0.62 },
       [BALL_VIBRATION_SWITCH_TYPE]: { x: 0.84, y: 0.62 },
       [ROTARY_SELECTOR_TYPE]: { x: 0.82, y: 0.66 },
+      [DC_MOTOR_ENCODER_TYPE]: { x: 0.8, y: 0.58 },
       'sensor.light-analogue-v1': { x: 0.62, y: 0.76 },
       'sensor.temperature-analogue-v1': { x: 0.78, y: 0.76 },
       [DIGITAL_LIGHT_THRESHOLD_TYPE]: { x: 0.78, y: 0.72 },
@@ -14022,6 +14025,25 @@ function renderRuntimeControls() {
       cw.addEventListener('click', () => rotateCandidateEncoder(component.id, 'cw', 'inspector button'));
       const note = document.createElement('small');
       note.textContent = '11→01→00→10→11 CW · reverse CCW · ideal 1 ms phases · no bounce';
+      row.append(label, ccw, cw, note); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === DC_MOTOR_ENCODER_TYPE) {
+      const row = document.createElement('div'); row.className = 'encoder-runtime-control';
+      const label = document.createElement('span');
+      label.textContent = `${component.label} · independent encoder detent ${component.controls.detent}`;
+      const step = (direction) => {
+        const delta = direction === 'cw' ? 1 : -1;
+        const prepared = selectedCandidateContactControl(component.id, 'detent', component.controls.detent + delta);
+        if (!prepared.ok) { showActionableError(elements.projectmessage, prepared.code, 'Motor encoder control rejected.'); return; }
+        const result = applyEditor(prepared.command, `${component.label} encoder ${direction.toUpperCase()} one detent`);
+        if (result.ok) elements.projectmessage.textContent = `${component.label} encoder moved one independent ${direction.toUpperCase()} detent; no motor-motion inference.`;
+      };
+      const ccw = document.createElement('button'); ccw.type = 'button'; ccw.textContent = 'CCW −1';
+      ccw.dataset.control = `${component.id}.detent-ccw`; ccw.addEventListener('click', () => step('ccw'));
+      const cw = document.createElement('button'); cw.type = 'button'; cw.textContent = 'CW +1';
+      cw.dataset.control = `${component.id}.detent-cw`; cw.addEventListener('click', () => step('cw'));
+      const note = document.createElement('small');
+      note.textContent = 'Independent authored quadrature feedback · never inferred from PWM, direction, artwork or elapsed time';
       row.append(label, ccw, cw, note); return [row];
     }
     if (editor.kind === 'candidate-project-v3'

@@ -736,6 +736,12 @@ export function candidateContactControl(session, componentId, key, value) {
       && Number.isInteger(value) && value >= 1 && value <= 4) {
     return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
   }
+  if (component.type === DC_MOTOR_ENCODER_TYPE && key === 'detent'
+      && Number.isInteger(value) && value >= -999 && value <= 999
+      && Math.abs(value - component.controls.detent) === 1) {
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      direction: value > component.controls.detent ? 'cw' : 'ccw' };
+  }
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE && key === 'lightLevel'
       && Number.isFinite(value) && value >= 0 && value <= 1) {
     return {

@@ -1377,6 +1377,16 @@ export class CandidateEditorSession {
             runtimeDirty = true;
             break;
           }
+          if (component.type === DC_MOTOR_ENCODER_TYPE) {
+            if (command.key !== 'detent' || !Number.isInteger(command.value)
+                || command.value < -999 || command.value > 999
+                || Math.abs(command.value - component.controls.detent) !== 1) {
+              return failure('PROJECT_CONTACT_DC_MOTOR_ENCODER_STATE', this.revision);
+            }
+            component.controls.detent = command.value;
+            runtimeDirty = true;
+            break;
+          }
           return failure('CANDIDATE_EDITOR_CONTROL_UNSUPPORTED', this.revision);
         }
         default:
