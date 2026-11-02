@@ -1,0 +1,203 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Finn Andre Hotvedt and IntentForce
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { chromium } = require(path.join(process.env.PLAYWRIGHT_NODE_MODULES || '/runner/node_modules', 'playwright'));
+
+const base = process.env.PROFILE_PARITY_URL || 'http://127.0.0.1:18891';
+const profiles = [
+  { id: 'avr', option: 'board.atmega328p-16mhz-v1', layer: '#component-layer', source: '#source',
+    canvas: '#circuit-canvas', save: '#project-save', open: '#project-open-input', properties: '#property-editor', api: '__M6_PROJECT__' },
+  { id: 'pico', option: 'board.rp2040-pico-v1', layer: '#pico-editor-components', source: '#pico-source',
+    canvas: '#pico-diagram', save: '#pico-save', open: '#pico-open-input', properties: '#pico-part-properties', api: '__RP2040_PUBLIC_WORKBENCH__' },
+  { id: 'c3', option: 'board.esp32-c3-devmodule-v1', layer: '#c3-editor-components', source: '#c3-source',
+    canvas: '#c3-diagram', save: '#c3-save', open: '#c3-open-input', properties: '#c3-part-properties', api: '__ESP32C3_PUBLIC_WORKBENCH__' },
+  { id: 'stm32', option: 'board.stm32f429zi-nucleo144-v1', layer: '#stm32-editor-components', source: '#stm32-source',
+    canvas: '#stm32-diagram', save: '#stm32-save', open: '#stm32-open-input', properties: '#stm32-part-properties', api: '__STM32_PUBLIC_WORKBENCH__' },
+];
+
+async function circuit(page, profile) {
+  return page.evaluate((item) => {
+    if (item.id === 'avr') {
+      const project = window.__M6_PROJECT__(); return { ...project.circuit, layout: project.layout };
+    }
+    const state = window[item.api].state();
+    return item.id === 'pico' ? state.circuit : state.project.circuit;
+  }, profile);
+}
+
+async function selectProfile(page, profile) {
+  await page.selectOption('#board-select', profile.option);
+  await page.waitForFunction((option) => document.querySelector('#board-select').value === option, profile.option);
+}
+
+(async () => {
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true, serviceWorkers: 'block' });
+  await context.addInitScript(() => {
+    Object.defineProperty(window, 'showSaveFilePicker', { configurable: true, value: undefined });
+    Object.defineProperty(window, 'showOpenFilePicker', { configurable: true, value: undefined });
+  });
+  const page = await context.newPage();
+  const errors = []; const producerRequests = [];
+  page.on('pageerror', (error) => errors.push(error.stack || String(error)));
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('request', (request) => {
+    if (request.method() !== 'GET' && /\/api\/(?:build|run)/u.test(new URL(request.url()).pathname)) producerRequests.push(request.url());
+  });
+  await page.route('**/api/page-views', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"status":"disabled"}' }));
+  try {
+    assert.equal((await page.goto(base, { waitUntil: 'domcontentloaded' }))?.status(), 200);
+    await page.waitForFunction(() => window.__M11_READY__ === true);
+    await page.evaluate(() => localStorage.clear());
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.__M11_READY__ === true);
+    const report = [];
+
+    for (const profile of profiles) {
+      await selectProfile(page, profile);
+      const beforeAdd = await circuit(page, profile);
+      await page.click('#toggle-catalog');
+      const picker = page.locator('#simple-parts-mount > [data-component-picker-contract]');
+      await picker.locator('.catalog-advanced-filters').evaluate((node) => { node.open = true; });
+      await picker.locator('[data-picker-role="status"]').selectOption('all');
+      await picker.locator('[data-picker-role="search"]').fill('RES-AXIAL-025W');
+      const supportedRow = picker.locator('[data-picker-role="list"] .catalog-item[data-type="resistor.fixed-v1"]');
+      assert.equal(await supportedRow.getAttribute('role'), 'button', `${profile.id}: supported resistor was not addable`);
+      await supportedRow.click();
+      const afterAdd = await circuit(page, profile);
+      const added = afterAdd.components.find((component) => !beforeAdd.components.some((old) => old.id === component.id));
+      assert.equal(added?.type, 'resistor.fixed-v1', `${profile.id}: visible Add did not add a resistor`);
+
+      await picker.locator('[data-picker-role="search"]').fill('DHT11');
+      const unavailable = picker.locator('[data-picker-role="list"] .catalog-item[data-type="sensor.dht11-temperature-humidity-v1"]');
+      assert.equal(await unavailable.getAttribute('role'), 'listitem', `${profile.id}: unavailable DHT11 was actionable`);
+      assert.equal(await unavailable.getAttribute('data-authoring-available'), 'false', `${profile.id}: unavailable DHT11 claimed authoring`);
+      assert((await unavailable.locator('.catalog-profile-limitation').textContent()).trim().length > 20,
+        `${profile.id}: unavailable DHT11 had no visible reason`);
+      await unavailable.click({ force: true });
+      assert.equal((await circuit(page, profile)).components.length, afterAdd.components.length,
+        `${profile.id}: unavailable row mutated the circuit`);
+      await page.locator('#simple-parts-drawer').press('Escape');
+
+      const addedCard = page.locator(`${profile.layer} [data-component-id="${added.id}"]`);
+      assert.equal(await addedCard.count(), 1, `${profile.id}: added resistor was not visible on canvas`);
+      const deleteCard = addedCard;
+      await deleteCard.click();
+      if (profile.id === 'avr') assert.equal(await page.locator('#delete-component').isEnabled(), true,
+        `avr: selection missing (${await page.locator('#selection-name').textContent()})`);
+      if (profile.id === 'avr') await page.evaluate(() => {
+        window.__profileDeleteTrace = [];
+        document.addEventListener('keydown', (event) => window.__profileDeleteTrace.push({
+          phase: 'capture', key: event.key, target: event.target?.id || event.target?.className,
+          selected: window.__M6_STATE__.selection,
+        }), { capture: true, once: true });
+        window.addEventListener('keydown', (event) => window.__profileDeleteTrace.push({
+          phase: 'bubble', key: event.key, target: event.target?.id || event.target?.className,
+          selected: window.__M6_STATE__.selection,
+        }), { once: true });
+      });
+      await page.locator(profile.canvas).focus(); await page.keyboard.press('Delete');
+      assert.equal((await circuit(page, profile)).components.some((component) => component.id === added.id), false,
+        `${profile.id}: Delete failed for ${added.id}; selection=${await page.locator(profile.id === 'avr' ? '#selection-name' : `#${profile.id}-circuit-selection`).textContent()}; state=${JSON.stringify(profile.id === 'avr' ? await page.evaluate(() => ({ selection: window.__M6_STATE__.selection, trace: window.__profileDeleteTrace, active: document.activeElement?.id, wire: document.querySelector('#wire-state')?.textContent, phase: window.__M6_STATE__.buildState })) : null)}`);
+      await page.keyboard.press('Control+z');
+
+      assert.equal((await circuit(page, profile)).components.some((component) => component.id === added.id), true,
+        `${profile.id}: Ctrl+Z failed`);
+      await page.keyboard.press('Control+Shift+z');
+      assert.equal((await circuit(page, profile)).components.some((component) => component.id === added.id), false,
+        `${profile.id}: redo failed`);
+      await page.keyboard.press('Control+z');
+
+      const resistor = page.locator(`${profile.layer} [data-component-id="resistor-1"]`);
+      await resistor.click();
+      const initialPosition = (await circuit(page, profile)).layout.positions['resistor-1'];
+      await page.keyboard.press('ArrowRight'); await page.keyboard.press('r');
+      const editedPosition = (await circuit(page, profile)).layout.positions['resistor-1'];
+      assert(editedPosition.x > initialPosition.x && editedPosition.rotation === (initialPosition.rotation + 90) % 360,
+        `${profile.id}: arrows/R did not move and rotate`);
+      await page.keyboard.press('Control+z'); await page.keyboard.press('Control+z');
+      assert.deepEqual((await circuit(page, profile)).layout.positions['resistor-1'], initialPosition,
+        `${profile.id}: exact movement undo failed`);
+      await page.keyboard.press('Control+Shift+z'); await page.keyboard.press('Control+Shift+z');
+      assert.deepEqual((await circuit(page, profile)).layout.positions['resistor-1'], editedPosition,
+        `${profile.id}: exact movement redo failed`);
+
+      if (!(await page.locator('#workbench-more').evaluate((node) => node.open))) await page.click('#workbench-more > summary');
+      await page.click('#firmware-open'); await page.waitForSelector('#workbench-firmware-dialog[open]');
+      const sourceBeforeShortcutCheck = await page.locator(profile.source).inputValue();
+      await page.locator(profile.source).focus();
+      const textFocusPosition = structuredClone((await circuit(page, profile)).layout.positions['resistor-1']);
+      await page.keyboard.press('ArrowLeft'); await page.keyboard.press('r'); await page.keyboard.press('Delete');
+      assert.deepEqual((await circuit(page, profile)).layout.positions['resistor-1'], textFocusPosition,
+        `${profile.id}: text input stole authoring shortcuts`);
+      await page.locator(profile.source).fill(sourceBeforeShortcutCheck);
+      await page.keyboard.press('Escape');
+
+      await resistor.click(); await page.click('#toggle-inspector');
+      await page.waitForSelector('#workbench-inspector-dialog[open]');
+      const inspector = page.locator('#workbench-inspector-dialog');
+      assert.equal(await inspector.locator('h2').first().textContent(), 'Inspector');
+      const input = profile.id === 'avr'
+        ? page.locator(`${profile.properties} [data-property="ohms"]`)
+        : page.locator(`${profile.properties} [data-bounded-property="ohms"]`);
+      const apply = profile.id === 'avr'
+        ? page.locator(`${profile.properties} [data-model-property-apply="resistor-1"]`)
+        : page.locator(`${profile.properties} [data-bounded-model-apply="resistor-1"]`);
+      assert.equal(await input.isVisible(), true, `${profile.id}: resistance field not visible`);
+      assert.equal(await inspector.locator('[role="status"]').count() > 0, true, `${profile.id}: Inspector status missing`);
+      await input.fill('330'); await apply.click();
+      assert.equal((await circuit(page, profile)).components.find((component) => component.id === 'resistor-1').properties.ohms,
+        330, `${profile.id}: visible property Apply failed`);
+      await page.keyboard.press('Escape');
+
+      await page.click('#project-files-open');
+      assert.equal(await page.locator(profile.save).isEnabled(), true, `${profile.id}: Save disabled`);
+      const downloadPromise = page.waitForEvent('download', { timeout: 8_000 }).catch(() => null);
+      await page.click(profile.save);
+      const download = await downloadPromise;
+      assert(download, `${profile.id}: Save produced no download; status=${await page.locator(profile.id === 'avr' ? '#project-message' : `#${profile.id}-message`).textContent()}`);
+      const savedPath = await download.path();
+      assert(savedPath && fs.statSync(savedPath).size > 0, `${profile.id}: Save produced no file`);
+      await page.keyboard.press('Escape');
+      await resistor.click(); await page.keyboard.press('ArrowDown');
+      await page.click('#project-files-open'); await page.setInputFiles(profile.open, savedPath);
+      if (await page.locator('#unsaved-change-dialog').isVisible()) await page.click('#unsaved-discard');
+      await page.waitForFunction(({ item }) => {
+        const project = item.id === 'avr' ? window.__M6_PROJECT__() : window[item.api].state();
+        const graph = item.id === 'avr' ? project.circuit : item.id === 'pico' ? project.circuit : project.project.circuit;
+        return graph.components.find((component) => component.id === 'resistor-1')?.properties?.ohms === 330;
+      }, { item: profile });
+      assert.equal((await circuit(page, profile)).components.some((component) => component.id === added.id), true,
+        `${profile.id}: Open lost the UI-added component`);
+      await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForFunction(() => window.__M11_READY__ === true);
+      assert.equal(await page.inputValue('#board-select'), profile.option, `${profile.id}: reload lost active profile`);
+      assert.equal((await circuit(page, profile)).components.find((component) => component.id === 'resistor-1').properties.ohms,
+        330, `${profile.id}: reload lost saved/opened property`);
+      assert.equal((await circuit(page, profile)).components.some((component) => component.id === added.id), true,
+        `${profile.id}: reload lost the UI-added component`);
+      report.push({ profile: profile.option, addSelect: 'pass', inspector: 'pass', propertyEdit: 'pass',
+        moveRotateDeleteUndoRedo: 'pass', keyboardAndTextFocus: 'pass', saveOpenReload: 'pass', unavailableFailClosed: 'pass' });
+    }
+    await selectProfile(page, profiles[0]);
+    await page.click('#beginner-dht11');
+    if (await page.locator('#unsaved-change-dialog').isVisible()) await page.click('#unsaved-discard');
+    await page.waitForSelector('[data-component-id="dht11-1"]');
+    assert.match(await page.locator('#beginner-status').textContent(), /DHT11 loaded/u);
+    await page.click('#toggle-catalog');
+    const dhtPicker = page.locator('#simple-parts-mount > [data-component-picker-contract]');
+    await dhtPicker.locator('[data-picker-role="search"]').fill('DHT11');
+    const dhtRow = dhtPicker.locator('.catalog-item[data-type="sensor.dht11-temperature-humidity-v1"]');
+    assert.equal(await dhtRow.getAttribute('data-authoring-available'), 'true',
+      'AVR DHT11 example did not expose its supported candidate-project row');
+    assert.equal(await dhtRow.getAttribute('role'), 'button');
+    await page.locator('#simple-parts-drawer').press('Escape');
+    assert.deepEqual(producerRequests, [], 'UI parity test unexpectedly called Build/Run');
+    assert.deepEqual(errors, []);
+    process.stdout.write(`${JSON.stringify({ result: 'pass', profiles: report, avrDht11Example: 'pass', producerRequests: 0 })}\n`);
+  } finally {
+    await browser.close();
+  }
+})().catch((error) => { process.stderr.write(`${error.stack || error}\n`); process.exit(1); });

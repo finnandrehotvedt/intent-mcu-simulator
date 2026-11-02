@@ -3135,6 +3135,37 @@ new ResizeObserver(() => requestAnimationFrame(() => {
   if (nextScale !== picoEditorResponsiveScale) renderPicoCircuitEditor(picoPublicWorkbench.snapshot());
   else requestAnimationFrame(drawPicoEditorWires);
 })).observe(elements.picodiagram);
+// Keep AVR component authoring on the same explicit profile keyboard contract
+// as Pico, C3 and STM32. Handling these keys before the broader runtime and
+// configurable-shortcut layer prevents focus changes in the shared shell from
+// silently dropping a selected-component command.
+document.addEventListener('keydown', (event) => {
+  if (selectedCompilerProfile !== AVR_PROFILE || isTextEditingTarget(event.target)
+      || runtimeInteractionLocked || canvasInteractionMode === 'interact') return;
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+    event.preventDefault(); event.stopImmediatePropagation();
+    (event.shiftKey ? elements.redo : elements.undo).click(); return;
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+    event.preventDefault(); event.stopImmediatePropagation(); elements.redo.click(); return;
+  }
+  if (['Delete', 'Backspace'].includes(event.key)) {
+    if (selection.kind !== 'component') return;
+    event.preventDefault(); event.stopImmediatePropagation(); elements.deletecomponent.click(); return;
+  }
+  if (!selectedComponentId) return;
+  if (event.key.toLowerCase() === 'r') {
+    event.preventDefault(); event.stopImmediatePropagation(); elements.rotatecomponent.click(); return;
+  }
+  const delta = { ArrowLeft: [-0.01, 0], ArrowRight: [0.01, 0], ArrowUp: [0, -0.01], ArrowDown: [0, 0.01] }[event.key];
+  if (!delta) return;
+  event.preventDefault(); event.stopImmediatePropagation();
+  const position = currentProject().layout.positions[selectedComponentId];
+  applyEditor({ type: 'component.move', componentId: selectedComponentId,
+    x: Math.max(0.07, Math.min(0.93, position.x + delta[0])),
+    y: Math.max(0.08, Math.min(0.92, position.y + delta[1])) }, `Moved ${selectedComponentId}`);
+});
+
 document.addEventListener('keydown', (event) => {
   if (selectedCompilerProfile !== RP2040_PROFILE || elements.picopublicworkbench.hidden || isTextEditingTarget(event.target)) return;
   const snapshot = picoPublicWorkbench.snapshot().circuitEditor;
