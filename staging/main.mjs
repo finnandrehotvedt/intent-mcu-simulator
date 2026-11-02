@@ -1062,6 +1062,7 @@ let canvasInteractionMode = 'select';
 let runtimeInteractionLocked = false;
 let activeKeyboardSwitch = null;
 let activeCanvasButton = null;
+let activeRuntimeButton = null;
 let keyboardShortcuts = defaultKeyboardShortcuts();
 let keyboardShortcutDraft = defaultKeyboardShortcuts();
 let activeShortcutSequence = null;
@@ -12239,10 +12240,23 @@ function releaseCanvasButton(reason = 'canvas button') {
   return true;
 }
 
+function releaseRuntimeButton(reason = 'runtime button') {
+  if (!activeRuntimeButton) return false;
+  const active = activeRuntimeButton; activeRuntimeButton = null;
+  try {
+    if (active.pointerId !== null && active.target.hasPointerCapture?.(active.pointerId)) {
+      active.target.releasePointerCapture(active.pointerId);
+    }
+  } catch { /* capture may already be released */ }
+  setMomentaryControl(active.componentId, false, reason);
+  return true;
+}
+
 function stopRuntime(message = 'No current artifact loaded', {
   updateLifecycle = true, stale = false, preserveX47Terminal = false,
 } = {}) {
   releaseActiveKeyboardSwitch('runtime stop');
+  releaseRuntimeButton('runtime stop');
   runtimeInteractionLocked = false;
   retireX48RoomLoop('X48_RUNTIME_RETIRED', { command: 'x48-cancel', restoreControls: false });
   x48RuntimeAuthority = null;
@@ -14189,10 +14203,31 @@ function renderRuntimeControls() {
       const label = document.createElement('span'); label.textContent = component.label;
       const button = document.createElement('button'); button.type = 'button'; button.dataset.control = `${component.id}.pressed`;
       button.setAttribute('aria-pressed', String(component.controls.pressed)); button.textContent = component.controls.pressed ? 'Pressed' : 'Released';
-      button.addEventListener('click', () => {
-        const pressed = button.getAttribute('aria-pressed') !== 'true';
-        setMomentaryControl(component.id, pressed, 'runtime control');
+      button.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        activeRuntimeButton = { componentId: component.id, pointerId: event.pointerId, target: button };
+        button.setPointerCapture(event.pointerId);
+        setMomentaryControl(component.id, true, 'runtime pointer');
       });
+      button.addEventListener('pointerup', (event) => {
+        if (activeRuntimeButton?.pointerId !== event.pointerId) return;
+        event.preventDefault(); releaseRuntimeButton('runtime pointer');
+      });
+      button.addEventListener('pointercancel', () => releaseRuntimeButton('runtime pointer cancellation'));
+      button.addEventListener('lostpointercapture', () => releaseRuntimeButton('runtime lost pointer capture'));
+      button.addEventListener('keydown', (event) => {
+        if (![' ', 'Enter'].includes(event.key) || event.repeat) return;
+        event.preventDefault();
+        activeRuntimeButton = { componentId: component.id, pointerId: null, target: button };
+        setMomentaryControl(component.id, true, 'runtime keyboard');
+      });
+      button.addEventListener('keyup', (event) => {
+        if (![' ', 'Enter'].includes(event.key)) return;
+        event.preventDefault(); releaseRuntimeButton('runtime keyboard');
+      });
+      button.addEventListener('click', (event) => event.preventDefault());
+      button.addEventListener('blur', () => releaseRuntimeButton('runtime control blur'));
       row.append(label, button); return [row];
     }
     if (editor.kind === 'candidate-project-v3' && component.type === 'sensor.light-analogue-v1') {
@@ -17927,7 +17962,7 @@ function cancelPendingWiring() {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape'
       && (cancelShortcutSequence('cancelled by Esc')
-        || releaseActiveKeyboardSwitch('Escape') || cancelComponentDrag() || cancelRouteDrag()
+        || releaseActiveKeyboardSwitch('Escape') || releaseRuntimeButton('Escape') || cancelComponentDrag() || cancelRouteDrag()
         || releaseCanvasButton('Escape') || cancelCanvasPan() || cancelPendingWiring())) {
     event.preventDefault(); return;
   }
@@ -17995,6 +18030,7 @@ document.addEventListener('keyup', (event) => {
 window.addEventListener('blur', () => {
   if (activeKeyboardSwitch) releaseActiveKeyboardSwitch('window blur release');
   if (activeCanvasButton) releaseCanvasButton('window blur release');
+  if (activeRuntimeButton) releaseRuntimeButton('window blur release');
 });
 window.addEventListener('resize', () => requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires)));
 
