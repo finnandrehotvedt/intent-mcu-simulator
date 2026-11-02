@@ -137,6 +137,21 @@ export function avrInstrumentPresentationEvidence(runtime, artifactIdentity) {
   }
 }
 
+export function avrInstrumentArtifactIdentity(runtime, lifecycle, projectArtifactIdentity = null) {
+  if (!runtime) return projectArtifactIdentity;
+  const binding = lifecycle?.runtimeBinding;
+  const artifact = lifecycle?.artifact;
+  const identity = runtime?.runtimeIdentity;
+  if (runtime && binding && artifact && identity
+      && binding.artifactIdentity === artifact.artifactIdentity
+      && identity.artifactIdentity === binding.artifactIdentity
+      && identity.projectGeneration === binding.projectGeneration
+      && identity.runtimeGeneration === binding.runtimeGeneration) {
+    return binding.artifactIdentity;
+  }
+  return null;
+}
+
 const noValue = (provenance) => ({
   classification: 'unavailable', provenance,
   time: { basis: 'unavailable', cycle: null, virtualMilliseconds: null },

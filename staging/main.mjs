@@ -111,7 +111,7 @@ import {
 } from '../src/x47-repeatable-inputs.mjs';
 import { mountSharedWorkbenchShell } from '../src/shared-workbench-shell.mjs';
 import {
-  avrInstrumentPresentationEvidence, instrumentCapability, sharedInstrumentPresentationSummary,
+  avrInstrumentArtifactIdentity, avrInstrumentPresentationEvidence, instrumentCapability, sharedInstrumentPresentationSummary,
   sharedInstrumentSummary, sharedInstrumentView,
 } from '../src/instrument-capabilities.mjs';
 import {
@@ -11930,7 +11930,9 @@ function clearRuntimePresentation() {
 }
 
 function renderInstrumentEvidence(runtime = null) {
-  const artifactIdentity = currentProject().build?.artifactIdentity ?? null;
+  const artifactIdentity = avrInstrumentArtifactIdentity(
+    runtime, lifecycle, currentProject().build?.artifactIdentity ?? null,
+  );
   const evidence = avrInstrumentPresentationEvidence(runtime, artifactIdentity);
   const capability = instrumentCapability(AVR_PROFILE);
   const configuredSerialLimit = currentProject().instruments.serial.historyLimit;

@@ -8,7 +8,7 @@ import {
   AVR_PROFILE, ESP32C3_PROFILE, RP2040_PROFILE, STM32F429ZI_PROFILE,
 } from '../src/compile-targets.mjs';
 import {
-  avrInstrumentEvidence, avrInstrumentPresentationEvidence, instrumentCapabilities,
+  avrInstrumentArtifactIdentity, avrInstrumentEvidence, avrInstrumentPresentationEvidence, instrumentCapabilities,
   instrumentCapability, sharedInstrumentPresentationSummary, sharedInstrumentSummary,
   sharedInstrumentView, SHARED_INSTRUMENT_SUMMARY_SCHEMA, SHARED_INSTRUMENT_VIEW_SCHEMA,
 } from '../src/instrument-capabilities.mjs';
@@ -68,6 +68,31 @@ test('AVR presentation fails closed while a ready message is still partial', () 
   assert.equal(summary.artifactIdentity, null);
   assert.deepEqual(Object.values(summary.channels).map((channel) => channel.classification),
     ['unavailable', 'unavailable', 'unavailable', 'unavailable']);
+});
+
+test('live runtime controls retain the exact lifecycle-bound instrument artifact', () => {
+  const bound = 'b'.repeat(64); const staleProject = 'a'.repeat(64);
+  const lifecycle = {
+    artifact: { artifactIdentity: bound },
+    runtimeBinding: { artifactIdentity: bound, projectGeneration: 3, runtimeGeneration: 5 },
+  };
+  const runtime = { runtimeIdentity: {
+    artifactIdentity: bound, projectGeneration: 3, runtimeGeneration: 5,
+  } };
+  assert.equal(avrInstrumentArtifactIdentity(runtime, lifecycle, null), bound);
+  assert.equal(avrInstrumentArtifactIdentity(runtime, lifecycle, staleProject), bound);
+  const staleRuntime = { ...runtime, runtimeIdentity: {
+    ...runtime.runtimeIdentity, runtimeGeneration: 4,
+  } };
+  assert.equal(avrInstrumentArtifactIdentity(staleRuntime, lifecycle, bound), null);
+  assert.equal(avrInstrumentPresentationEvidence(staleRuntime, avrInstrumentArtifactIdentity(
+    staleRuntime, lifecycle, bound,
+  )).state, 'no-recorded-runtime');
+  assert.equal(avrInstrumentArtifactIdentity({ ...runtime, runtimeIdentity: {
+    ...runtime.runtimeIdentity, projectGeneration: 2,
+  } }, lifecycle, bound), null);
+  assert.equal(avrInstrumentArtifactIdentity({ cycle: 0 }, lifecycle, bound), null);
+  assert.equal(avrInstrumentArtifactIdentity(null, lifecycle, staleProject), staleProject);
 });
 
 test('serial and logic retention limits keep the newest exact bounded history', () => {
