@@ -19,6 +19,9 @@ import { CONNECTION_HARDWARE_DEFINITIONS,
 import { OPTOCOUPLER_TYPE, P_CHANNEL_MOSFET_TYPE,
   SEMICONDUCTOR_ACTIVE_DEFINITIONS,
   validateSemiconductorActiveAuthoringGraph } from '../expansion-drafts/semiconductor-active-components-v1.mjs';
+import {
+  ANALOG_JOYSTICK_TYPE, KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE,
+} from '../expansion-drafts/joystick-keypads-v1.mjs';
 
 import {
   CATALOG_CATEGORIES,
@@ -12205,6 +12208,31 @@ function setMomentaryControl(componentId, pressed, action = 'canvas button') {
   return result;
 }
 
+function setCandidateMomentaryControl(componentId, pressed, action = 'runtime control') {
+  const component = currentProject().circuit.components.find((item) => item.id === componentId);
+  if (!component || editor.kind !== 'candidate-project-v3' || component.controls?.pressed === pressed) {
+    return { ok: Boolean(component), unchanged: true };
+  }
+  const prepared = selectedCandidateContactControl(componentId, 'pressed', pressed);
+  if (!prepared.ok) return prepared;
+  const result = editor.apply({ ...prepared.command, revision: editor.revision }, { running });
+  if (!result.ok) {
+    showActionableError(elements.projectmessage, result.code, `${action}: ${componentId}`);
+    return result;
+  }
+  persistProject();
+  if (prepared.worker) worker?.postMessage(prepared.worker);
+  for (const control of document.querySelectorAll(`[data-control="${componentId}.pressed"]`)) {
+    control.setAttribute('aria-pressed', String(pressed));
+    control.textContent = pressed ? 'Pressed' : 'Released';
+  }
+  publish({ project: JSON.parse(currentProjectText()), revision: editor.revision,
+    graph: structuredClone(currentProject().circuit),
+    lastAction: `CANDIDATE_BUTTON_${pressed ? 'PRESSED' : 'RELEASED'}` });
+  elements.projectmessage.textContent = `${component.label} ${pressed ? 'pressed' : 'released'} through ${action}.`;
+  return result;
+}
+
 function rotateCandidateEncoder(componentId, direction, action = 'encoder control') {
   const component = currentProject().circuit.components.find(
     (item) => item.id === componentId && item.type === ROTARY_ENCODER_TYPE,
@@ -14078,7 +14106,9 @@ function renderRuntimeControls() {
       const row = document.createElement('div'); const label = document.createElement('span');
       label.textContent = `${component.label} · detent ${component.controls.detent}`;
       const ccw = document.createElement('button'); ccw.type = 'button'; ccw.textContent = 'CCW −1';
+      ccw.dataset.control = `${component.id}.detent-ccw`;
       const cw = document.createElement('button'); cw.type = 'button'; cw.textContent = 'CW +1';
+      cw.dataset.control = `${component.id}.detent-cw`;
       const pressed = document.createElement('button'); pressed.type = 'button';
       pressed.dataset.control = `${component.id}.pressed`; pressed.textContent = component.controls.pressed ? 'Pressed' : 'Released';
       const applyControl = (key, value) => {
@@ -14089,7 +14119,24 @@ function renderRuntimeControls() {
       };
       ccw.addEventListener('click', () => applyControl('detent', component.controls.detent - 1));
       cw.addEventListener('click', () => applyControl('detent', component.controls.detent + 1));
-      pressed.addEventListener('click', () => applyControl('pressed', !component.controls.pressed));
+      let held = false;
+      const setPressed = (value) => {
+        if (held === value) return;
+        held = value; setCandidateMomentaryControl(component.id, value, 'encoder button');
+      };
+      pressed.addEventListener('pointerdown', (event) => {
+        event.preventDefault(); pressed.setPointerCapture?.(event.pointerId); setPressed(true);
+      });
+      for (const eventName of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+        pressed.addEventListener(eventName, () => setPressed(false));
+      }
+      pressed.addEventListener('keydown', (event) => {
+        if (!event.repeat && [' ', 'Enter'].includes(event.key)) { event.preventDefault(); setPressed(true); }
+      });
+      pressed.addEventListener('keyup', (event) => {
+        if ([' ', 'Enter'].includes(event.key)) { event.preventDefault(); setPressed(false); }
+      });
+      pressed.addEventListener('blur', () => setPressed(false));
       row.append(label, ccw, cw, pressed); return [row];
     }
     if (editor.kind === 'candidate-project-v3'
@@ -14229,6 +14276,54 @@ function renderRuntimeControls() {
       button.addEventListener('click', (event) => event.preventDefault());
       button.addEventListener('blur', () => releaseRuntimeButton('runtime control blur'));
       row.append(label, button); return [row];
+    }
+    if (editor.kind === 'candidate-project-v3' && component.type === ANALOG_JOYSTICK_TYPE) {
+      const applyControl = (key, value, message) => {
+        const prepared = selectedCandidateContactControl(component.id, key, value);
+        if (!prepared.ok) { showActionableError(elements.projectmessage, prepared.code, 'Joystick control rejected.'); return; }
+        const result = applyEditor(prepared.command, message);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      };
+      const axes = ['x', 'y'].map((key) => {
+        const row = document.createElement('div'); const label = document.createElement('label');
+        const percent = Math.round(component.controls[key] * 100);
+        label.textContent = `${component.label} · ${key.toUpperCase()} ${percent}% · ${(component.controls[key] * 5).toFixed(2)} V`;
+        const input = document.createElement('input'); input.type = 'range'; input.min = '0'; input.max = '100'; input.step = '1';
+        input.value = String(percent); input.dataset.control = `${component.id}.${key}`;
+        input.setAttribute('aria-label', `${component.label} ${key.toUpperCase()} axis, 0 to 100 percent`);
+        input.addEventListener('input', () => applyControl(key, Number(input.value) / 100,
+          `${component.label} ${key.toUpperCase()} axis ${input.value}%`));
+        row.append(label, input); return row;
+      });
+      const row = document.createElement('div'); const label = document.createElement('span'); label.textContent = `${component.label} · switch`;
+      const button = document.createElement('button'); button.type = 'button'; button.dataset.control = `${component.id}.pressed`;
+      button.setAttribute('aria-pressed', String(component.controls.pressed)); button.textContent = component.controls.pressed ? 'Pressed' : 'Released';
+      const press = (value, source) => setCandidateMomentaryControl(component.id, value, `joystick ${source}`);
+      button.addEventListener('pointerdown', (event) => { if (event.button === 0) { event.preventDefault(); press(true, 'pointer'); } });
+      for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) button.addEventListener(name, () => press(false, 'pointer'));
+      button.addEventListener('keydown', (event) => { if ([' ', 'Enter'].includes(event.key) && !event.repeat) { event.preventDefault(); press(true, 'keyboard'); } });
+      button.addEventListener('keyup', (event) => { if ([' ', 'Enter'].includes(event.key)) { event.preventDefault(); press(false, 'keyboard'); } });
+      button.addEventListener('click', (event) => event.preventDefault()); button.addEventListener('blur', () => press(false, 'blur'));
+      row.append(label, button); return [...axes, row];
+    }
+    if (editor.kind === 'candidate-project-v3'
+        && [KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE].includes(component.type)) {
+      const columns = component.type === KEYPAD_3X4_TYPE ? 3 : 4;
+      const row = document.createElement('div'); const label = document.createElement('label'); label.textContent = component.label;
+      const select = document.createElement('select'); select.dataset.control = `${component.id}.pressedKey`;
+      for (const value of ['none', ...Array.from({ length: 4 }, (_, rowIndex) =>
+        Array.from({ length: columns }, (_, columnIndex) => `R${rowIndex + 1}C${columnIndex + 1}`)).flat()]) {
+        const option = document.createElement('option'); option.value = value;
+        option.textContent = value === 'none' ? 'No key pressed' : value; option.selected = component.controls.pressedKey === value;
+        select.append(option);
+      }
+      select.addEventListener('change', () => {
+        const prepared = selectedCandidateContactControl(component.id, 'pressedKey', select.value);
+        if (!prepared.ok) { showActionableError(elements.projectmessage, prepared.code, 'Keypad control rejected.'); return; }
+        const result = applyEditor(prepared.command, `${component.label} ${select.value}`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+      });
+      row.append(label, select); return [row];
     }
     if (editor.kind === 'candidate-project-v3' && component.type === 'sensor.light-analogue-v1') {
       const row = document.createElement('div');

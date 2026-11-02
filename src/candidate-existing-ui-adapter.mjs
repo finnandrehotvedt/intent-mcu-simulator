@@ -725,7 +725,12 @@ export function candidateContactControl(session, componentId, key, value) {
   }
   if (['input.matrix-keypad-3x4-v1', 'input.matrix-keypad-4x4-v1'].includes(component.type)
       && key === 'pressedKey' && typeof value === 'string') {
-    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+    const columns = component.type === 'input.matrix-keypad-3x4-v1' ? 3 : 4;
+    const validKeys = ['none', ...Array.from({ length: 4 }, (_, row) =>
+      Array.from({ length: columns }, (_, column) => `R${row + 1}C${column + 1}`)).flat()];
+    if (validKeys.includes(value)) {
+      return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+    }
   }
   if (component.type === ROTARY_SELECTOR_TYPE && key === 'position'
       && Number.isInteger(value) && value >= 1 && value <= 4) {

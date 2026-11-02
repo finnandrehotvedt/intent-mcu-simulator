@@ -1312,6 +1312,37 @@ export class CandidateEditorSession {
             runtimeDirty = true;
             break;
           }
+          if (component.type === ANALOG_JOYSTICK_TYPE) {
+            const validAxis = ['x', 'y'].includes(command.key)
+              && Number.isFinite(command.value) && command.value >= 0 && command.value <= 1;
+            const validButton = command.key === 'pressed' && typeof command.value === 'boolean';
+            if (!validAxis && !validButton) {
+              return failure('PROJECT_CONTACT_JOYSTICK_STATE', this.revision);
+            }
+            component.controls[command.key] = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if ([KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE].includes(component.type)) {
+            const columns = component.type === KEYPAD_3X4_TYPE ? 3 : 4;
+            const validKeys = ['none', ...Array.from({ length: 4 }, (_, row) =>
+              Array.from({ length: columns }, (_, column) => `R${row + 1}C${column + 1}`)).flat()];
+            if (command.key !== 'pressedKey' || !validKeys.includes(command.value)) {
+              return failure('PROJECT_CONTACT_KEYPAD_STATE', this.revision);
+            }
+            component.controls.pressedKey = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (component.type === ROTARY_SELECTOR_TYPE) {
+            if (command.key !== 'position' || !Number.isInteger(command.value)
+                || command.value < 1 || command.value > 4) {
+              return failure('PROJECT_CONTACT_ROTARY_SELECTOR_STATE', this.revision);
+            }
+            component.controls.position = command.value;
+            runtimeDirty = true;
+            break;
+          }
           if (component.type === DIGITAL_LIGHT_THRESHOLD_TYPE) {
             try {
               const updated = updateDigitalLightThresholdControl(component, command.key, command.value);
