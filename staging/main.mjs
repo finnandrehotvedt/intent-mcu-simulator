@@ -136,6 +136,7 @@ import {
   COMPONENT_SUPPORT_CELLS,
   COMPONENT_SUPPORT_MODELS,
   COMPONENT_SUPPORT_PROFILES,
+  componentSupportCell,
   componentSupportSummary,
 } from '../src/component-support-matrix.mjs';
 import { createExampleProject, exampleCatalog } from '../src/example-projects.mjs';
@@ -1610,15 +1611,41 @@ function renderBoundedComponentCatalog(options) {
   const favorites = new Set(catalogPreferences.favorites);
   const recentRank = new Map(catalogPreferences.recent.map((type, index) => [type, index]));
   const partByType = new Map(catalog.parts.map((part) => [part.type, part]));
-  const definitions = catalog.parts.map((part) => uiComponentCatalog[part.type]).filter(Boolean);
+  // Every controller exposes the same discoverable model inventory. The
+  // profile support cell controls whether a row can author or execute; hiding
+  // unsupported models made the narrower profiles look like different tools.
+  const definitions = COMPONENT_SUPPORT_MODELS
+    .map((model) => uiComponentCatalog[model.type])
+    .filter(Boolean);
   const matchedParts = filterCatalog(definitions, {
     query: search.value, category: controls.category.value, interface: controls.interface.value,
-    status: controls.status.value, supplyVoltage: controls.supplyVoltage.value, pinVoltage: controls.pinVoltage.value,
+    status: 'all', supplyVoltage: controls.supplyVoltage.value, pinVoltage: controls.pinVoltage.value,
   }).filter((definition) => !controls.favorites.checked || favorites.has(definition.type))
+    .filter((definition) => {
+      const cell = componentSupportCell(profile, definition.type);
+      return controls.status.value === 'all'
+        || (cell?.authoringAvailable && cell.status === controls.status.value);
+    })
     .sort((a, b) => Number(favorites.has(b.type)) - Number(favorites.has(a.type))
       || (recentRank.get(a.type) ?? 99) - (recentRank.get(b.type) ?? 99)
       || a.displayName.localeCompare(b.displayName))
-    .map((definition) => ({ definition, part: partByType.get(definition.type) }));
+    .map((definition) => {
+      const cell = componentSupportCell(profile, definition.type);
+      const existing = partByType.get(definition.type);
+      return {
+        definition,
+        cell,
+        part: existing ?? {
+          type: definition.type,
+          displayName: definition.displayName,
+          present: false,
+          fixed: false,
+          addable: false,
+          repeatable: false,
+          limitation: cell?.limitations?.[0] ?? 'Unavailable for this controller profile.',
+        },
+      };
+    });
   const maximumStart = matchedParts.length
     ? Math.floor((matchedParts.length - 1) / CATALOG_WINDOW_LIMIT) * CATALOG_WINDOW_LIMIT : 0;
   const windowStart = Math.min(boundedCatalogWindowStarts.get(profile) ?? 0, maximumStart);
@@ -1638,17 +1665,20 @@ function renderBoundedComponentCatalog(options) {
     boundedCatalogWindowStarts.set(profile, windowStart + CATALOG_WINDOW_LIMIT); rerender();
   };
 
-  const rows = windowParts.map(({ definition, part }) => {
+  const rows = windowParts.map(({ definition, part, cell }) => {
     const component = draft.components.find((candidate) => candidate.type === part.type);
     const row = document.createElement('article');
     row.className = 'catalog-item'; row.dataset.type = part.type;
     row.dataset.present = String(part.present);
-    const addable = !authoringLocked && Boolean(part.addable || part.repeatable);
+    const addable = !authoringLocked && Boolean(cell?.authoringAvailable) && Boolean(part.addable || part.repeatable);
+    const availabilityLabel = !cell?.authoringAvailable
+      ? 'Unavailable'
+      : cell.executableAvailable ? SUPPORT_STATUS[cell.status] : `${SUPPORT_STATUS[cell.status]} · authoring only`;
     row.setAttribute('role', addable ? 'button' : 'listitem'); row.tabIndex = addable ? 0 : -1;
     row.draggable = addable;
     row.setAttribute('aria-label', addable
-      ? `Add ${definition.displayName}, ${SUPPORT_STATUS[definition.support.status]}`
-      : `${definition.displayName} is fixed for this profile, ${SUPPORT_STATUS[definition.support.status]}`);
+      ? `Add ${definition.displayName}, ${availabilityLabel}`
+      : `${definition.displayName}, ${availabilityLabel}. ${cell?.limitations?.[0] ?? part.limitation}`);
     const thumbnail = document.createElement('span');
     thumbnail.className = 'catalog-thumbnail-slot';
     const previewComponent = component ?? {
@@ -1660,15 +1690,26 @@ function renderBoundedComponentCatalog(options) {
         : {},
       controls: {},
     };
-    thumbnail.append(createComponentArtwork(definition, previewComponent, { thumbnail: true }));
+    if (cell?.authoringAvailable) {
+      thumbnail.append(createComponentArtwork(definition, previewComponent, { thumbnail: true }));
+    } else {
+      const unavailableArtwork = document.createElement('span');
+      unavailableArtwork.className = 'catalog-unavailable-artwork';
+      unavailableArtwork.textContent = '—';
+      unavailableArtwork.setAttribute('aria-hidden', 'true');
+      thumbnail.append(unavailableArtwork);
+    }
     const copy = document.createElement('span'); copy.className = 'catalog-item-copy';
     const name = document.createElement('strong'); name.textContent = definition.displayName;
     const summary = document.createElement('small');
     summary.textContent = `${definition.partNumber} · ${definition.catalog.interfaces.join(', ')}`;
     const status = document.createElement('span');
-    status.className = `support-badge ${definition.support.status}`;
-    status.textContent = SUPPORT_STATUS[definition.support.status];
-    copy.append(name, summary, status);
+    status.className = `support-badge ${cell?.authoringAvailable ? cell.status : 'unavailable'}`;
+    status.textContent = availabilityLabel;
+    const limitation = document.createElement('small');
+    limitation.className = 'catalog-profile-limitation';
+    limitation.textContent = cell?.limitations?.[0] ?? part.limitation;
+    copy.append(name, summary, status, limitation);
     const favorite = document.createElement('button'); favorite.type = 'button'; favorite.className = 'catalog-favourite';
     favorite.textContent = favorites.has(definition.type) ? '★' : '☆';
     favorite.setAttribute('aria-label', `${favorites.has(definition.type) ? 'Remove' : 'Add'} ${definition.displayName} ${favorites.has(definition.type) ? 'from' : 'to'} favourites`);
@@ -1690,7 +1731,10 @@ function renderBoundedComponentCatalog(options) {
         event.dataTransfer.setData('application/x-intent-component', JSON.stringify({ profile, type: part.type }));
       });
     }
-    row.title = part.limitation;
+    row.dataset.profileStatus = cell?.authoringAvailable ? cell.status : 'unavailable';
+    row.dataset.authoringAvailable = String(Boolean(cell?.authoringAvailable));
+    row.dataset.executableAvailable = String(Boolean(cell?.executableAvailable));
+    row.title = cell?.limitations?.[0] ?? part.limitation;
     row.append(thumbnail, copy, favorite);
     return row;
   });
@@ -13113,9 +13157,15 @@ const catalogThumbnailObserver = 'IntersectionObserver' in window
 
 function activeCatalogRecords() {
   if (catalogFixtureRecords) return catalogFixtureRecords;
-  const records = catalogEntries({ selectableOnly: true });
-  if (editor.kind !== 'candidate-project-v3') return records;
-  return [...records, ...Object.values(CANDIDATE_UI_COMPONENTS).filter((definition) => definition.selectable)];
+  return COMPONENT_SUPPORT_MODELS.map((model) => uiComponentCatalog[model.type]).filter(Boolean);
+}
+
+function avrCatalogAuthoringAvailable(type) {
+  if (editor.kind === 'candidate-project-v3') {
+    return Boolean(catalogEntries({ selectableOnly: true }).some((entry) => entry.type === type)
+      || CANDIDATE_UI_COMPONENTS[type]?.selectable);
+  }
+  return catalogEntries({ selectableOnly: true }).some((entry) => entry.type === type);
 }
 
 function matchedCatalogRecords(records = activeCatalogRecords()) {
@@ -13134,18 +13184,33 @@ function matchedCatalogRecords(records = activeCatalogRecords()) {
       || a.displayName.localeCompare(b.displayName));
 }
 
-function createCatalogRow(definition, { interactive = true, thumbnail = true } = {}) {
+function createCatalogRow(definition, { interactive = true, thumbnail = true, authoringAvailable = true } = {}) {
   const favorites = new Set(catalogPreferences.favorites);
+  const cell = componentSupportCell(AVR_PROFILE, definition.type);
+  const availabilityLabel = !authoringAvailable
+    ? 'Unavailable in this project mode'
+    : cell?.executableAvailable ? SUPPORT_STATUS[cell.status] : `${SUPPORT_STATUS[cell?.status]} · authoring only`;
   const row = document.createElement('div'); row.className = 'catalog-item';
   row.dataset.type = definition.type; row.draggable = interactive; row.tabIndex = interactive ? 0 : -1; row.setAttribute('role', interactive ? 'button' : 'listitem');
-  row.setAttribute('aria-label', `Add ${definition.displayName}, ${SUPPORT_STATUS[definition.support.status]}`);
+  row.dataset.profileStatus = authoringAvailable ? cell?.status : 'unavailable';
+  row.dataset.authoringAvailable = String(authoringAvailable);
+  row.dataset.executableAvailable = String(Boolean(authoringAvailable && cell?.executableAvailable));
+  row.setAttribute('aria-label', interactive
+    ? `Add ${definition.displayName}, ${availabilityLabel}`
+    : `${definition.displayName}, ${availabilityLabel}. ${cell?.limitations?.[0] ?? definition.support.limitations[0]}`);
   const thumbnailSlot = document.createElement('span'); thumbnailSlot.className = 'catalog-thumbnail-slot'; thumbnailSlot.dataset.type = definition.type;
   thumbnailSlot.catalogDefinition = definition;
   const text = document.createElement('span'); text.className = 'catalog-item-copy';
   const name = document.createElement('strong'); name.textContent = definition.displayName;
   const small = document.createElement('small'); small.textContent = `${definition.partNumber} · ${definition.catalog.interfaces.join(', ')}`;
-  const badge = document.createElement('span'); badge.className = `support-badge ${definition.support.status}`; badge.textContent = SUPPORT_STATUS[definition.support.status];
-  text.append(name, small, badge);
+  const badge = document.createElement('span'); badge.className = `support-badge ${authoringAvailable ? cell?.status : 'unavailable'}`; badge.textContent = availabilityLabel;
+  const limitation = document.createElement('small'); limitation.className = 'catalog-profile-limitation';
+  limitation.textContent = authoringAvailable
+    ? cell?.limitations?.[0] ?? definition.support.limitations[0]
+    : editor.kind === 'candidate-project-v3'
+      ? cell?.limitations?.[0] ?? 'Unavailable for AVR authoring.'
+      : 'Switch to the AVR candidate project format to author this model; the current project remains unchanged.';
+  text.append(name, small, badge, limitation);
   const favorite = document.createElement('button'); favorite.type = 'button'; favorite.className = 'catalog-favourite';
   favorite.textContent = favorites.has(definition.type) ? '★' : '☆';
   favorite.setAttribute('aria-label', `${favorites.has(definition.type) ? 'Remove' : 'Add'} ${definition.displayName} ${favorites.has(definition.type) ? 'from' : 'to'} favourites`);
@@ -13157,8 +13222,12 @@ function createCatalogRow(definition, { interactive = true, thumbnail = true } =
     row.addEventListener('dragstart', (event) => event.dataTransfer.setData('application/x-intent-component', definition.type));
   }
   row.append(thumbnailSlot, text, favorite);
-  if (thumbnail && catalogThumbnailObserver) catalogThumbnailObserver.observe(thumbnailSlot);
-  else if (thumbnail) hydrateCatalogThumbnail(thumbnailSlot);
+  if (thumbnail && authoringAvailable && catalogThumbnailObserver) catalogThumbnailObserver.observe(thumbnailSlot);
+  else if (thumbnail && authoringAvailable) hydrateCatalogThumbnail(thumbnailSlot);
+  else if (thumbnail) {
+    const unavailableArtwork = document.createElement('span'); unavailableArtwork.className = 'catalog-unavailable-artwork';
+    unavailableArtwork.textContent = '—'; unavailableArtwork.setAttribute('aria-hidden', 'true'); thumbnailSlot.append(unavailableArtwork);
+  }
   return row;
 }
 
@@ -13169,7 +13238,10 @@ function renderCatalog() {
   catalogWindowStart = Math.min(catalogWindowStart, maximumStart);
   const windowRecords = matches.slice(catalogWindowStart, catalogWindowStart + CATALOG_WINDOW_LIMIT);
   const interactive = catalogFixtureRecords === null && !runtimeInteractionLocked;
-  const buttons = windowRecords.map((definition) => createCatalogRow(definition, { interactive, thumbnail: true }));
+  const buttons = windowRecords.map((definition) => {
+    const authoringAvailable = avrCatalogAuthoringAvailable(definition.type);
+    return createCatalogRow(definition, { interactive: interactive && authoringAvailable, authoringAvailable, thumbnail: true });
+  });
   elements.cataloglist.replaceChildren(...buttons);
   if (elements.cataloglist.closest('#simple-parts-mount')) {
     for (const slot of elements.cataloglist.querySelectorAll('.catalog-thumbnail-slot')) {
@@ -15624,7 +15696,7 @@ elements.catalogclear.addEventListener('click', () => {
   elements.catalogsearch.value = '';
   elements.catalogcategory.value = 'all';
   elements.cataloginterface.value = 'all';
-  elements.catalogstatus.value = 'simulated';
+  elements.catalogstatus.value = 'all';
   elements.catalogsupplyvoltage.value = 'all';
   elements.catalogpinvoltage.value = 'all';
   elements.catalogfavorites.checked = false;

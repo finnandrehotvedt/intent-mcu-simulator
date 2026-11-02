@@ -30,10 +30,12 @@ const output = process.env.COMPONENT_DRAWER_OUTPUT || '/tmp/component-drawer-par
     });
 
     assert.equal((await page.goto(base, { waitUntil: 'domcontentloaded' }))?.status(), 200);
-    await page.waitForFunction(() => window.__M11_READY__ === true);
+    await page.waitForFunction(() => window.__M11_READY__ === true)
+      .catch((error) => { throw new Error(`${error.message}\n${errors.join('\n')}`); });
     await page.evaluate(() => localStorage.clear());
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => window.__M11_READY__ === true);
+    await page.waitForFunction(() => window.__M11_READY__ === true)
+      .catch((error) => { throw new Error(`${error.message}\n${errors.join('\n')}`); });
 
     assert.equal(await page.locator('#simple-parts-drawer').getAttribute('aria-hidden'), 'true');
     assert.equal(await page.locator('#simple-parts-drawer').getAttribute('role'), 'dialog');
@@ -97,14 +99,33 @@ const output = process.env.COMPONENT_DRAWER_OUTPUT || '/tmp/component-drawer-par
 
       await picker.locator('[data-picker-role="search"]').fill('definitely-no-component');
       assert.equal(await picker.locator('[data-picker-role="empty"]').isVisible(), true, profile);
-      await picker.locator('[data-picker-role="clear"]').click();
+      await picker.locator('[data-picker-role="search"]').fill('');
       assert.equal(await picker.locator('[data-picker-role="search"]').inputValue(), '', profile);
+      assert.equal(await picker.locator('[data-picker-role="count"]').textContent(), '103 parts', profile);
+
+      await picker.locator('[data-picker-role="search"]').fill('DHT11');
+      assert.equal(await picker.locator('[data-picker-role="list"] .catalog-item').count(), 1, profile);
+      const dht11 = picker.locator('[data-picker-role="list"] .catalog-item');
+      if (profile === 'board.atmega328p-16mhz-v1') {
+        assert.equal(await dht11.getAttribute('data-profile-status'), 'unavailable', profile);
+        assert.equal(await dht11.getAttribute('data-authoring-available'), 'false', profile);
+        assert.match(await dht11.locator('.catalog-profile-limitation').textContent(), /candidate project format/u, profile);
+      } else {
+        assert.equal(await dht11.getAttribute('data-profile-status'), 'unavailable', profile);
+        assert.equal(await dht11.getAttribute('data-authoring-available'), 'false', profile);
+        assert.equal(await dht11.getAttribute('data-executable-available'), 'false', profile);
+        assert.equal(await dht11.getAttribute('role'), 'listitem', profile);
+        assert.match(await dht11.locator('.catalog-profile-limitation').textContent(), /does not yet admit/u, profile);
+      }
+      await picker.locator('[data-picker-role="search"]').fill('');
     }
 
     await page.locator('#simple-parts-drawer').press('Escape');
     await page.waitForFunction(() => document.querySelector('#simple-parts-drawer').getAttribute('aria-hidden') === 'true');
     assert.equal(await page.locator('#toggle-catalog').getAttribute('aria-expanded'), 'false');
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'toggle-catalog');
+    assert.equal(await page.locator('body > main footer a[href="/components.html#compatibility-matrix"]').textContent(),
+      'component compatibility');
 
     fs.mkdirSync(path.dirname(output), { recursive: true });
     await page.screenshot({ path: output, fullPage: false });
@@ -113,6 +134,7 @@ const output = process.env.COMPONENT_DRAWER_OUTPUT || '/tmp/component-drawer-par
     assert.deepEqual(outside, []);
     process.stdout.write(`${JSON.stringify({ ok: true, profiles: 4, dht11Feature: true,
       contract: 'intent-mcu-avr-catalog-picker@1', structureParity: true, cardStyleParity: true,
+      modelInventoryParity: 103, unsupportedRowsFailClosed: true,
       viewportWidth: 1024, nonModalDialog: true, escapeFocusReturn: true, screenshot: output })}\n`);
   } finally {
     await browser.close();
