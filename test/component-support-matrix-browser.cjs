@@ -91,7 +91,9 @@ let browser;
   await picker.locator('[data-picker-role="count"]').filter({ hasText: '103 parts' }).waitFor({ state: 'visible' });
   await closeCatalogue(page);
 
-  await page.locator('.starter-card[data-example="temperature-lcd-threshold"] .starter-action').evaluate((node) => node.click());
+  await page.locator('#beginner-examples').click();
+  await page.locator('#example-picker-dialog').waitFor({ state: 'visible' });
+  await page.locator('#example-picker-dialog .starter-card[data-example="temperature-lcd-threshold"] .starter-action').click();
   await page.waitForFunction(() => window.__M6_PROJECT__().schema === 'intent-mcu-project-contact-persistence@1');
   await page.waitForFunction(() => document.querySelector('#catalog-count').textContent.includes('103 parts'));
   await page.click('#workbench-view-advanced');
