@@ -11615,9 +11615,10 @@ function loadCatalogPreferences() {
       ? [...new Set(value.favorites.filter((type) => typeof type === 'string' && selectable.has(type)))].slice(0, 64) : [];
     const recent = Array.isArray(value.recent)
       ? [...new Set(value.recent.filter((type) => typeof type === 'string' && selectable.has(type)))].slice(0, MAX_RECENT_COMPONENTS) : [];
-    return { favorites, recent };
+    const status = ['all', 'simulated', 'partial', 'visual'].includes(value.status) ? value.status : 'all';
+    return { favorites, recent, status };
   } catch {
-    return { favorites: [], recent: [] };
+    return { favorites: [], recent: [], status: 'all' };
   }
 }
 function saveCatalogPreferences() {
@@ -15723,7 +15724,10 @@ function resetCatalogWindow() { catalogWindowStart = 0; renderCatalog(); }
 elements.catalogsearch.addEventListener('input', resetCatalogWindow);
 elements.catalogcategory.addEventListener('change', resetCatalogWindow);
 elements.cataloginterface.addEventListener('change', resetCatalogWindow);
-elements.catalogstatus.addEventListener('change', resetCatalogWindow);
+elements.catalogstatus.addEventListener('change', () => {
+  catalogPreferences.status = elements.catalogstatus.value;
+  saveCatalogPreferences(); resetCatalogWindow();
+});
 elements.catalogsupplyvoltage.addEventListener('change', resetCatalogWindow);
 elements.catalogpinvoltage.addEventListener('change', resetCatalogWindow);
 elements.catalogfavorites.addEventListener('change', resetCatalogWindow);
@@ -15732,6 +15736,7 @@ elements.catalogclear.addEventListener('click', () => {
   elements.catalogcategory.value = 'all';
   elements.cataloginterface.value = 'all';
   elements.catalogstatus.value = 'all';
+  catalogPreferences.status = 'all'; saveCatalogPreferences();
   elements.catalogsupplyvoltage.value = 'all';
   elements.catalogpinvoltage.value = 'all';
   elements.catalogfavorites.checked = false;
@@ -18156,6 +18161,7 @@ for (const [name, button] of [['catalog-collapsed', elements.togglecatalog], ['i
   if (workspacePreference(name)) { workspace.classList.add(name); button.setAttribute('aria-pressed', 'true'); }
 }
 if (workspacePreference('pin-labels')) { elements.circuitcanvas.classList.add('show-pin-labels'); elements.showpinlabels.setAttribute('aria-pressed', 'true'); }
+elements.catalogstatus.value = catalogPreferences.status;
 renderCompilerTarget(); renderCatalog(); renderProject(); renderProjectBrief(); renderModelLibraryStatus(); setRuntimeEnabled(false);
 renderCheckableEvidence(null);
 clearRuntimePresentation(); renderLifecycle();

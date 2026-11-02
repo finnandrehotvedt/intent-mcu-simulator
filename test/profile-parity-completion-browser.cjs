@@ -59,9 +59,13 @@ async function pointerSelectWire(page, profile, netId) {
       let x; let y;
       if (target.routeInteraction) [x, y] = target.routeInteraction.midpoint;
       else {
-        const local = target.getPointAtLength(target.getTotalLength() / 2);
-        const screen = local.matrixTransform(target.getScreenCTM());
-        ({ x, y } = screen);
+        const length = target.getTotalLength(); const matrix = target.getScreenCTM();
+        for (let ratio = 0.05; ratio < 1; ratio += 0.05) {
+          const screen = target.getPointAtLength(length * ratio).matrixTransform(matrix);
+          const hit = document.elementFromPoint(screen.x, screen.y)?.closest?.('[data-net]');
+          if (hit?.dataset.net === netId) return { x: screen.x, y: screen.y };
+        }
+        continue;
       }
       const hit = document.elementFromPoint(x, y)?.closest?.('[data-net]');
       if (hit?.dataset.net === netId) return { x, y };
