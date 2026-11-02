@@ -43,7 +43,7 @@ async function exerciseVisibleRanges(page, allowedIds = null) {
     const candidates = [min, min + Math.round(((max - min) / 2) / step) * step, max];
     for (const candidate of candidates) {
       control = page.locator(`[data-control="${token}"]:visible`); await control.fill(String(candidate));
-      const expected = max <= 100 && ['position', 'lightLevel', 'flameIntensityRatio', 'wetnessRatio', 'soundLevelRatio',
+      const expected = max > 1 && max <= 100 && ['position', 'lightLevel', 'flameIntensityRatio', 'wetnessRatio', 'soundLevelRatio',
         'co2ResponseRatio', 'gasResponseRatio', 'uvResponseRatio', 'moistureRatio',
         'waterLevelRatio'].includes(key) ? candidate / 100 : candidate;
       assert.equal(await projectValue(page, id, key), expected, token);
