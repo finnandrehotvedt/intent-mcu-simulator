@@ -54,25 +54,33 @@ async function selectWire(page, profile, netId) {
 
 async function pointerSelectWire(page, profile, netId) {
   const selector = `${profile.wireLayer} ${profile.wireHit}[data-net="${netId}"]`;
-  const pointerPoint = await page.evaluate(({ selector, netId }) => {
-    for (const target of document.querySelectorAll(selector)) {
-      let x; let y;
-      if (target.routeInteraction) [x, y] = target.routeInteraction.midpoint;
-      else {
-        const length = target.getTotalLength(); const matrix = target.getScreenCTM();
-        for (let ratio = 0.05; ratio < 1; ratio += 0.05) {
-          const screen = target.getPointAtLength(length * ratio).matrixTransform(matrix);
-          const hit = document.elementFromPoint(screen.x, screen.y)?.closest?.('[data-net]');
-          if (hit?.dataset.net === netId) return { x: screen.x, y: screen.y };
+  let pointerPoint;
+  for (let attempt = 0; attempt < 20 && !Number.isFinite(pointerPoint?.x); attempt += 1) {
+    pointerPoint = await page.evaluate(({ selector, netId }) => {
+      const diagnostics = [];
+      for (const target of document.querySelectorAll(selector)) {
+        let x; let y;
+        if (target.routeInteraction) [x, y] = target.routeInteraction.midpoint;
+        else {
+          const length = target.getTotalLength(); const matrix = target.getScreenCTM();
+          for (let ratio = 0.05; ratio < 1; ratio += 0.05) {
+            const screen = target.getPointAtLength(length * ratio).matrixTransform(matrix);
+            const hit = document.elementFromPoint(screen.x, screen.y)?.closest?.('[data-net]');
+            if (hit?.dataset.net === netId) return { x: screen.x, y: screen.y };
+            if (diagnostics.length < 6) diagnostics.push({ x: screen.x, y: screen.y,
+              hit: document.elementFromPoint(screen.x, screen.y)?.className?.baseVal
+                ?? document.elementFromPoint(screen.x, screen.y)?.className ?? null });
+          }
+          continue;
         }
-        continue;
+        const hit = document.elementFromPoint(x, y)?.closest?.('[data-net]');
+        if (hit?.dataset.net === netId) return { x, y };
       }
-      const hit = document.elementFromPoint(x, y)?.closest?.('[data-net]');
-      if (hit?.dataset.net === netId) return { x, y };
-    }
-    return null;
-  }, { selector, netId });
-  assert(pointerPoint, `${profile.id}: no ordinary pointer target for ${netId}`);
+      return { diagnostics };
+    }, { selector, netId });
+    if (!Number.isFinite(pointerPoint.x)) await page.waitForTimeout(50);
+  }
+  assert(Number.isFinite(pointerPoint.x), `${profile.id}: no ordinary pointer target for ${netId}: ${JSON.stringify(pointerPoint.diagnostics)}`);
   await page.mouse.click(pointerPoint.x, pointerPoint.y);
   const pointerSelected = await page.evaluate((item) => {
     if (item.id === 'avr') return window.__M6_STATE__.selection.netId;
