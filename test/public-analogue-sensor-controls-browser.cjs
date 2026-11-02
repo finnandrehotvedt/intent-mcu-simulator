@@ -12,8 +12,8 @@ const files = process.env.CLIMATE_ONLY === '1' ? [] : [
   'examples/analogue-temperature-ic-sensors/avr-analogue-temperature-ic-sensors.intent-mcu.json',
   'examples/resistive-divider-sensors/avr-resistive-divider-sensors.intent-mcu.json',
 ];
-const projectValue = (page, id, key) => page.evaluate(({ id, key }) => window.__M6_PROJECT__()
-  .candidateCircuit.components.find((component) => component.id === id).controls[key], { id, key });
+const projectValue = (page, id, key) => page.evaluate(({ id, key }) => { const project = window.__M6_PROJECT__();
+  return (project.candidateCircuit ?? project.circuit).components.find((component) => component.id === id).controls[key]; }, { id, key });
 async function discard(page) {
   if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) await page.click('#unsaved-discard');
 }
@@ -43,13 +43,13 @@ async function exerciseVisibleRanges(page, allowedIds = null) {
     const candidates = [min, min + Math.round(((max - min) / 2) / step) * step, max];
     for (const candidate of candidates) {
       control = page.locator(`[data-control="${token}"]:visible`); await control.fill(String(candidate));
-      const expected = max <= 100 && ['flameIntensityRatio', 'wetnessRatio', 'soundLevelRatio',
+      const expected = max <= 100 && ['position', 'lightLevel', 'flameIntensityRatio', 'wetnessRatio', 'soundLevelRatio',
         'co2ResponseRatio', 'gasResponseRatio', 'uvResponseRatio', 'moistureRatio',
         'waterLevelRatio'].includes(key) ? candidate / 100 : candidate;
       assert.equal(await projectValue(page, id, key), expected, token);
     }
     const rowText = await page.locator(`[data-control="${token}"]:visible`).locator('xpath=..').textContent();
-    assert.match(rowText, /(V|°C|°|% RH|hPa|ratio|Relative|Temperature|Bend|force)/u, token);
+    assert.match(rowText, /(V|°C|°|%|hPa|ratio|Relative|Temperature|Bend|force|threshold|Hysteresis)/u, token);
     covered.push(token);
   }
   return covered;
@@ -73,9 +73,24 @@ async function saveOpen(page) {
     for (const file of files) { await openFile(page, file); analogue.push(...await exerciseVisibleRanges(page)); await saveOpen(page); }
     const climate = [];
     await page.click('#workbench-view-simple');
-    for (const [button, id] of [['#beginner-dht11', 'dht11-1'], ['#beginner-dht22', 'dht22-1'], ['#beginner-bme280', 'bme280-1']]) {
-      await page.click(button); await discard(page); await page.waitForSelector(`[data-component-id="${id}"]`);
-      await page.click('#serial-tab'); climate.push(...await exerciseVisibleRanges(page, [id])); await saveOpen(page);
+    const starters = [['#beginner-dht11', 'dht11-1', null], ['#beginner-dht22', 'dht22-1', null],
+      ['#beginner-bme280', 'bme280-1', null], [null, 'ds18b20-1', 'avr-ds18b20-temperature'],
+      [null, 'pot-1', 'adc'], [null, 'light-sensor-1', 'avr-light-analogue'],
+      [null, 'light-threshold-1', 'avr-light-threshold'], [null, 'temperature-sensor-1', 'temperature-lcd-threshold']];
+    for (const [button, id, starter] of starters) {
+      if (button) await page.click(button);
+      else { await page.click('#beginner-examples'); await page.click(`.starter-card[data-example="${starter}"] .starter-action`); }
+      await discard(page); await page.waitForSelector(`[data-component-id="${id}"]`);
+      await page.click('#serial-tab'); climate.push(...await exerciseVisibleRanges(page, [id]));
+      if (id === 'light-threshold-1') {
+        const output = async () => projectValue(page, id, 'outputActive');
+        await page.locator(`[data-control="${id}.thresholdPercent"]:visible`).fill('50');
+        await page.locator(`[data-control="${id}.hysteresisPercentagePoints"]:visible`).fill('0');
+        await page.locator(`[data-control="${id}.lightLevelPercent"]:visible`).fill('100'); const high = await output();
+        await page.locator(`[data-control="${id}.lightLevelPercent"]:visible`).fill('0'); const low = await output();
+        assert.notEqual(high, low); climate.push(`${id}.outputActive`);
+      }
+      await saveOpen(page);
       await page.click('#workbench-view-simple');
     }
     await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForFunction(() => window.__M11_READY__ === true);
