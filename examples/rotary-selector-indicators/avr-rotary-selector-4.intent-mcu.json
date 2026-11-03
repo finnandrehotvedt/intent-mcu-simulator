@@ -81,7 +81,7 @@
         "files": [
           {
             "name": "main.ino",
-            "content": "void setup() { pinMode(7, INPUT_PULLUP); Serial.begin(115200); }\nvoid loop() { Serial.println(digitalRead(7)); delay(120); }\n"
+            "content": "void setup() { for(byte p=2;p<=5;p++) pinMode(p, INPUT_PULLUP); Serial.begin(115200); }\nvoid loop() { byte found=0,count=0; for(byte p=2;p<=5;p++) if(digitalRead(p)==LOW){found=p-1;count++;} Serial.println(count==1?found:0); delay(120); }\n"
           }
         ]
       },
@@ -109,11 +109,11 @@
         ],
         "nets": [
           {
-            "id": "net-selector-com-d7",
+            "id": "net-selector-com-ground",
             "endpoints": [
               {
                 "component": "board-1",
-                "pin": "D7"
+                "pin": "GND1"
               },
               {
                 "component": "rotary-selector-1",
@@ -126,7 +126,7 @@
             "endpoints": [
               {
                 "component": "board-1",
-                "pin": "GND1"
+                "pin": "D2"
               },
               {
                 "component": "rotary-selector-1",
@@ -152,11 +152,11 @@
         },
         "wireRoutes": {},
         "wireStyles": {
-          "net-selector-com-d7": {
-            "color": "#39dff2"
+          "net-selector-com-ground": {
+            "color": "#303943"
           },
           "net-selector-p1": {
-            "color": "#303943"
+            "color": "#39dff2"
           }
         },
         "viewport": {
@@ -209,11 +209,11 @@
       ],
       "nets": [
         {
-          "id": "net-selector-com-d7",
+          "id": "net-selector-com-ground",
           "endpoints": [
             {
               "component": "board-1",
-              "pin": "D7"
+              "pin": "GND1"
             },
             {
               "component": "rotary-selector-1",
@@ -226,7 +226,7 @@
           "endpoints": [
             {
               "component": "board-1",
-              "pin": "GND1"
+              "pin": "D2"
             },
             {
               "component": "rotary-selector-1",
@@ -239,15 +239,11 @@
           "endpoints": [
             {
               "component": "board-1",
-              "pin": "5V"
+              "pin": "D3"
             },
             {
               "component": "rotary-selector-1",
               "pin": "P2"
-            },
-            {
-              "component": "rotary-selector-1",
-              "pin": "P4"
             }
           ]
         },
@@ -256,21 +252,29 @@
           "endpoints": [
             {
               "component": "board-1",
-              "pin": "GND2"
+              "pin": "D4"
             },
             {
               "component": "rotary-selector-1",
               "pin": "P3"
             }
           ]
+        },
+        {
+          "id": "net-selector-p4",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D5"
+            },
+            {
+              "component": "rotary-selector-1",
+              "pin": "P4"
+            }
+          ]
         }
       ],
-      "junctions": [
-        {
-          "id": "junction-selector-power-p4",
-          "net": "net-selector-p2"
-        }
-      ]
+      "junctions": []
     },
     "candidateLayout": {
       "schema": "intent-mcu-candidate-layout@1",

@@ -833,7 +833,10 @@ export function candidateContactControl(session, componentId, key, value) {
   }
   if (component.type === ROTARY_SELECTOR_TYPE && key === 'position'
       && Number.isInteger(value) && value >= 1 && value <= 4) {
-    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      workers: [1, 2, 3, 4].map((position) => ({ command: 'control',
+        componentId: `${componentId}-p${position}`, key: 'pressed', value: false })).concat({
+        command: 'control', componentId: `${componentId}-p${value}`, key: 'pressed', value: true }) };
   }
   if (component.type === DC_MOTOR_ENCODER_TYPE && key === 'detent'
       && Number.isInteger(value) && value >= -999 && value <= 999

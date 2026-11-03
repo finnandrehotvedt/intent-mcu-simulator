@@ -1606,6 +1606,7 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
           advancedProjection.runtimePositionSources[sourceId] ?? sourceId])),
       ...advancedProjection.runtimePositionSources,
       ...joystickKeypadProjection.runtimePositionSources,
+      ...selectorProjection.runtimePositionSources,
     }),
   };
 }

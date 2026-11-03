@@ -51,19 +51,21 @@ test('all three contracts carry original artwork provenance and explicit limitat
   assert.deepEqual(createCandidateUiComponent(LED_BAR_GRAPH_TYPE, 'bar-2').properties, { color: 'green' });
 });
 
-test('rotary selector projection retains only the selected COM contact in the runtime graph', () => {
+test('rotary selector projection retains four stable contacts and selects one', () => {
   const selector = createRotarySelectorIndicator(ROTARY_SELECTOR_TYPE, 'selector-4-3');
   selector.controls.position = 3;
   const projected = projectRotarySelectors({ schema: CIRCUIT_SCHEMA,
     components: [selector, createComponent('board-1', 'board.atmega328p-16mhz-v1')],
     nets: [
-      { id: 'net-com', endpoints: [{ component: 'selector-4-3', pin: 'COM' }, { component: 'board-1', pin: 'D7' }] },
-      { id: 'net-p3', endpoints: [{ component: 'selector-4-3', pin: 'P3' }, { component: 'board-1', pin: 'GND1' }] },
-      { id: 'net-p1', endpoints: [{ component: 'selector-4-3', pin: 'P1' }, { component: 'board-1', pin: '5V' }] },
+      { id: 'net-com', endpoints: [{ component: 'selector-4-3', pin: 'COM' }, { component: 'board-1', pin: 'GND1' }] },
+      { id: 'net-p3', endpoints: [{ component: 'selector-4-3', pin: 'P3' }, { component: 'board-1', pin: 'D4' }] },
+      { id: 'net-p1', endpoints: [{ component: 'selector-4-3', pin: 'P1' }, { component: 'board-1', pin: 'D2' }] },
     ], junctions: [] });
   assert.deepEqual(projected.selectors[0].activeContact, ['COM', 'P3']);
-  assert.equal(projected.runtimeGraph.nets.some(({ id }) => id === 'net-p1'), false);
-  assert.deepEqual(projected.runtimeGraph.components.find(({ id }) => id === 'selector-4-3').controls, { pressed: true });
+  assert.equal(projected.runtimeGraph.nets.some(({ id }) => id === 'net-p1'), true);
+  assert.equal(projected.runtimeGraph.components.filter(({ type }) => type === 'button.momentary-v1').length, 4);
+  assert.deepEqual(projected.runtimeGraph.components.find(({ id }) => id === 'selector-4-3-p3').controls, { pressed: true });
+  assert.equal(projected.runtimeGraph.components.filter(({ controls }) => controls.pressed).length, 1);
 });
 
 test('common-anode projection and runtime make LOW bright and HIGH dark', () => {

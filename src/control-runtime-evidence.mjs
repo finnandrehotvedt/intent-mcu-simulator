@@ -27,9 +27,9 @@ const rows = [
   ['switch.float-no-v1', 'liquidHigh', 'control · active-low NO contact', 'D4 input → executed firmware → USART', 'actual-executed'],
   ['sensor.tilt-switch-no-v1', 'tilted', 'control · active-low NO contact', 'D5 input → executed firmware → USART', 'actual-executed'],
   ['sensor.ball-vibration-switch-no-v1', 'vibrationDetected', 'control · active-low NO contact', 'D6 input → executed firmware → USART', 'actual-executed'],
-  ['switch.rotary-selector-4-v1', 'position', 'contact projection · selected one-of-four throw', 'authored COM/P1–P4 contact → bounded AVR projection', 'model-projected'],
-  ['sensor.light-analogue-v1', 'lightLevel', 'control · position', 'A0 ADC → executed firmware → USART/D13', 'actual-executed'],
-  ['sensor.temperature-analogue-v1', 'temperatureC', 'control · normalized position', 'A1 ADC → executed firmware → USART/D13', 'actual-executed'],
+  ['switch.rotary-selector-4-v1', 'position', 'control · release all then close selected contact', 'D2–D5 pull-up inputs → executed firmware → USART one-of-four', 'actual-executed'],
+  ['sensor.light-analogue-v1', 'lightLevel', 'control · position', 'A0 ADC → bounded analogue projection; firmware pass pending', 'model-projected'],
+  ['sensor.temperature-analogue-v1', 'temperatureC', 'control · normalized position', 'A1 ADC → bounded analogue projection; firmware pass pending', 'model-projected'],
   ['sensor.soil-moisture-resistive-analogue-v1', 'moistureRatio', 'control · normalized position', 'A2 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.soil-moisture-capacitive-analogue-v1', 'moistureRatio', 'control · normalized position', 'A3 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.water-level-analogue-v1', 'waterLevelRatio', 'control · normalized position', 'A4 ADC → executed firmware → USART', 'actual-executed'],
@@ -109,6 +109,8 @@ const rows = [
     ? 'test/firmware-acceptance-digital-browser.cjs'
     : ['switch.dip-4-v1', 'input.rotary-encoder-button-v1'].includes(model)
       ? 'test/firmware-acceptance-advanced-switch-browser.cjs'
+    : model === 'switch.rotary-selector-4-v1'
+      ? 'test/firmware-acceptance-selector-browser.cjs'
     : ['switch.slide-spdt-v1', 'button.momentary-nc-v1', 'switch.limit-spdt-v1'].includes(model)
       ? 'test/firmware-acceptance-digital-browser.cjs'
     : ['magnetPresent', 'latched', 'pressed'].includes(field)

@@ -14285,7 +14285,9 @@ function renderRuntimeControls() {
         const prepared = selectedCandidateContactControl(component.id, 'position', Number(select.value));
         const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
         if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Rotary selector rejected.'); return; }
-        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        for (const command of prepared.workers ?? []) worker?.postMessage(command);
+        renderProject();
       }); row.append(label, select); return [row];
     }
     if (component.type === 'button.momentary-v1') {

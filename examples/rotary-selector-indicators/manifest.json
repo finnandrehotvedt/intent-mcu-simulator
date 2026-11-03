@@ -23,8 +23,8 @@
         "P3": "GND2",
         "P4": "5V"
       },
-      "projectSha256": "fda3fac967a28792ec4fad024d4f076146040eec78171c9f21485752e414d941",
-      "sourceSha256": "3fe76fbad516c32857e1f79d6d1588dd4b3c82f944039f214ea9afdc8126e1b4",
+      "projectSha256": "a0d653266dc8c2f2620fb8403c864cac85eeaaeac443413ac9b61536af98923f",
+      "sourceSha256": "f6f6cf5f930411aac87b5a6c5e026885e4a56c88b4366619f65cc9364639597d",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact 5 V model is unavailable",

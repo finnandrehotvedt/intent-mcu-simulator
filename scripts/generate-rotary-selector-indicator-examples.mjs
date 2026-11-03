@@ -39,15 +39,13 @@ const add = (apply, component, x, y) => apply({ type: 'component.add', component
 const wire = (apply, id, left, right) => apply({ type: 'wire.create', net: { id, endpoints: [left, right] } });
 
 function selectorProject() {
-  const { session, apply } = cleanSession(sourceFor({ setup: 'pinMode(7, INPUT_PULLUP);',
-    loop: 'Serial.println(digitalRead(7));' }), 'Four-position rotary selector');
+  const { session, apply } = cleanSession(sourceFor({ setup: 'for(byte p=2;p<=5;p++) pinMode(p, INPUT_PULLUP);',
+    loop: 'byte found=0,count=0; for(byte p=2;p<=5;p++) if(digitalRead(p)==LOW){found=p-1;count++;} Serial.println(count==1?found:0);' }), 'Four-position rotary selector');
   add(apply, createRotarySelectorIndicator(ROTARY_SELECTOR_TYPE, 'rotary-selector-1'), 0.7, 0.5);
-  wire(apply, 'net-selector-com-d7', { component: 'rotary-selector-1', pin: 'COM' }, { component: 'board-1', pin: 'D7' });
-  for (const [position, pin] of [['P1', 'GND1'], ['P2', '5V'], ['P3', 'GND2']]) {
+  wire(apply, 'net-selector-com-ground', { component: 'rotary-selector-1', pin: 'COM' }, { component: 'board-1', pin: 'GND1' });
+  for (const [position, pin] of [['P1', 'D2'], ['P2', 'D3'], ['P3', 'D4'], ['P4', 'D5']]) {
     wire(apply, `net-selector-${position.toLowerCase()}`, { component: 'rotary-selector-1', pin: position }, { component: 'board-1', pin });
   }
-  apply({ type: 'wire.branch', netId: 'net-selector-p2', endpoint: { component: 'rotary-selector-1', pin: 'P4' },
-    junctionId: 'junction-selector-power-p4' });
   return JSON.parse(session.saveText());
 }
 

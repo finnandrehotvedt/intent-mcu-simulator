@@ -116,7 +116,7 @@ const remapGraph = (value, type, replacementsFor) => {
   });
   graph.nets = graph.nets.map((net) => ({ ...net, endpoints: net.endpoints.flatMap((endpoint) => {
     const mapped = replacements.get(endpoint.component)?.[endpoint.pin];
-    return mapped ? [mapped] : replacements.has(endpoint.component) ? [] : [endpoint];
+    return mapped ? (Array.isArray(mapped) ? mapped : [mapped]) : replacements.has(endpoint.component) ? [] : [endpoint];
   }) })).filter((net) => net.endpoints.length >= 2);
   const survivingNets = new Set(graph.nets.map(({ id }) => id));
   graph.junctions = graph.junctions.filter((junction) => survivingNets.has(junction.net));
@@ -125,15 +125,21 @@ const remapGraph = (value, type, replacementsFor) => {
 
 export function projectRotarySelectors(value) {
   const selectors = value.components.filter(({ type }) => type === ROTARY_SELECTOR_TYPE);
+  const runtimePositionSources = {};
   const runtimeGraph = remapGraph(value, ROTARY_SELECTOR_TYPE, (component) => {
-    const selected = `P${component.controls.position}`;
-    const runtimeId = component.id;
-    return { components: [{ id: runtimeId, type: 'button.momentary-v1', label: component.label,
-      properties: { normallyOpen: true }, controls: { pressed: true } }],
-    pinMap: { COM: { component: runtimeId, pin: 'A' }, [selected]: { component: runtimeId, pin: 'B' } } };
+    const contacts = [1, 2, 3, 4].map((position) => ({ position,
+      runtimeId: childId(component.id, `p${position}`) }));
+    for (const { runtimeId } of contacts) runtimePositionSources[runtimeId] = component.id;
+    return { components: contacts.map(({ position, runtimeId }) => ({ id: runtimeId,
+      type: 'button.momentary-v1', label: `${component.label} P${position}`,
+      properties: { normallyOpen: true }, controls: { pressed: component.controls.position === position } })),
+    pinMap: { COM: contacts.map(({ runtimeId }) => ({ component: runtimeId, pin: 'A' })),
+      ...Object.fromEntries(contacts.map(({ position, runtimeId }) => [`P${position}`, { component: runtimeId, pin: 'B' }])) } };
   });
   return { ok: true, runtimeGraph, selectors: selectors.map((component) => ({ componentId: component.id,
-    position: component.controls.position, activeContact: ['COM', `P${component.controls.position}`] })) };
+    position: component.controls.position, activeContact: ['COM', `P${component.controls.position}`],
+    runtimeIds: Object.fromEntries([1, 2, 3, 4].map((position) => [position, childId(component.id, `p${position}`)])) })),
+  runtimePositionSources };
 }
 
 export function projectCommonAnodeRgbLeds(value) {
