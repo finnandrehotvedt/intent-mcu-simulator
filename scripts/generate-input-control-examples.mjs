@@ -131,18 +131,16 @@ void loop() { Serial.print(digitalRead(7)); Serial.print(','); Serial.print(digi
   const session = openCandidateUiSession(canonicalContactPersistenceDraftJson(draft.project)).session;
   const apply = (command) => { const result = session.apply({ ...command, revision: session.revision });
     if (!result.ok) throw new Error(`SAFETY_PEDAL_EXAMPLE:${command.type}:${result.code}:${JSON.stringify(result.details)}`); };
+  const branch = (component, pin, junctionId) => apply({ type: 'wire.branch', netId: 'net-ground-branch',
+    endpoint: { component, pin }, junctionId });
   const cases = [[REED_SWITCH_TYPE, 'reed-switch-1', 'D7'],
     [EMERGENCY_STOP_TYPE, 'emergency-stop-1', 'D8'], [FOOT_PEDAL_TYPE, 'foot-pedal-1', 'D9']];
   cases.forEach(([type, id, boardPin], index) => {
     apply({ type: 'component.add', component: createSafetyPedalInput(type, id),
       position: { x: 0.7 + index * 0.08, y: 0.68, rotation: 0 } });
-    const groundId = `safety-ground-${index + 1}`;
-    apply({ type: 'component.add', component: createCandidateUiComponent('reference.ground-v1', groundId),
-      position: { x: 0.7 + index * 0.08, y: 0.86, rotation: 0 } });
     apply({ type: 'wire.create', net: { id: `net-safety-${index + 1}`,
       endpoints: [{ component: id, pin: 'A' }, { component: 'board-1', pin: boardPin }] } });
-    apply({ type: 'wire.create', net: { id: `net-safety-${index + 1}-ground`,
-      endpoints: [{ component: id, pin: 'B' }, { component: groundId, pin: 'REF' }] } });
+    branch(id, 'B', `junction-safety-${index + 1}-ground`);
   });
   return JSON.parse(session.saveText());
 }
@@ -189,7 +187,7 @@ const definitions = [
   {
     id: 'avr-safety-pedal-inputs', requirementIds: ['CMP-033', 'CMP-034', 'CMP-035'],
     file: 'avr-safety-pedal-inputs.intent-mcu.json', project: safetyPedal,
-    namedPins: { reed: 'D7', emergencyStop: 'D8', footPedal: 'D9', common: 'three explicit 0 V references' },
+    namedPins: { reed: 'D7', emergencyStop: 'D8', footPedal: 'D9', common: 'shared GND1 branch' },
     expectedBehavior: 'Magnet presence closes D7, latching the instructional emergency stop opens D8, and pressing the foot pedal closes D9.',
     firmwareLimits: 'Instructional ideal contacts only; the emergency-stop model is not safety-rated and no contact includes physical bounce, force, resistance or certification behavior.',
   },

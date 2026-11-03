@@ -150,12 +150,12 @@
         "reed": "D7",
         "emergencyStop": "D8",
         "footPedal": "D9",
-        "common": "three explicit 0 V references"
+        "common": "shared GND1 branch"
       },
       "expectedBehavior": "Magnet presence closes D7, latching the instructional emergency stop opens D8, and pressing the foot pedal closes D9.",
       "firmwareLimits": "Instructional ideal contacts only; the emergency-stop model is not safety-rated and no contact includes physical bounce, force, resistance or certification behavior.",
       "sourceSha256": "7af3c87cc2244bc3b1fd0ac6802b4ff542a079d02c26be644d614576b4e0ff35",
-      "projectSha256": "0be8125823592f2fd0e9e7dd28255dac186e949ba4aaab02939299f0d7d42e25",
+      "projectSha256": "c08c6f3bda7ca3fdcce799389ed82dfa4a0aa8ba5fc1c898dd727f21e7511fda",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",

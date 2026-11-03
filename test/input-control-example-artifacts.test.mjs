@@ -55,7 +55,7 @@ test('input-control named wiring is exact', async () => {
       limitCom: 'D6', limitNC: 'GND1', limitNO: '5V' },
     { encoderA: 'D2', encoderB: 'D3', encoderButton: 'D4', dip1: 'D5', dip2: 'D6',
       dip3: 'D7', dip4: 'D8', changeoverCom: 'D9', contactsCommon: 'GND1', changeoverB: '5V' },
-    { reed: 'D7', emergencyStop: 'D8', footPedal: 'D9', common: 'three explicit 0 V references' },
+    { reed: 'D7', emergencyStop: 'D8', footPedal: 'D9', common: 'shared GND1 branch' },
   ]);
 });
 

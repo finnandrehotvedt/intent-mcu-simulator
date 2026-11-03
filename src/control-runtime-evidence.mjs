@@ -21,9 +21,9 @@ const rows = [
   ['switch.dip-4-v1', 'switch4', 'contact projection · maintained channel 4', 'authored DIP contact → bounded AVR projection', 'model-projected'],
   ['input.rotary-encoder-button-v1', 'detent', 'digital-sequence · four ordered phases', 'A/B inputs → executed firmware', 'model-projected'],
   ['input.rotary-encoder-button-v1', 'pressed', 'contact projection · shaft button', 'authored SW contact → bounded AVR projection', 'model-projected'],
-  ['switch.reed-no-v1', 'magnetPresent', 'contact projection · magnetic presence', 'authored reed contact → bounded AVR projection', 'model-projected'],
-  ['switch.emergency-stop-nc-v1', 'latched', 'contact projection · instructional latch', 'authored NC stop contact → bounded AVR projection', 'model-projected'],
-  ['switch.foot-pedal-no-v1', 'pressed', 'contact projection · pedal press', 'authored pedal contact → bounded AVR projection', 'model-projected'],
+  ['switch.reed-no-v1', 'magnetPresent', 'control · active-low NO contact', 'D7 input → executed firmware → USART', 'actual-executed'],
+  ['switch.emergency-stop-nc-v1', 'latched', 'control · NC contact opens when latched', 'D8 input → executed firmware → USART', 'actual-executed'],
+  ['switch.foot-pedal-no-v1', 'pressed', 'control · active-low NO contact', 'D9 input → executed firmware → USART', 'actual-executed'],
   ['switch.float-no-v1', 'liquidHigh', 'control · active-low NO contact', 'D4 input → executed firmware → USART', 'actual-executed'],
   ['sensor.tilt-switch-no-v1', 'tilted', 'control · active-low NO contact', 'D5 input → executed firmware → USART', 'actual-executed'],
   ['sensor.ball-vibration-switch-no-v1', 'vibrationDetected', 'control · active-low NO contact', 'D6 input → executed firmware → USART', 'actual-executed'],
@@ -107,6 +107,9 @@ const rows = [
     ? 'test/bme280-environment-browser.cjs'
     : ['sensor.flow-pulse-digital-v1', 'sensor.wind-speed-pulse-digital-v1'].includes(model)
     ? 'test/firmware-acceptance-digital-browser.cjs'
+    : ['magnetPresent', 'latched', 'pressed'].includes(field)
+      && ['switch.reed-no-v1', 'switch.emergency-stop-nc-v1', 'switch.foot-pedal-no-v1'].includes(model)
+      ? 'test/firmware-acceptance-digital-browser.cjs'
     : ['liquidHigh', 'tilted', 'vibrationDetected'].includes(field)
       ? 'test/firmware-acceptance-digital-browser.cjs'
     : ['touched', 'motionDetected', 'magnetPresent'].includes(field)

@@ -118,6 +118,17 @@
             }
           },
           {
+            "id": "foot-pedal-1",
+            "type": "button.momentary-v1",
+            "label": "Momentary foot pedal",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
             "id": "reed-switch-1",
             "type": "button.momentary-v1",
             "label": "Normally-open reed switch",
@@ -233,6 +244,14 @@
                 "pin": "B"
               },
               {
+                "component": "emergency-stop-1",
+                "pin": "B"
+              },
+              {
+                "component": "foot-pedal-1",
+                "pin": "B"
+              },
+              {
                 "component": "led-1",
                 "pin": "CATHODE"
               },
@@ -243,6 +262,10 @@
               {
                 "component": "pot-1",
                 "pin": "LOW"
+              },
+              {
+                "component": "reed-switch-1",
+                "pin": "B"
               }
             ]
           },
@@ -299,19 +322,6 @@
             ]
           },
           {
-            "id": "net-safety-1-ground",
-            "endpoints": [
-              {
-                "component": "board-1",
-                "pin": "GND2"
-              },
-              {
-                "component": "reed-switch-1",
-                "pin": "B"
-              }
-            ]
-          },
-          {
             "id": "net-safety-2",
             "endpoints": [
               {
@@ -325,15 +335,15 @@
             ]
           },
           {
-            "id": "net-safety-2-ground",
+            "id": "net-safety-3",
             "endpoints": [
               {
                 "component": "board-1",
-                "pin": "GND3"
+                "pin": "D9"
               },
               {
-                "component": "emergency-stop-1",
-                "pin": "B"
+                "component": "foot-pedal-1",
+                "pin": "A"
               }
             ]
           }
@@ -363,6 +373,11 @@
           },
           "emergency-stop-1": {
             "x": 0.7799999999999999,
+            "y": 0.68,
+            "rotation": 0
+          },
+          "foot-pedal-1": {
+            "x": 0.86,
             "y": 0.68,
             "rotation": 0
           },
@@ -423,14 +438,11 @@
           "net-safety-1": {
             "color": "#39dff2"
           },
-          "net-safety-1-ground": {
-            "color": "#303943"
-          },
           "net-safety-2": {
             "color": "#39dff2"
           },
-          "net-safety-2-ground": {
-            "color": "#303943"
+          "net-safety-3": {
+            "color": "#39dff2"
           }
         },
         "viewport": {
@@ -509,33 +521,6 @@
           "controls": {
             "position": 0.5
           }
-        },
-        {
-          "id": "safety-ground-1",
-          "type": "reference.ground-v1",
-          "label": "0 V circuit reference",
-          "properties": {
-            "potentialVolts": 0
-          },
-          "controls": {}
-        },
-        {
-          "id": "safety-ground-2",
-          "type": "reference.ground-v1",
-          "label": "0 V circuit reference",
-          "properties": {
-            "potentialVolts": 0
-          },
-          "controls": {}
-        },
-        {
-          "id": "safety-ground-3",
-          "type": "reference.ground-v1",
-          "label": "0 V circuit reference",
-          "properties": {
-            "potentialVolts": 0
-          },
-          "controls": {}
         },
         {
           "id": "resistor-1",
@@ -646,6 +631,14 @@
               "pin": "B"
             },
             {
+              "component": "emergency-stop-1",
+              "pin": "B"
+            },
+            {
+              "component": "foot-pedal-1",
+              "pin": "B"
+            },
+            {
               "component": "led-1",
               "pin": "CATHODE"
             },
@@ -656,6 +649,10 @@
             {
               "component": "pot-1",
               "pin": "LOW"
+            },
+            {
+              "component": "reed-switch-1",
+              "pin": "B"
             }
           ]
         },
@@ -712,19 +709,6 @@
           ]
         },
         {
-          "id": "net-safety-1-ground",
-          "endpoints": [
-            {
-              "component": "reed-switch-1",
-              "pin": "B"
-            },
-            {
-              "component": "safety-ground-1",
-              "pin": "REF"
-            }
-          ]
-        },
-        {
           "id": "net-safety-2",
           "endpoints": [
             {
@@ -738,19 +722,6 @@
           ]
         },
         {
-          "id": "net-safety-2-ground",
-          "endpoints": [
-            {
-              "component": "emergency-stop-1",
-              "pin": "B"
-            },
-            {
-              "component": "safety-ground-2",
-              "pin": "REF"
-            }
-          ]
-        },
-        {
           "id": "net-safety-3",
           "endpoints": [
             {
@@ -760,19 +731,6 @@
             {
               "component": "foot-pedal-1",
               "pin": "A"
-            }
-          ]
-        },
-        {
-          "id": "net-safety-3-ground",
-          "endpoints": [
-            {
-              "component": "foot-pedal-1",
-              "pin": "B"
-            },
-            {
-              "component": "safety-ground-3",
-              "pin": "REF"
             }
           ]
         }
@@ -839,21 +797,6 @@
         "resistor-2": {
           "x": 0.6,
           "y": 0.55,
-          "rotation": 0
-        },
-        "safety-ground-1": {
-          "x": 0.7,
-          "y": 0.86,
-          "rotation": 0
-        },
-        "safety-ground-2": {
-          "x": 0.7799999999999999,
-          "y": 0.86,
-          "rotation": 0
-        },
-        "safety-ground-3": {
-          "x": 0.86,
-          "y": 0.86,
           "rotation": 0
         }
       },
