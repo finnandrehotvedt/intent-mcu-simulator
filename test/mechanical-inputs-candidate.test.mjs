@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   LIMIT_SWITCH_TYPE, NC_BUTTON_TYPE, SLIDE_SWITCH_TYPE,
   createMechanicalInputComponent, mechanicalRuntimeState,
@@ -8,7 +9,7 @@ import {
 } from '../expansion-drafts/mechanical-inputs-v1.mjs';
 import { CandidateEditorSession, openPortableEditorSession } from '../src/candidate-project-session.mjs';
 import { createContactPersistenceExample } from '../expansion-drafts/contact-persistence-fixture-v1.mjs';
-import { candidateContactControl } from '../src/candidate-existing-ui-adapter.mjs';
+import { candidateContactControl, candidateRuntimeInputs } from '../src/candidate-existing-ui-adapter.mjs';
 
 test('mechanical worker commands preserve exact contact polarity', () => {
   const session = new CandidateEditorSession(createContactPersistenceExample().project);
@@ -16,12 +17,25 @@ test('mechanical worker commands preserve exact contact polarity', () => {
     assert.equal(session.apply({type:'component.add',revision:session.revision,
       component:createMechanicalInputComponent(type,id),position:{x:.5,y:.5,rotation:0}}).ok,true);
   }
-  assert.deepEqual(candidateContactControl(session,'slide-1','selectedThrow','B').worker,
-    {command:'control',componentId:'slide-1',key:'pressed',value:false});
+  assert.equal(candidateContactControl(session,'slide-1','selectedThrow','B').ok,false);
   assert.deepEqual(candidateContactControl(session,'nc-1','pressed',true).worker,
     {command:'control',componentId:'nc-1',key:'pressed',value:false});
-  assert.deepEqual(candidateContactControl(session,'limit-1','actuated',true).worker,
-    {command:'control',componentId:'limit-1',key:'pressed',value:false});
+  assert.equal(candidateContactControl(session,'limit-1','actuated',true).ok,false);
+});
+
+test('wired mechanical example projects exact D4 and D6 levels into the worker', async () => {
+  const envelope = JSON.parse(await readFile(new URL('../examples/input-controls/avr-mechanical-inputs.intent-mcu.json', import.meta.url), 'utf8'));
+  const opened = openPortableEditorSession(JSON.stringify(envelope.project));
+  assert.equal(opened.ok, true, opened.code);
+  const session = opened.session;
+  assert.deepEqual(candidateRuntimeInputs(session).filter((item) => ['slide-switch-1', 'limit-switch-1'].includes(item.componentId)), [
+    { componentId: 'limit-switch-1', pin: 6, pinLabel: 'D6', level: false },
+    { componentId: 'slide-switch-1', pin: 4, pinLabel: 'D4', level: false },
+  ]);
+  assert.deepEqual(candidateContactControl(session, 'slide-switch-1', 'selectedThrow', 'B').worker,
+    { command: 'digital-input', pin: 4, level: true });
+  assert.deepEqual(candidateContactControl(session, 'limit-switch-1', 'actuated', true).worker,
+    { command: 'digital-input', pin: 6, level: true });
 });
 
 test('CMP023 slide switch retains an explicit break-before-make throw', () => {

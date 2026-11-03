@@ -538,6 +538,29 @@ export function openCandidateUiSession(source, options = {}) {
   return { ...opened, schema: CANDIDATE_EXISTING_UI_ADAPTER_SCHEMA };
 }
 
+function mechanicalDigitalProjection(session, component, nextValue = null) {
+  const graph = session.visualProject.circuit;
+  const board = graph.components.find((item) => item.type === 'board.atmega328p-16mhz-v1');
+  const netFor = (pin) => graph.nets.find((net) => net.endpoints.some(
+    (endpoint) => endpoint.component === component.id && endpoint.pin === pin,
+  ));
+  const boardPin = (pin) => netFor(pin)?.endpoints.find(
+    (endpoint) => endpoint.component === board?.id && /^D(?:[0-9]|1[0-3])$/u.test(endpoint.pin),
+  )?.pin;
+  const referenceLevel = (pin) => {
+    const reference = netFor(pin)?.endpoints.find((endpoint) => endpoint.component === board?.id
+      && (endpoint.pin === '5V' || /^GND[1-3]$/u.test(endpoint.pin)))?.pin;
+    return reference === '5V' ? true : /^GND[1-3]$/u.test(reference ?? '') ? false : null;
+  };
+  const signalPin = boardPin('COM');
+  const selectedPin = component.type === SLIDE_SWITCH_TYPE
+    ? (nextValue ?? component.controls.selectedThrow)
+    : (nextValue ?? component.controls.actuated) ? 'NO' : 'NC';
+  const level = referenceLevel(selectedPin);
+  if (!signalPin || level === null) return null;
+  return { componentId: component.id, pin: Number(signalPin.slice(1)), pinLabel: signalPin, level };
+}
+
 export function candidateRuntimeInputs(session) {
   if (session?.kind !== 'candidate-project-v3') return [];
   const runnable = session.runnable;
@@ -570,6 +593,14 @@ export function candidateRuntimeInputs(session) {
         selectedThrow: result.projection.selectedThrow,
       };
     })];
+  for (const support of session.runtimeSupport.filter(
+    (item) => [SLIDE_SWITCH_TYPE, LIMIT_SWITCH_TYPE].includes(item.type),
+  )) {
+    const component = session.visualProject.circuit.components.find((item) => item.id === support.componentId);
+    const projection = component ? mechanicalDigitalProjection(session, component) : null;
+    if (!projection) throw new Error('MECHANICAL_DIGITAL_PROJECTION_INVALID');
+    inputs.push(projection);
+  }
   for (const support of session.runtimeSupport.filter((item) => item.type === ROTARY_ENCODER_TYPE)) {
     const projection = support.runtimeProjection;
     for (const phase of ['A', 'B']) inputs.push({
@@ -604,8 +635,10 @@ export function candidateContactControl(session, componentId, key, value) {
     };
   }
   if (component.type === SLIDE_SWITCH_TYPE && key === 'selectedThrow' && ['A', 'B'].includes(value)) {
+    const projection = mechanicalDigitalProjection(session, component, value);
+    if (!projection) return failure('MECHANICAL_DIGITAL_PROJECTION_INVALID', [componentId]);
     return { ok: true, command: { type: 'component.control.set', componentId, key, value },
-      worker: { command: 'control', componentId, key: 'pressed', value: value === 'A' } };
+      worker: { command: 'digital-input', pin: projection.pin, level: projection.level } };
   }
   if (component.type === NC_BUTTON_TYPE && key === 'pressed' && typeof value === 'boolean') {
     return {
@@ -614,8 +647,10 @@ export function candidateContactControl(session, componentId, key, value) {
     };
   }
   if (component.type === LIMIT_SWITCH_TYPE && key === 'actuated' && typeof value === 'boolean') {
+    const projection = mechanicalDigitalProjection(session, component, value);
+    if (!projection) return failure('MECHANICAL_DIGITAL_PROJECTION_INVALID', [componentId]);
     return { ok: true, command: { type: 'component.control.set', componentId, key, value },
-      worker: { command: 'control', componentId, key: 'pressed', value: !value } };
+      worker: { command: 'digital-input', pin: projection.pin, level: projection.level } };
   }
   if (component.type === DIP_SWITCH_4_TYPE && /^switch[1-4]$/u.test(key)
       && typeof value === 'boolean') {
