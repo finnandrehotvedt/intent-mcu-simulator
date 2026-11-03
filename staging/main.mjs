@@ -14037,6 +14037,7 @@ function renderRuntimeControls() {
         const prepared = selectedCandidateContactControl(component.id, 'detent', component.controls.detent + delta);
         if (!prepared.ok) { showActionableError(elements.projectmessage, prepared.code, 'Motor encoder control rejected.'); return; }
         const result = applyEditor(prepared.command, `${component.label} encoder ${direction.toUpperCase()} one detent`);
+        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
         if (result.ok) elements.projectmessage.textContent = `${component.label} encoder moved one independent ${direction.toUpperCase()} detent; no motor-motion inference.`;
       };
       const ccw = document.createElement('button'); ccw.type = 'button'; ccw.textContent = 'CCW −1';

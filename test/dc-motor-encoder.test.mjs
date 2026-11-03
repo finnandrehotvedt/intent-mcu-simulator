@@ -23,6 +23,8 @@ test('CMP-069 owns five exact terminals and original motor/encoder artwork', () 
 test('CMP-069 expands to the bounded L298N command observer and real quadrature runtime', () => { const projection = projectDcMotorEncoders(graph());
   assert.equal(projection.ok, true); assert.equal(projection.motors.length, 1); assert.equal(projection.encoders.length, 1);
   assert.equal(projection.encoders[0].detent, 4); assert.deepEqual(projection.encoders[0].sequences.cw, ['11','01','00','10','11']);
+  assert.deepEqual(projection.assemblies[0].encoder, projection.encoders[0]);
+  assert.deepEqual(new Set(Object.values(projection.runtimePositionSources)), new Set(['assembly']));
   assert.equal(projection.runtimeGraph.components.some(({ type }) => type === 'output.dc-motor-encoder-v1'), false); });
 test('CMP-069 rejects inferred, shorted or unsupported encoder wiring', () => { const missing = graph();
   missing.nets = missing.nets.filter(({ id }) => id !== 'ea'); assert.equal(projectDcMotorEncoders(missing).code, 'ROTARY_ENCODER_TERMINALS_REQUIRED');
@@ -42,17 +44,34 @@ test('CMP-069 editor persists independent detents with atomic rejection and exac
 });
 test('CMP-069 workbench adapter accepts exactly one bounded independent detent', () => {
   const component = createDcMotorEncoderComponent('assembly', 'Motor encoder', 4);
-  const session = { kind: 'candidate-project-v3', visualProject: { circuit: { components: [component] } } };
-  assert.deepEqual(candidateContactControl(session, 'assembly', 'detent', 5), {
-    ok: true, command: { type: 'component.control.set', componentId: 'assembly', key: 'detent', value: 5 }, direction: 'cw',
+  const projection = projectDcMotorEncoders(graph());
+  const session = { kind: 'candidate-project-v3', visualProject: { circuit: { components: [component] } },
+    runtimeSupport: [{ componentId: 'assembly', runtimeProjection: projection.assemblies[0] }],
+    evaluateModel(type, input) { assert.equal(type, 'output.dc-motor-encoder-v1');
+      assert.deepEqual(input, { in1: false, in2: false, enable: 0, encoderDirection: 'cw', encoderDetents: 1 });
+      return { ok: true, result: { encoder: { grayStates: ['11','01','00','10','11'] } } }; } };
+  const accepted = candidateContactControl(session, 'assembly', 'detent', 5);
+  assert.deepEqual(accepted, {
+    ok: true,
+    command: { type: 'component.control.set', componentId: 'assembly', key: 'detent', value: 5 },
+    worker: { command: 'digital-sequence', events: [
+      { offsetCycles: 16000, pin: 2, level: false },
+      { offsetCycles: 32000, pin: 3, level: false },
+      { offsetCycles: 48000, pin: 2, level: true },
+      { offsetCycles: 64000, pin: 3, level: true },
+    ] },
+    direction: 'cw',
   });
   assert.equal(candidateContactControl(session, 'assembly', 'detent', 6).code, 'CANDIDATE_UI_CONTROL');
   assert.equal(candidateContactControl(session, 'assembly', 'detent', 1000).code, 'CANDIDATE_UI_CONTROL');
 });
 test('CMP-069 canonical example preserves explicit independent encoder authority', async () => {
   const value = JSON.parse(await readFile(new URL('../examples/indicators-actuators/avr-dc-motor-encoder.intent-mcu.json', import.meta.url)));
-  assert.equal(value.schema, 'intent-mcu-dc-motor-encoder-example@1'); assert.deepEqual(value.requirementIds, ['CMP-069']);
-  assert.deepEqual(value.interaction.expectedCwSequence, ['11','01','00','10','11']);
-  assert.match(value.limitations, /never inferred from PWM, direction, artwork, elapsed time/u);
-  assert.equal(projectDcMotorEncoders(value.graph).ok, true);
+  assert.equal(value.schema, 'intent-mcu-project-envelope@8');
+  assert.equal(value.project.project.metadata.name, 'DC motor command with independent encoder detents');
+  assert.match(value.project.project.source.files[0].content, /encoderQuarterSteps/u);
+  assert.doesNotMatch(value.project.project.source.files[0].content, /analogWrite|millis\(\).*encoder|RPM/u);
+  const projection = projectDcMotorEncoders(value.project.candidateCircuit);
+  assert.equal(projection.ok, true); assert.equal(projection.assemblies.length, 1);
+  assert.deepEqual(projection.encoders[0].sequences.cw, ['11','01','00','10','11']);
 });

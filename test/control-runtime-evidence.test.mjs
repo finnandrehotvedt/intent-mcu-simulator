@@ -19,14 +19,10 @@ test('runtime evidence matrix covers exactly fifty-three AVR models and sixty-si
   assert(matrix.excluded.includes('saved model state alone'));
 });
 
-test('runtime evidence keeps the three fields without receipt firmware proof model-projected', () => {
+test('runtime evidence has receipt firmware proof for all sixty-six retained fields', () => {
   const projected = controlRuntimeEvidenceMatrix().rows
     .filter((row) => row.evidence === 'model-projected')
     .map((row) => `${row.model}.${row.field}`)
     .sort();
-  assert.deepEqual(projected, [
-    'output.dc-motor-encoder-v1.detent',
-    'sensor.light-analogue-v1.lightLevel',
-    'sensor.temperature-analogue-v1.temperatureC',
-  ]);
+  assert.deepEqual(projected, []);
 });

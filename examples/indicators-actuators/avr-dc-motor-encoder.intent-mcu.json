@@ -1,213 +1,436 @@
 {
-  "schema": "intent-mcu-dc-motor-encoder-example@1",
-  "requirementIds": [
-    "CMP-069"
-  ],
+  "schema": "intent-mcu-project-envelope@8",
   "profile": "board.atmega328p-16mhz-v1",
-  "title": "DC motor command with independent encoder detents",
-  "graph": {
-    "components": [
-      {
-        "id": "board",
-        "type": "board.atmega328p-16mhz-v1"
+  "modelLibrary": {
+    "schema": "intent-mcu-model-library-lock@2",
+    "libraryId": "intent-mcu-public-models",
+    "version": "2.0.0-configurable-shortcuts.1-current",
+    "manifestSha256": "bab5958ef190e912748e8eabdba3382f79c1e077873bfee437b1f523b74f993f",
+    "implementationSha256": "16f07e6b070524598954ea6bc6e25ccf8e2aaa00828eb615a35e576ed66a1b28"
+  },
+  "brief": {
+    "schema": "intent-mcu-project-brief@4",
+    "purpose": "",
+    "inputs": [],
+    "outputs": [],
+    "boundaryCases": [],
+    "acceptanceCriteria": [],
+    "openAssumptions": [],
+    "requiredCapabilities": []
+  },
+  "scenarioTimeline": null,
+  "project": {
+    "schema": "intent-mcu-project-contact-persistence@1",
+    "project": {
+      "schema": "intent-mcu-project@3",
+      "metadata": {
+        "name": "DC motor command with independent encoder detents"
       },
-      {
-        "id": "dc-motor-encoder-1",
-        "type": "output.dc-motor-encoder-v1",
-        "label": "DC motor with encoder",
-        "properties": {
-          "encoding": "gray-2bit",
-          "pullMode": "input-pullup"
+      "catalogue": {
+        "schema": "intent-mcu-catalogue-ref@1",
+        "version": "intent-mcu-catalogue@2"
+      },
+      "controller": {
+        "profile": "board.atmega328p-16mhz-v1",
+        "adapterContract": "intent-mcu-controller-adapter@1",
+        "status": "simulated",
+        "capabilities": [
+          {
+            "id": "gpio",
+            "status": "simulated"
+          },
+          {
+            "id": "adc",
+            "status": "simulated"
+          },
+          {
+            "id": "pwm",
+            "status": "simulated"
+          },
+          {
+            "id": "uart0",
+            "status": "simulated"
+          },
+          {
+            "id": "timers",
+            "status": "partial"
+          },
+          {
+            "id": "interrupts",
+            "status": "partial"
+          },
+          {
+            "id": "spi",
+            "status": "unsupported"
+          },
+          {
+            "id": "i2c",
+            "status": "unsupported"
+          },
+          {
+            "id": "eeprom",
+            "status": "unsupported"
+          },
+          {
+            "id": "watchdog",
+            "status": "unsupported"
+          }
+        ]
+      },
+      "source": {
+        "files": [
+          {
+            "name": "main.ino",
+            "content": "byte previousEncoder = 3; int encoderQuarterSteps = 0; int encoderDetents = 0;\nvoid setup() {\n  pinMode(2, INPUT_PULLUP); pinMode(3, INPUT_PULLUP);\n  pinMode(7, OUTPUT); pinMode(8, OUTPUT); pinMode(9, OUTPUT);\n  digitalWrite(7, LOW); digitalWrite(8, LOW); digitalWrite(9, LOW);\n  Serial.begin(115200); Serial.println(\"READY\");\n}\nvoid loop() {\n  byte a = digitalRead(2), b = digitalRead(3), currentEncoder = (a << 1) | b;\n  if (currentEncoder != previousEncoder) {\n    const signed char transition[16] = {0,-1,1,0, 1,0,0,-1, -1,0,0,1, 0,1,-1,0};\n    encoderQuarterSteps += transition[(previousEncoder << 2) | currentEncoder];\n    if (currentEncoder == 3 && encoderQuarterSteps != 0) {\n      encoderDetents += encoderQuarterSteps / 4; encoderQuarterSteps = 0;\n    }\n    Serial.print(\"phase=\"); Serial.print(a); Serial.print(b);\n    Serial.print(\",count=\"); Serial.println(encoderDetents);\n    previousEncoder = currentEncoder;\n  }\n  delayMicroseconds(100);\n}\n"
+          }
+        ]
+      },
+      "circuit": {
+        "schema": "teach-lab-circuit@2",
+        "components": [
+          {
+            "id": "board-1",
+            "type": "board.atmega328p-16mhz-v1",
+            "label": "ATmega328P board",
+            "properties": {},
+            "controls": {}
+          },
+          {
+            "id": "dc-motor-encoder-1-encoder",
+            "type": "button.momentary-v1",
+            "label": "DC motor with encoder encoder (A)",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "dc-motor-encoder-1-encoder-b",
+            "type": "button.momentary-v1",
+            "label": "DC motor with encoder encoder (B)",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          }
+        ],
+        "nets": [
+          {
+            "id": "net-motor-encoder-a",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D2"
+              },
+              {
+                "component": "dc-motor-encoder-1-encoder",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-motor-encoder-b",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D3"
+              },
+              {
+                "component": "dc-motor-encoder-1-encoder-b",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-motor-encoder-common",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "GND2"
+              },
+              {
+                "component": "dc-motor-encoder-1-encoder-b",
+                "pin": "B"
+              },
+              {
+                "component": "dc-motor-encoder-1-encoder",
+                "pin": "B"
+              }
+            ]
+          }
+        ],
+        "junctions": []
+      },
+      "layout": {
+        "positions": {
+          "board-1": {
+            "x": 0.12,
+            "y": 0.2,
+            "rotation": 0
+          },
+          "dc-motor-encoder-1-encoder": {
+            "x": 0.82,
+            "y": 0.58,
+            "rotation": 0
+          },
+          "dc-motor-encoder-1-encoder-b": {
+            "x": 0.82,
+            "y": 0.58,
+            "rotation": 0
+          }
         },
-        "controls": {
-          "detent": 0
+        "wireRoutes": {},
+        "wireStyles": {
+          "net-motor-encoder-a": {
+            "color": "#39dff2"
+          },
+          "net-motor-encoder-b": {
+            "color": "#39dff2"
+          },
+          "net-motor-encoder-common": {
+            "color": "#303943"
+          }
+        },
+        "viewport": {
+          "zoom": 1,
+          "panX": 0,
+          "panY": 0
         }
       },
-      {
-        "id": "l298n-1",
-        "type": "driver.l298n-single-channel-v1",
-        "label": "L298N motor driver",
-        "properties": {},
-        "controls": {}
+      "instruments": {
+        "logicChannels": [
+          "D13",
+          "D2"
+        ],
+        "selectedPin": "D13",
+        "serial": {
+          "baud": 9600,
+          "encoding": "utf-8",
+          "historyLimit": 512
+        }
+      },
+      "artifact": {
+        "schema": "intent-mcu-project-artifact-ref@1",
+        "status": "dirty",
+        "profile": null,
+        "inputIdentitySha256": null,
+        "artifactIdentitySha256": null
       }
-    ],
-    "nets": [
-      {
-        "id": "in1",
-        "endpoints": [
-          {
-            "component": "l298n-1",
-            "pin": "IN1"
+    },
+    "candidateCircuit": {
+      "schema": "teach-lab-circuit@2",
+      "components": [
+        {
+          "id": "board-1",
+          "type": "board.atmega328p-16mhz-v1",
+          "label": "ATmega328P board",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "l298n-1",
+          "type": "driver.l298n-single-channel-v1",
+          "label": "L298N motor driver",
+          "properties": {},
+          "controls": {}
+        },
+        {
+          "id": "dc-motor-encoder-1",
+          "type": "output.dc-motor-encoder-v1",
+          "label": "DC motor with encoder",
+          "properties": {
+            "encoding": "gray-2bit",
+            "pullMode": "input-pullup"
           },
-          {
-            "component": "board",
-            "pin": "D7"
+          "controls": {
+            "detent": 0
           }
-        ]
+        }
+      ],
+      "nets": [
+        {
+          "id": "net-motor-encoder-a",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D2"
+            },
+            {
+              "component": "dc-motor-encoder-1",
+              "pin": "EA"
+            }
+          ]
+        },
+        {
+          "id": "net-motor-encoder-b",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D3"
+            },
+            {
+              "component": "dc-motor-encoder-1",
+              "pin": "EB"
+            }
+          ]
+        },
+        {
+          "id": "net-motor-encoder-common",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "GND2"
+            },
+            {
+              "component": "dc-motor-encoder-1",
+              "pin": "ECOM"
+            }
+          ]
+        },
+        {
+          "id": "net-motor-encoder-driver-ground",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "GND1"
+            },
+            {
+              "component": "l298n-1",
+              "pin": "GND"
+            }
+          ]
+        },
+        {
+          "id": "net-motor-encoder-driver-vcc",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "5V"
+            },
+            {
+              "component": "l298n-1",
+              "pin": "VCC"
+            }
+          ]
+        },
+        {
+          "id": "net-motor-encoder-enable",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D9"
+            },
+            {
+              "component": "l298n-1",
+              "pin": "ENA"
+            }
+          ]
+        },
+        {
+          "id": "net-motor-encoder-in1",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D7"
+            },
+            {
+              "component": "l298n-1",
+              "pin": "IN1"
+            }
+          ]
+        },
+        {
+          "id": "net-motor-encoder-in2",
+          "endpoints": [
+            {
+              "component": "board-1",
+              "pin": "D8"
+            },
+            {
+              "component": "l298n-1",
+              "pin": "IN2"
+            }
+          ]
+        },
+        {
+          "id": "net-motor-encoder-m1",
+          "endpoints": [
+            {
+              "component": "dc-motor-encoder-1",
+              "pin": "M1"
+            },
+            {
+              "component": "l298n-1",
+              "pin": "OUT1"
+            }
+          ]
+        },
+        {
+          "id": "net-motor-encoder-m2",
+          "endpoints": [
+            {
+              "component": "dc-motor-encoder-1",
+              "pin": "M2"
+            },
+            {
+              "component": "l298n-1",
+              "pin": "OUT2"
+            }
+          ]
+        }
+      ],
+      "junctions": []
+    },
+    "candidateLayout": {
+      "schema": "intent-mcu-candidate-layout@1",
+      "positions": {
+        "board-1": {
+          "x": 0.12,
+          "y": 0.2,
+          "rotation": 0
+        },
+        "dc-motor-encoder-1": {
+          "x": 0.82,
+          "y": 0.58,
+          "rotation": 0
+        },
+        "l298n-1": {
+          "x": 0.58,
+          "y": 0.58,
+          "rotation": 0
+        }
       },
-      {
-        "id": "in2",
-        "endpoints": [
-          {
-            "component": "l298n-1",
-            "pin": "IN2"
-          },
-          {
-            "component": "board",
-            "pin": "D8"
-          }
-        ]
-      },
-      {
-        "id": "ena",
-        "endpoints": [
-          {
-            "component": "l298n-1",
-            "pin": "ENA"
-          },
-          {
-            "component": "board",
-            "pin": "D9"
-          }
-        ]
-      },
-      {
-        "id": "vcc",
-        "endpoints": [
-          {
-            "component": "l298n-1",
-            "pin": "VCC"
-          },
-          {
-            "component": "board",
-            "pin": "5V"
-          }
-        ]
-      },
-      {
-        "id": "gnd",
-        "endpoints": [
-          {
-            "component": "l298n-1",
-            "pin": "GND"
-          },
-          {
-            "component": "board",
-            "pin": "GND1"
-          }
-        ]
-      },
-      {
-        "id": "out1",
-        "endpoints": [
-          {
-            "component": "l298n-1",
-            "pin": "OUT1"
-          },
-          {
-            "component": "dc-motor-encoder-1",
-            "pin": "M1"
-          }
-        ]
-      },
-      {
-        "id": "out2",
-        "endpoints": [
-          {
-            "component": "l298n-1",
-            "pin": "OUT2"
-          },
-          {
-            "component": "dc-motor-encoder-1",
-            "pin": "M2"
-          }
-        ]
-      },
-      {
-        "id": "encoder-a",
-        "endpoints": [
-          {
-            "component": "dc-motor-encoder-1",
-            "pin": "EA"
-          },
-          {
-            "component": "board",
-            "pin": "D2"
-          }
-        ]
-      },
-      {
-        "id": "encoder-b",
-        "endpoints": [
-          {
-            "component": "dc-motor-encoder-1",
-            "pin": "EB"
-          },
-          {
-            "component": "board",
-            "pin": "D3"
-          }
-        ]
-      },
-      {
-        "id": "encoder-common",
-        "endpoints": [
-          {
-            "component": "dc-motor-encoder-1",
-            "pin": "ECOM"
-          },
-          {
-            "component": "board",
-            "pin": "GND2"
-          }
-        ]
+      "wireRoutes": {},
+      "viewport": {
+        "zoom": 1,
+        "panX": 0,
+        "panY": 0
       }
-    ],
-    "junctions": []
-  },
-  "model": {
-    "schema": "intent-mcu-model-entry@1",
-    "componentType": "output.dc-motor-encoder-v1",
-    "modelId": "model.dc-motor-encoder-command-quadrature-v1",
-    "renderer": "output-dc-motor-encoder",
-    "controls": [
-      {
-        "key": "detent",
-        "kind": "integer",
-        "min": -999,
-        "max": 999,
-        "default": 0
-      }
-    ],
-    "runtimeAuthority": "independent-user-authored-quadrature-only",
-    "forbiddenInferences": [
-      "pwm-to-encoder",
-      "direction-to-encoder",
-      "artwork-to-encoder",
-      "elapsed-time-to-rpm"
-    ]
-  },
-  "interaction": {
-    "control": "detent",
-    "values": [
-      -2,
-      0,
-      2
-    ],
-    "expectedCwSequence": [
-      "11",
-      "01",
-      "00",
-      "10",
-      "11"
-    ],
-    "expectedCcwSequence": [
-      "11",
-      "10",
-      "00",
-      "01",
-      "11"
-    ]
-  },
-  "limitations": "Encoder detents are explicit user-authored quadrature events and are never inferred from PWM, direction, artwork, elapsed time or claimed RPM."
+    },
+    "compiledFixture": {
+      "schema": "intent-mcu-compiled-fixture-ref@1",
+      "id": "button-pullup",
+      "profile": "board.atmega328p-16mhz-v1",
+      "toolchainImageId": "sha256:f04aa7a8c37699d16a965fb374870ff147ca776ba6386f81e7700e350ed3d89f",
+      "source": {
+        "sha256": "84ceea4f298483f4696a3672ac1fff97b046b9e35c65aaa6155b20140a66f518",
+        "bytes": 209
+      },
+      "executable": {
+        "format": "intel-hex",
+        "sha256": "247f94bb051e9eebb4dfe8099278d810e04ccbf097f1b3ddb53b904e26ea8ebc",
+        "bytes": 2525
+      },
+      "debug": {
+        "format": "elf",
+        "sha256": "23a37eff7f7c5b1d0626e12a3f31e00d9b79466eab374cd0d74c46e3667150bd",
+        "bytes": 14632
+      },
+      "artifactIdentitySha256": "69ad0bc87ba02a2d33ac4c5ba1d9bd07e28636b631cd007f4b9423889e76bd3b"
+    }
+  }
 }

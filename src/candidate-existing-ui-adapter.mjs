@@ -841,8 +841,30 @@ export function candidateContactControl(session, componentId, key, value) {
   if (component.type === DC_MOTOR_ENCODER_TYPE && key === 'detent'
       && Number.isInteger(value) && value >= -999 && value <= 999
       && Math.abs(value - component.controls.detent) === 1) {
-    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
-      direction: value > component.controls.detent ? 'cw' : 'ccw' };
+    const direction = value > component.controls.detent ? 'cw' : 'ccw';
+    const support = session.runtimeSupport?.find((item) => item.componentId === componentId);
+    const encoder = support?.runtimeProjection?.encoder;
+    if (!encoder) return failure('CANDIDATE_UI_RUNTIME', [componentId]);
+    const evaluated = session.evaluateModel(component.type, {
+      in1: false, in2: false, enable: 0, encoderDirection: direction, encoderDetents: 1,
+    });
+    if (!evaluated.ok) return failure(evaluated.code, [componentId]);
+    const events = rotaryEncoderDigitalSequence(encoder, direction);
+    const states = ['11', ...events.reduce((rows, event, index) => {
+      const prior = rows[index - 1] ?? '11';
+      const next = prior.split('');
+      next[event.pin === encoder.phases.A.boardPinNumber ? 0 : 1] = event.level ? '1' : '0';
+      return [...rows, next.join('')];
+    }, [])];
+    if (JSON.stringify(states) !== JSON.stringify(evaluated.result.encoder.grayStates)) {
+      return failure('MODEL_LIBRARY_PRODUCTION_MISMATCH', [componentId]);
+    }
+    return {
+      ok: true,
+      command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'digital-sequence', events },
+      direction,
+    };
   }
   if (component.type === LIGHT_ANALOGUE_SENSOR_TYPE && key === 'lightLevel'
       && Number.isFinite(value) && value >= 0 && value <= 1) {

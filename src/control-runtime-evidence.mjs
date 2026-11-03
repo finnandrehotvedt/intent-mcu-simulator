@@ -28,8 +28,8 @@ const rows = [
   ['sensor.tilt-switch-no-v1', 'tilted', 'control · active-low NO contact', 'D5 input → executed firmware → USART', 'actual-executed'],
   ['sensor.ball-vibration-switch-no-v1', 'vibrationDetected', 'control · active-low NO contact', 'D6 input → executed firmware → USART', 'actual-executed'],
   ['switch.rotary-selector-4-v1', 'position', 'control · release all then close selected contact', 'D2–D5 pull-up inputs → executed firmware → USART one-of-four', 'actual-executed'],
-  ['sensor.light-analogue-v1', 'lightLevel', 'control · position', 'A0 ADC → bounded analogue projection; firmware pass pending', 'model-projected'],
-  ['sensor.temperature-analogue-v1', 'temperatureC', 'control · normalized position', 'A1 ADC → bounded analogue projection; firmware pass pending', 'model-projected'],
+  ['sensor.light-analogue-v1', 'lightLevel', 'control · position', 'A1 ADC → executed firmware → USART/D13', 'actual-executed'],
+  ['sensor.temperature-analogue-v1', 'temperatureC', 'control · normalized position', 'A1 ADC → executed firmware → USART/LCD/RGB threshold', 'actual-executed'],
   ['sensor.soil-moisture-resistive-analogue-v1', 'moistureRatio', 'control · normalized position', 'A2 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.soil-moisture-capacitive-analogue-v1', 'moistureRatio', 'control · normalized position', 'A3 ADC → executed firmware → USART', 'actual-executed'],
   ['sensor.water-level-analogue-v1', 'waterLevelRatio', 'control · normalized position', 'A4 ADC → executed firmware → USART', 'actual-executed'],
@@ -52,7 +52,7 @@ const rows = [
   ['sensor.light-threshold-digital-v1', 'hysteresisPercentagePoints', 'control · derived pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.light-threshold-digital-v1', 'outputActive', 'derived state · emitted as control pressed', 'D2 module output → executed firmware → USART/D13', 'actual-executed-derived'],
   ['input.rotary-encoder-quadrature-v1', 'detent', 'digital-sequence · four ordered phases', 'D2/D3 inputs → executed firmware → USART', 'actual-executed'],
-  ['output.dc-motor-encoder-v1', 'detent', 'digital-sequence · independent four-phase feedback', 'EA/EB inputs → bounded quadrature projection', 'model-projected'],
+  ['output.dc-motor-encoder-v1', 'detent', 'digital-sequence · independent four-phase feedback', 'EA/EB on D2/D3 → executed firmware → USART count', 'actual-executed'],
   ['input.analog-joystick-2axis-v1', 'x', 'control · X position', 'A0 ADC → executed firmware → USART', 'actual-executed'],
   ['input.analog-joystick-2axis-v1', 'y', 'control · Y position', 'A1 ADC → executed firmware → USART', 'actual-executed'],
   ['input.analog-joystick-2axis-v1', 'pressed', 'contact projection · shaft button', 'D2 input → executed firmware → USART', 'actual-executed'],
@@ -81,7 +81,9 @@ const rows = [
   workerEvent,
   observable,
   evidence,
-  evidenceSource: ['sensor.ldr-divider-v1', 'sensor.ntc-10k-divider-v1',
+  evidenceSource: ['sensor.light-analogue-v1', 'sensor.temperature-analogue-v1'].includes(model)
+    ? 'test/firmware-acceptance-core-analogue-browser.cjs'
+    : ['sensor.ldr-divider-v1', 'sensor.ntc-10k-divider-v1',
     'sensor.flex-divider-v1', 'sensor.force-sensitive-resistor-divider-v1'].includes(model)
     ? 'test/resistive-divider-sensors-browser.cjs'
     : model === 'sensor.tmp36-temperature-analogue-v1'
@@ -121,7 +123,7 @@ const rows = [
     : ['touched', 'motionDetected', 'magnetPresent'].includes(field)
       ? 'test/digital-presence-sensors-browser.cjs'
     : model === 'output.dc-motor-encoder-v1'
-      ? 'test/dc-motor-encoder-browser.cjs'
+      ? 'test/firmware-acceptance-dc-motor-encoder-browser.cjs'
     : ['thresholdPercent', 'hysteresisPercentagePoints', 'outputActive'].includes(field)
       ? 'test/control-runtime-evidence-browser.cjs'
       : 'test/control-persistence-browser.cjs',

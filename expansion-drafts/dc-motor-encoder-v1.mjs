@@ -117,7 +117,19 @@ export function projectDcMotorEncoders(value) {
   const motorProjection = projectDcMotorL298n(graph); if (!motorProjection.ok) return motorProjection;
   const encoderProjection = projectRotaryEncoders(motorProjection.runtimeGraph); if (!encoderProjection.ok) return encoderProjection;
   return { ok: true, runtimeGraph: encoderProjection.runtimeGraph,
-    assemblies: assemblies.map(({ id, controls }) => ({ componentId: id, motorId: `${id}-motor`, encoderId: `${id}-encoder`, detent: controls.detent })),
+    assemblies: assemblies.map(({ id, controls }) => ({
+      componentId: id,
+      motorId: `${id}-motor`,
+      encoderId: `${id}-encoder`,
+      detent: controls.detent,
+      encoder: structuredClone(encoderProjection.encoders.find(({ componentId }) => componentId === `${id}-encoder`)),
+    })),
     motors: motorProjection.motors, drivers: motorProjection.drivers, encoders: encoderProjection.encoders,
-    runtimePositionSources: encoderProjection.runtimePositionSources };
+    runtimePositionSources: Object.fromEntries([
+      ...assemblies.map(({ id }) => [`${id}-motor`, id]),
+      ...Object.entries(encoderProjection.runtimePositionSources).map(([runtimeId, sourceId]) => {
+        const assembly = assemblies.find(({ id }) => sourceId === `${id}-encoder`);
+        return [runtimeId, assembly?.id ?? sourceId];
+      }),
+    ]) };
 }
