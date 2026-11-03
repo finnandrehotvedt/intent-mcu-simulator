@@ -15,12 +15,12 @@ const rows = [
   ['switch.slide-spdt-v1', 'selectedThrow', 'control · selected throw', 'D4 input → executed firmware → USART', 'actual-executed'],
   ['button.momentary-nc-v1', 'pressed', 'control · inverted pressed hold/release', 'D5 input → executed firmware → USART', 'actual-executed'],
   ['switch.limit-spdt-v1', 'actuated', 'control · spring-return COM/NC/NO state', 'D6 input → executed firmware → USART', 'actual-executed'],
-  ['switch.dip-4-v1', 'switch1', 'contact projection · maintained channel 1', 'authored DIP contact → bounded AVR projection', 'model-projected'],
-  ['switch.dip-4-v1', 'switch2', 'contact projection · maintained channel 2', 'authored DIP contact → bounded AVR projection', 'model-projected'],
-  ['switch.dip-4-v1', 'switch3', 'contact projection · maintained channel 3', 'authored DIP contact → bounded AVR projection', 'model-projected'],
-  ['switch.dip-4-v1', 'switch4', 'contact projection · maintained channel 4', 'authored DIP contact → bounded AVR projection', 'model-projected'],
-  ['input.rotary-encoder-button-v1', 'detent', 'digital-sequence · four ordered phases', 'A/B inputs → executed firmware', 'model-projected'],
-  ['input.rotary-encoder-button-v1', 'pressed', 'contact projection · shaft button', 'authored SW contact → bounded AVR projection', 'model-projected'],
+  ['switch.dip-4-v1', 'switch1', 'digital-input · maintained channel 1', 'D5 input → executed firmware → USART', 'actual-executed'],
+  ['switch.dip-4-v1', 'switch2', 'digital-input · maintained channel 2', 'D6 input → executed firmware → USART', 'actual-executed'],
+  ['switch.dip-4-v1', 'switch3', 'digital-input · maintained channel 3', 'D7 input → executed firmware → USART', 'actual-executed'],
+  ['switch.dip-4-v1', 'switch4', 'digital-input · maintained channel 4', 'D8 input → executed firmware → USART', 'actual-executed'],
+  ['input.rotary-encoder-button-v1', 'detent', 'digital-sequence · four ordered phases', 'D2/D3 inputs → executed firmware → USART count', 'actual-executed'],
+  ['input.rotary-encoder-button-v1', 'pressed', 'digital-input · shaft button hold/release', 'D4 input → executed firmware → USART', 'actual-executed'],
   ['switch.reed-no-v1', 'magnetPresent', 'control · active-low NO contact', 'D7 input → executed firmware → USART', 'actual-executed'],
   ['switch.emergency-stop-nc-v1', 'latched', 'control · NC contact opens when latched', 'D8 input → executed firmware → USART', 'actual-executed'],
   ['switch.foot-pedal-no-v1', 'pressed', 'control · active-low NO contact', 'D9 input → executed firmware → USART', 'actual-executed'],
@@ -107,6 +107,10 @@ const rows = [
     ? 'test/bme280-environment-browser.cjs'
     : ['sensor.flow-pulse-digital-v1', 'sensor.wind-speed-pulse-digital-v1'].includes(model)
     ? 'test/firmware-acceptance-digital-browser.cjs'
+    : ['switch.dip-4-v1', 'input.rotary-encoder-button-v1'].includes(model)
+      ? 'test/firmware-acceptance-advanced-switch-browser.cjs'
+    : ['switch.slide-spdt-v1', 'button.momentary-nc-v1', 'switch.limit-spdt-v1'].includes(model)
+      ? 'test/firmware-acceptance-digital-browser.cjs'
     : ['magnetPresent', 'latched', 'pressed'].includes(field)
       && ['switch.reed-no-v1', 'switch.emergency-stop-nc-v1', 'switch.foot-pedal-no-v1'].includes(model)
       ? 'test/firmware-acceptance-digital-browser.cjs'

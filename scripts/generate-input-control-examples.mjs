@@ -90,8 +90,15 @@ function mechanicalExample() {
 }
 const mechanical = mechanicalExample();
 function advancedSwitchExample() {
-  const source = `void setup() { for (byte p=2;p<=9;p++) pinMode(p, INPUT_PULLUP); Serial.begin(115200); }
-void loop() { for (byte p=2;p<=9;p++) Serial.print(digitalRead(p)); Serial.println(); delay(120); }
+  const source = `byte previousEncoder = 3; int encoderQuarterSteps = 0; int encoderDetents = 0; unsigned long lastReport = 0;
+void setup() { for (byte p=2;p<=9;p++) pinMode(p, INPUT_PULLUP); Serial.begin(115200); }
+void loop() {
+  byte currentEncoder = (digitalRead(2) << 1) | digitalRead(3);
+  const signed char transition[16] = {0,-1,1,0, 1,0,0,-1, -1,0,0,1, 0,1,-1,0};
+  encoderQuarterSteps += transition[(previousEncoder << 2) | currentEncoder]; previousEncoder = currentEncoder;
+  if (currentEncoder == 3 && encoderQuarterSteps != 0) { encoderDetents += encoderQuarterSteps / 4; encoderQuarterSteps = 0; }
+  if (millis() - lastReport >= 120) { lastReport = millis(); Serial.print("count="); Serial.print(encoderDetents); Serial.print(",bits="); for (byte p=2;p<=9;p++) Serial.print(digitalRead(p)); Serial.println(); }
+}
 `;
   const draft = createEditableContactDraft(source); if (!draft.ok) throw new Error(draft.code);
   draft.project.project.metadata.name = 'DIP, changeover and encoder button inputs';

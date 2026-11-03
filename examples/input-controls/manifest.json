@@ -128,8 +128,8 @@
       },
       "expectedBehavior": "Turning and pressing the encoder changes D2–D4, four DIP positions change D5–D8, and the changeover contact selects GND or 5 V on D9.",
       "firmwareLimits": "Ideal AVR contact models only; no bounce, acceleration, resistance, missed edges, force, travel, arcing or wear.",
-      "sourceSha256": "b1bd1a93e2a6d66a0112a07e7f6ac6ed91a063f05e5604592d5e47e1e04ad681",
-      "projectSha256": "3fe8c283c5f94cee8b569956ed1a15f9ddae9b400dc5034baf64ced761dd105a",
+      "sourceSha256": "bca467811047fbf996ac258582d68bcc1add4762697d882864b86660a0d1fd1c",
+      "projectSha256": "ffc55b2a22ee25a050387f1da00865df83f11650e90a01b171b5e4d0fe048478",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "separate 3.3 V authoring component exists; this exact model is unavailable",

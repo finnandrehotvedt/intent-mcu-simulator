@@ -14135,7 +14135,8 @@ function renderRuntimeControls() {
           const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
           const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
           if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'DIP switch rejected.'); return; }
-          applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+          applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+          if (prepared.worker) worker?.postMessage(prepared.worker); renderProject();
         }); row.append(label, button); return row;
       });
     }
@@ -14152,7 +14153,8 @@ function renderRuntimeControls() {
         const prepared = selectedCandidateContactControl(component.id, key, value);
         const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
         if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Encoder control rejected.'); return; }
-        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker); renderProject();
       };
       ccw.addEventListener('click', () => applyControl('detent', component.controls.detent - 1));
       cw.addEventListener('click', () => applyControl('detent', component.controls.detent + 1));

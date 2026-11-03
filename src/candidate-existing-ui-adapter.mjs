@@ -561,6 +561,27 @@ function mechanicalDigitalProjection(session, component, nextValue = null) {
   return { componentId: component.id, pin: Number(signalPin.slice(1)), pinLabel: signalPin, level };
 }
 
+function candidateBoardPin(session, componentId, terminal) {
+  const graph = session.visualProject.circuit;
+  const board = graph.components.find((item) => item.type === 'board.atmega328p-16mhz-v1');
+  const net = graph.nets.find((item) => item.endpoints.some(
+    (endpoint) => endpoint.component === componentId && endpoint.pin === terminal,
+  ));
+  const pinLabel = net?.endpoints.find((endpoint) => endpoint.component === board?.id
+    && /^D(?:[0-9]|1[0-3])$/u.test(endpoint.pin))?.pin;
+  return pinLabel ? { pin: Number(pinLabel.slice(1)), pinLabel } : null;
+}
+
+function advancedEncoderProjection(session, component) {
+  const phaseA = candidateBoardPin(session, component.id, 'A');
+  const phaseB = candidateBoardPin(session, component.id, 'B');
+  const button = candidateBoardPin(session, component.id, 'SW');
+  if (!phaseA || !phaseB || !button) return null;
+  return { phaseCycles: 16_000, phases: {
+    A: { boardPinNumber: phaseA.pin }, B: { boardPinNumber: phaseB.pin },
+  }, button };
+}
+
 export function candidateRuntimeInputs(session) {
   if (session?.kind !== 'candidate-project-v3') return [];
   const runnable = session.runnable;
@@ -600,6 +621,28 @@ export function candidateRuntimeInputs(session) {
     const projection = component ? mechanicalDigitalProjection(session, component) : null;
     if (!projection) throw new Error('MECHANICAL_DIGITAL_PROJECTION_INVALID');
     inputs.push(projection);
+  }
+  for (const support of session.runtimeSupport.filter(
+    (item) => [DIP_SWITCH_4_TYPE, ROTARY_ENCODER_BUTTON_TYPE].includes(item.type),
+  )) {
+    const component = session.visualProject.circuit.components.find((item) => item.id === support.componentId);
+    if (component?.type === DIP_SWITCH_4_TYPE) {
+      for (let index = 1; index <= 4; index += 1) {
+        const boardPin = candidateBoardPin(session, component.id, `${index}A`);
+        if (!boardPin) throw new Error('ADVANCED_SWITCH_DIGITAL_PROJECTION_INVALID');
+        inputs.push({ componentId: `${component.id}-${index}`, ...boardPin,
+          level: !component.controls[`switch${index}`] });
+      }
+    } else if (component?.type === ROTARY_ENCODER_BUTTON_TYPE) {
+      const projection = advancedEncoderProjection(session, component);
+      if (!projection) throw new Error('ADVANCED_SWITCH_DIGITAL_PROJECTION_INVALID');
+      inputs.push({ componentId: `${component.id}-A`, pin: projection.phases.A.boardPinNumber,
+        pinLabel: `D${projection.phases.A.boardPinNumber}`, level: true });
+      inputs.push({ componentId: `${component.id}-B`, pin: projection.phases.B.boardPinNumber,
+        pinLabel: `D${projection.phases.B.boardPinNumber}`, level: true });
+      inputs.push({ componentId: `${component.id}-SW`, ...projection.button,
+        level: !component.controls.pressed });
+    }
   }
   for (const support of session.runtimeSupport.filter((item) => item.type === ROTARY_ENCODER_TYPE)) {
     const projection = support.runtimeProjection;
@@ -654,16 +697,26 @@ export function candidateContactControl(session, componentId, key, value) {
   }
   if (component.type === DIP_SWITCH_4_TYPE && /^switch[1-4]$/u.test(key)
       && typeof value === 'boolean') {
-    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+    const boardPin = candidateBoardPin(session, componentId, `${key.slice(-1)}A`);
+    if (!boardPin) return failure('ADVANCED_SWITCH_DIGITAL_PROJECTION_INVALID', [componentId]);
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'digital-input', pin: boardPin.pin, level: !value } };
   }
   if (component.type === ROTARY_ENCODER_BUTTON_TYPE && key === 'pressed'
       && typeof value === 'boolean') {
-    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+    const projection = advancedEncoderProjection(session, component);
+    if (!projection) return failure('ADVANCED_SWITCH_DIGITAL_PROJECTION_INVALID', [componentId]);
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'digital-input', pin: projection.button.pin, level: !value } };
   }
   if (component.type === ROTARY_ENCODER_BUTTON_TYPE && key === 'detent'
       && Number.isInteger(value) && Math.abs(value - component.controls.detent) === 1) {
+    const projection = advancedEncoderProjection(session, component);
+    if (!projection) return failure('ADVANCED_SWITCH_DIGITAL_PROJECTION_INVALID', [componentId]);
+    const direction = value > component.controls.detent ? 'cw' : 'ccw';
     return { ok: true, command: { type: 'component.control.set', componentId, key, value },
-      direction: value > component.controls.detent ? 'cw' : 'ccw' };
+      worker: { command: 'digital-sequence', events: rotaryEncoderDigitalSequence(projection, direction) },
+      direction };
   }
   if (component.type === REED_SWITCH_TYPE && key === 'magnetPresent' && typeof value === 'boolean') {
     return { ok: true, command: { type: 'component.control.set', componentId, key, value },

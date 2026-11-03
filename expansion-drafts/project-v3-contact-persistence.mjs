@@ -947,6 +947,7 @@ function projectedId(id, suffix) {
 function projectAdvancedSwitchInputs(graph) {
   const projected = clone(graph);
   const replacements = new Map();
+  const runtimePositionSources = {};
   projected.components = projected.components.flatMap((component) => {
     if (component.type === DIP_SWITCH_4_TYPE) {
       const items = [1, 2, 3, 4].map((channel) => ({
@@ -958,6 +959,7 @@ function projectAdvancedSwitchInputs(graph) {
         [`${index + 1}A`, { component: item.id, pin: 'A' }],
         [`${index + 1}B`, { component: item.id, pin: 'B' }],
       ])));
+      for (const item of items) runtimePositionSources[item.id] = component.id;
       return items;
     }
     if (component.type === ROTARY_ENCODER_BUTTON_TYPE) {
@@ -967,6 +969,8 @@ function projectAdvancedSwitchInputs(graph) {
         B: { component: encoderId, pin: 'B' }, SW: { component: buttonId, pin: 'A' },
         SWCOM: { component: buttonId, pin: 'B' },
       });
+      runtimePositionSources[encoderId] = component.id;
+      runtimePositionSources[buttonId] = component.id;
       return [{ id: encoderId, type: ROTARY_ENCODER_TYPE, label: component.label,
         properties: { encoding: 'gray-2bit', pullMode: 'input-pullup' },
         controls: { detent: component.controls.detent } },
@@ -991,7 +995,7 @@ function projectAdvancedSwitchInputs(graph) {
     const replacement = replacements.get(endpoint.component)?.[endpoint.pin];
     return replacement ? { ...endpoint, ...replacement } : endpoint;
   }) }));
-  return projected;
+  return { runtimeGraph: projected, runtimePositionSources };
 }
 
 function production(implementation, componentType, input, details = []) {
@@ -1103,7 +1107,7 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   const joystickKeypadProjection = projectJoystickKeypads(graph);
   const selectorProjection = projectRotarySelectors(joystickKeypadProjection.runtimeGraph);
   const advancedProjection = projectAdvancedSwitchInputs(selectorProjection.runtimeGraph);
-  const mechanicalProjection = projectMechanicalInputs(advancedProjection);
+  const mechanicalProjection = projectMechanicalInputs(advancedProjection.runtimeGraph);
   const withoutSpdt = removeSpdtComponents(mechanicalProjection);
   const withProjectedSpst = projectSpstComponents(withoutSpdt);
   const lightProjection = projectLightAnalogueSensors(withProjectedSpst);
@@ -1597,7 +1601,10 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
       ...sevenSegmentProjection.runtimePositionSources,
       ...fourDigitProjection.runtimePositionSources,
       ...motorEncoderProjection.runtimePositionSources,
-      ...rotaryEncoderProjection.runtimePositionSources,
+      ...Object.fromEntries(Object.entries(rotaryEncoderProjection.runtimePositionSources)
+        .map(([runtimeId, sourceId]) => [runtimeId,
+          advancedProjection.runtimePositionSources[sourceId] ?? sourceId])),
+      ...advancedProjection.runtimePositionSources,
       ...joystickKeypadProjection.runtimePositionSources,
     }),
   };

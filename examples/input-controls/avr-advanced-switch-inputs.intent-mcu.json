@@ -81,7 +81,7 @@
         "files": [
           {
             "name": "main.ino",
-            "content": "void setup() { for (byte p=2;p<=9;p++) pinMode(p, INPUT_PULLUP); Serial.begin(115200); }\nvoid loop() { for (byte p=2;p<=9;p++) Serial.print(digitalRead(p)); Serial.println(); delay(120); }\n"
+            "content": "byte previousEncoder = 3; int encoderQuarterSteps = 0; int encoderDetents = 0; unsigned long lastReport = 0;\nvoid setup() { for (byte p=2;p<=9;p++) pinMode(p, INPUT_PULLUP); Serial.begin(115200); }\nvoid loop() {\n  byte currentEncoder = (digitalRead(2) << 1) | digitalRead(3);\n  const signed char transition[16] = {0,-1,1,0, 1,0,0,-1, -1,0,0,1, 0,1,-1,0};\n  encoderQuarterSteps += transition[(previousEncoder << 2) | currentEncoder]; previousEncoder = currentEncoder;\n  if (currentEncoder == 3 && encoderQuarterSteps != 0) { encoderDetents += encoderQuarterSteps / 4; encoderQuarterSteps = 0; }\n  if (millis() - lastReport >= 120) { lastReport = millis(); Serial.print(\"count=\"); Serial.print(encoderDetents); Serial.print(\",bits=\"); for (byte p=2;p<=9;p++) Serial.print(digitalRead(p)); Serial.println(); }\n}\n"
           }
         ]
       },
@@ -94,6 +94,83 @@
             "label": "ATmega328P board",
             "properties": {},
             "controls": {}
+          },
+          {
+            "id": "dip-switch-1-s1",
+            "type": "button.momentary-v1",
+            "label": "4-position DIP switch 1",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "dip-switch-1-s2",
+            "type": "button.momentary-v1",
+            "label": "4-position DIP switch 2",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "dip-switch-1-s3",
+            "type": "button.momentary-v1",
+            "label": "4-position DIP switch 3",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "dip-switch-1-s4",
+            "type": "button.momentary-v1",
+            "label": "4-position DIP switch 4",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "encoder-button-1-enc",
+            "type": "button.momentary-v1",
+            "label": "Rotary encoder with button (A)",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "encoder-button-1-enc-b",
+            "type": "button.momentary-v1",
+            "label": "Rotary encoder with button (B)",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "encoder-button-1-sw",
+            "type": "button.momentary-v1",
+            "label": "Rotary encoder with button button",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
           },
           {
             "id": "led-1",
@@ -159,6 +236,97 @@
             ]
           },
           {
+            "id": "net-advanced-dip-1",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D5"
+              },
+              {
+                "component": "dip-switch-1-s1",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-advanced-dip-2",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D6"
+              },
+              {
+                "component": "dip-switch-1-s2",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-advanced-dip-3",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D7"
+              },
+              {
+                "component": "dip-switch-1-s3",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-advanced-dip-4",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D8"
+              },
+              {
+                "component": "dip-switch-1-s4",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-advanced-encoder-a",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D2"
+              },
+              {
+                "component": "encoder-button-1-enc",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-advanced-encoder-b",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D3"
+              },
+              {
+                "component": "encoder-button-1-enc-b",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-advanced-encoder-sw",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D4"
+              },
+              {
+                "component": "encoder-button-1-sw",
+                "pin": "A"
+              }
+            ]
+          },
+          {
             "id": "net-d13-branch",
             "endpoints": [
               {
@@ -181,6 +349,34 @@
               {
                 "component": "board-1",
                 "pin": "GND1"
+              },
+              {
+                "component": "dip-switch-1-s1",
+                "pin": "B"
+              },
+              {
+                "component": "dip-switch-1-s2",
+                "pin": "B"
+              },
+              {
+                "component": "dip-switch-1-s3",
+                "pin": "B"
+              },
+              {
+                "component": "dip-switch-1-s4",
+                "pin": "B"
+              },
+              {
+                "component": "encoder-button-1-enc-b",
+                "pin": "B"
+              },
+              {
+                "component": "encoder-button-1-enc",
+                "pin": "B"
+              },
+              {
+                "component": "encoder-button-1-sw",
+                "pin": "B"
               },
               {
                 "component": "led-1",
@@ -238,6 +434,10 @@
         ],
         "junctions": [
           {
+            "id": "junction-advanced-changeover-power",
+            "net": "net-5v"
+          },
+          {
             "id": "junction-d13",
             "net": "net-d13-branch"
           },
@@ -252,6 +452,41 @@
           "board-1": {
             "x": 0.12,
             "y": 0.2,
+            "rotation": 0
+          },
+          "dip-switch-1-s1": {
+            "x": 0.72,
+            "y": 0.58,
+            "rotation": 0
+          },
+          "dip-switch-1-s2": {
+            "x": 0.72,
+            "y": 0.58,
+            "rotation": 0
+          },
+          "dip-switch-1-s3": {
+            "x": 0.72,
+            "y": 0.58,
+            "rotation": 0
+          },
+          "dip-switch-1-s4": {
+            "x": 0.72,
+            "y": 0.58,
+            "rotation": 0
+          },
+          "encoder-button-1-enc": {
+            "x": 0.74,
+            "y": 0.3,
+            "rotation": 0
+          },
+          "encoder-button-1-enc-b": {
+            "x": 0.74,
+            "y": 0.3,
+            "rotation": 0
+          },
+          "encoder-button-1-sw": {
+            "x": 0.74,
+            "y": 0.3,
             "rotation": 0
           },
           "led-1": {
@@ -284,6 +519,27 @@
         "wireStyles": {
           "net-5v": {
             "color": "#f04f5f"
+          },
+          "net-advanced-dip-1": {
+            "color": "#39dff2"
+          },
+          "net-advanced-dip-2": {
+            "color": "#39dff2"
+          },
+          "net-advanced-dip-3": {
+            "color": "#39dff2"
+          },
+          "net-advanced-dip-4": {
+            "color": "#39dff2"
+          },
+          "net-advanced-encoder-a": {
+            "color": "#39dff2"
+          },
+          "net-advanced-encoder-b": {
+            "color": "#39dff2"
+          },
+          "net-advanced-encoder-sw": {
+            "color": "#39dff2"
           },
           "net-d13-branch": {
             "color": "#39dff2"

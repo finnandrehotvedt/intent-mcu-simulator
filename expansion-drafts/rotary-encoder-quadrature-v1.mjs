@@ -185,7 +185,7 @@ export function projectRotaryEncoders(value) {
     if (phases[0].boardPin === phases[1].boardPin) return fail('ROTARY_ENCODER_PHASES_REQUIRE_UNIQUE_PINS', [component.id]);
     const commonEndpoints = index.nets.get(commonNet)?.endpoints ?? [];
     const commonBoards = boardEndpoints(index, commonNet);
-    if (commonEndpoints.length !== 2 || commonBoards.length !== 1 || !GROUND_PIN.test(commonBoards[0].pin)) {
+    if (commonEndpoints.length < 2 || commonBoards.length !== 1 || !GROUND_PIN.test(commonBoards[0].pin)) {
       return fail('ROTARY_ENCODER_COM_REQUIRES_GROUND', [component.id, commonNet]);
     }
     inspections.push({ component, commonNet, phases });
