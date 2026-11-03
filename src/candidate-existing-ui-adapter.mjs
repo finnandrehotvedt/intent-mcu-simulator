@@ -604,7 +604,8 @@ export function candidateContactControl(session, componentId, key, value) {
     };
   }
   if (component.type === SLIDE_SWITCH_TYPE && key === 'selectedThrow' && ['A', 'B'].includes(value)) {
-    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value: value === 'A' } };
   }
   if (component.type === NC_BUTTON_TYPE && key === 'pressed' && typeof value === 'boolean') {
     return {
@@ -613,7 +614,8 @@ export function candidateContactControl(session, componentId, key, value) {
     };
   }
   if (component.type === LIMIT_SWITCH_TYPE && key === 'actuated' && typeof value === 'boolean') {
-    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value: !value } };
   }
   if (component.type === DIP_SWITCH_4_TYPE && /^switch[1-4]$/u.test(key)
       && typeof value === 'boolean') {

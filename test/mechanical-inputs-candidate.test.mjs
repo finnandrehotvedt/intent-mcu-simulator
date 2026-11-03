@@ -8,6 +8,21 @@ import {
 } from '../expansion-drafts/mechanical-inputs-v1.mjs';
 import { CandidateEditorSession, openPortableEditorSession } from '../src/candidate-project-session.mjs';
 import { createContactPersistenceExample } from '../expansion-drafts/contact-persistence-fixture-v1.mjs';
+import { candidateContactControl } from '../src/candidate-existing-ui-adapter.mjs';
+
+test('mechanical worker commands preserve exact contact polarity', () => {
+  const session = new CandidateEditorSession(createContactPersistenceExample().project);
+  for (const [type,id] of [[SLIDE_SWITCH_TYPE,'slide-1'],[NC_BUTTON_TYPE,'nc-1'],[LIMIT_SWITCH_TYPE,'limit-1']]) {
+    assert.equal(session.apply({type:'component.add',revision:session.revision,
+      component:createMechanicalInputComponent(type,id),position:{x:.5,y:.5,rotation:0}}).ok,true);
+  }
+  assert.deepEqual(candidateContactControl(session,'slide-1','selectedThrow','B').worker,
+    {command:'control',componentId:'slide-1',key:'pressed',value:false});
+  assert.deepEqual(candidateContactControl(session,'nc-1','pressed',true).worker,
+    {command:'control',componentId:'nc-1',key:'pressed',value:false});
+  assert.deepEqual(candidateContactControl(session,'limit-1','actuated',true).worker,
+    {command:'control',componentId:'limit-1',key:'pressed',value:false});
+});
 
 test('CMP023 slide switch retains an explicit break-before-make throw', () => {
   const component = createMechanicalInputComponent(SLIDE_SWITCH_TYPE, 'slide-1');
