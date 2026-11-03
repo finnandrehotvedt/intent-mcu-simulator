@@ -12277,7 +12277,8 @@ function releaseRuntimeButton(reason = 'runtime button') {
       active.target.releasePointerCapture(active.pointerId);
     }
   } catch { /* capture may already be released */ }
-  setMomentaryControl(active.componentId, false, reason);
+  if (active.candidate) setCandidateMomentaryControl(active.componentId, false, reason);
+  else setMomentaryControl(active.componentId, false, reason);
   return true;
 }
 
@@ -14096,6 +14097,20 @@ function renderRuntimeControls() {
       button.textContent = key === 'selectedThrow' ? `Throw ${value}`
         : key === 'pressed' ? (value ? 'Pressed · open' : 'Released · closed')
           : (value ? 'Actuated · NO' : 'Resting · NC');
+      if (component.type === 'button.momentary-nc-v1') {
+        const press = (source, pointerId = null) => {
+          activeRuntimeButton = { componentId: component.id, pointerId, target: button, candidate: true };
+          setCandidateMomentaryControl(component.id, true, `NC ${source}`);
+        };
+        button.addEventListener('pointerdown', (event) => { if (event.button === 0) { event.preventDefault(); button.setPointerCapture(event.pointerId); press('pointer', event.pointerId); } });
+        button.addEventListener('pointerup', (event) => { if (activeRuntimeButton?.pointerId === event.pointerId) { event.preventDefault(); releaseRuntimeButton('NC pointer release'); } });
+        for (const name of ['pointercancel', 'lostpointercapture']) button.addEventListener(name, () => releaseRuntimeButton(`NC ${name}`));
+        button.addEventListener('keydown', (event) => { if ([' ', 'Enter'].includes(event.key) && !event.repeat) { event.preventDefault(); press('keyboard'); } });
+        button.addEventListener('keyup', (event) => { if ([' ', 'Enter'].includes(event.key)) { event.preventDefault(); releaseRuntimeButton('NC keyboard release'); } });
+        button.addEventListener('click', (event) => event.preventDefault());
+        button.addEventListener('blur', () => releaseRuntimeButton('NC blur release'));
+        row.append(label, button); return [row];
+      }
       button.addEventListener('click', () => {
         const next = key === 'selectedThrow' ? (component.controls.selectedThrow === 'A' ? 'B' : 'A') : !component.controls[key];
         const prepared = selectedCandidateContactControl(component.id, key, next);
