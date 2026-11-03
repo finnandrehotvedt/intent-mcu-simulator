@@ -24,9 +24,9 @@ const rows = [
   ['switch.reed-no-v1', 'magnetPresent', 'contact projection · magnetic presence', 'authored reed contact → bounded AVR projection', 'model-projected'],
   ['switch.emergency-stop-nc-v1', 'latched', 'contact projection · instructional latch', 'authored NC stop contact → bounded AVR projection', 'model-projected'],
   ['switch.foot-pedal-no-v1', 'pressed', 'contact projection · pedal press', 'authored pedal contact → bounded AVR projection', 'model-projected'],
-  ['switch.float-no-v1', 'liquidHigh', 'contact projection · liquid state', 'authored float contact → bounded AVR projection', 'model-projected'],
-  ['sensor.tilt-switch-no-v1', 'tilted', 'contact projection · orientation state', 'authored tilt contact → bounded AVR projection', 'model-projected'],
-  ['sensor.ball-vibration-switch-no-v1', 'vibrationDetected', 'contact projection · vibration snapshot', 'authored vibration contact → bounded AVR projection', 'model-projected'],
+  ['switch.float-no-v1', 'liquidHigh', 'control · active-low NO contact', 'D4 input → executed firmware → USART', 'actual-executed'],
+  ['sensor.tilt-switch-no-v1', 'tilted', 'control · active-low NO contact', 'D5 input → executed firmware → USART', 'actual-executed'],
+  ['sensor.ball-vibration-switch-no-v1', 'vibrationDetected', 'control · active-low NO contact', 'D6 input → executed firmware → USART', 'actual-executed'],
   ['switch.rotary-selector-4-v1', 'position', 'contact projection · selected one-of-four throw', 'authored COM/P1–P4 contact → bounded AVR projection', 'model-projected'],
   ['sensor.light-analogue-v1', 'lightLevel', 'control · position', 'A0 ADC → executed firmware → USART/D13', 'actual-executed'],
   ['sensor.temperature-analogue-v1', 'temperatureC', 'control · normalized position', 'A1 ADC → executed firmware → USART/D13', 'actual-executed'],
@@ -61,8 +61,8 @@ const rows = [
   ['input.capacitive-touch-button-v1', 'touched', 'control · active-high digital state', 'D4 input → executed firmware → USART', 'actual-executed'],
   ['sensor.pir-motion-v1', 'motionDetected', 'control · active-high digital state', 'D5 input → executed firmware → USART', 'actual-executed'],
   ['sensor.hall-switch-digital-v1', 'magnetPresent', 'control · active-high digital state', 'D6 input → executed firmware → USART', 'actual-executed'],
-  ['sensor.flow-pulse-digital-v1', 'pulseHigh', 'control · manual active-high pulse level', 'authored pulse snapshot → bounded AVR projection', 'model-projected'],
-  ['sensor.wind-speed-pulse-digital-v1', 'pulseHigh', 'control · manual active-high pulse level', 'authored pulse snapshot → bounded AVR projection', 'model-projected'],
+  ['sensor.flow-pulse-digital-v1', 'pulseHigh', 'control · manual active-high pulse level', 'D4 level/edge → executed firmware → USART', 'actual-executed'],
+  ['sensor.wind-speed-pulse-digital-v1', 'pulseHigh', 'control · manual active-high pulse level', 'D5 level/edge → executed firmware → USART', 'actual-executed'],
   ['sensor.ir-obstacle-reflective-v1', 'obstacleDetected', 'control · active-low digital state', 'D7 input → executed firmware → USART', 'actual-executed'],
   ['sensor.line-tracking-reflective-v1', 'lineDetected', 'control · active-low digital state', 'D8 input → executed firmware → USART', 'actual-executed'],
   ['sensor.dht11-temperature-humidity-v1', 'temperatureC', 'DHT11 payload · integer temperature byte plus checksum', 'D4 timed DATA response → executed firmware → USART', 'actual-executed'],
@@ -106,9 +106,9 @@ const rows = [
     : model === 'sensor.bme280-environment-v1'
     ? 'test/bme280-environment-browser.cjs'
     : ['sensor.flow-pulse-digital-v1', 'sensor.wind-speed-pulse-digital-v1'].includes(model)
-    ? 'test/digital-pulse-sensors-browser.cjs'
+    ? 'test/firmware-acceptance-digital-browser.cjs'
     : ['liquidHigh', 'tilted', 'vibrationDetected'].includes(field)
-      ? 'test/contact-sensors-browser.cjs'
+      ? 'test/firmware-acceptance-digital-browser.cjs'
     : ['touched', 'motionDetected', 'magnetPresent'].includes(field)
       ? 'test/digital-presence-sensors-browser.cjs'
     : model === 'output.dc-motor-encoder-v1'

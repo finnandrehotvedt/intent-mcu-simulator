@@ -40,7 +40,10 @@ test('contact controls are exact, atomic, model-backed, undoable and reopenable'
   for (const component of session.visualProject.circuit.components.filter((item) => TYPES.includes(item.type))) {
     const key = CONTACT_SENSOR_DEFINITIONS[component.type].controlKeys[0];
     const prepared = candidateContactControl(session, component.id, key, true);
-    assert.equal(prepared.ok, true); const changed = session.apply({ ...prepared.command, revision: session.revision });
+    assert.equal(prepared.ok, true);
+    assert.deepEqual(prepared.worker,
+      { command: 'control', componentId: component.id, key: 'pressed', value: true });
+    const changed = session.apply({ ...prepared.command, revision: session.revision });
     assert.equal(changed.ok, true, changed.code);
     assert.deepEqual(implementation.evaluateProduction(component.type, { closed: true }).result, { connected: true });
     assert.equal(candidateContactControl(session, component.id, `${key}Invalid`, true).ok, false);

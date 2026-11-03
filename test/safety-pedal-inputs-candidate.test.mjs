@@ -4,12 +4,26 @@ import { EMERGENCY_STOP_TYPE, FOOT_PEDAL_TYPE, REED_SWITCH_TYPE, createSafetyPed
   safetyPedalRuntimeState, validateSafetyPedalInput } from '../expansion-drafts/safety-pedal-inputs-v1.mjs';
 import { CandidateEditorSession, openPortableEditorSession } from '../src/candidate-project-session.mjs';
 import { createContactPersistenceExample } from '../expansion-drafts/contact-persistence-fixture-v1.mjs';
+import { candidateContactControl } from '../src/candidate-existing-ui-adapter.mjs';
 test('CMP033 reed contact follows magnetic presence', () => { const item = createSafetyPedalInput(REED_SWITCH_TYPE, 'reed-1');
   assert.deepEqual(safetyPedalRuntimeState(item), { closed: false }); item.controls.magnetPresent = true; assert.deepEqual(safetyPedalRuntimeState(item), { closed: true }); });
 test('CMP034 emergency stop latches an instructional NC contact open', () => { const item = createSafetyPedalInput(EMERGENCY_STOP_TYPE, 'estop-1');
   assert.deepEqual(safetyPedalRuntimeState(item), { closed: true }); item.controls.latched = true; assert.deepEqual(safetyPedalRuntimeState(item), { closed: false }); });
 test('CMP035 foot pedal is momentary normally-open', () => { const item = createSafetyPedalInput(FOOT_PEDAL_TYPE, 'pedal-1');
   item.controls.pressed = true; assert.deepEqual(safetyPedalRuntimeState(item), { closed: true }); item.controls.pressed = 'yes'; assert.equal(validateSafetyPedalInput(item), false); });
+test('safety controls preserve NO/NC polarity in worker commands', () => {
+  const session = new CandidateEditorSession(createContactPersistenceExample().project);
+  for (const [type, id] of [[REED_SWITCH_TYPE, 'reed-1'], [EMERGENCY_STOP_TYPE, 'estop-1'], [FOOT_PEDAL_TYPE, 'pedal-1']]) {
+    assert.equal(session.apply({ type: 'component.add', revision: session.revision,
+      component: createSafetyPedalInput(type, id), position: { x: 0.7, y: 0.6, rotation: 0 } }).ok, true);
+  }
+  assert.deepEqual(candidateContactControl(session, 'reed-1', 'magnetPresent', true).worker,
+    { command: 'control', componentId: 'reed-1', key: 'pressed', value: true });
+  assert.deepEqual(candidateContactControl(session, 'estop-1', 'latched', true).worker,
+    { command: 'control', componentId: 'estop-1', key: 'pressed', value: false });
+  assert.deepEqual(candidateContactControl(session, 'pedal-1', 'pressed', true).worker,
+    { command: 'control', componentId: 'pedal-1', key: 'pressed', value: true });
+});
 test('all three safety and pedal inputs add, control, undo, redo and reopen', () => {
   const session = new CandidateEditorSession(createContactPersistenceExample().project);
   for (const [type, id] of [[REED_SWITCH_TYPE, 'reed-1'], [EMERGENCY_STOP_TYPE, 'estop-1'], [FOOT_PEDAL_TYPE, 'pedal-1']]) {

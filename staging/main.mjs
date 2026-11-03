@@ -14176,7 +14176,9 @@ function renderRuntimeControls() {
         const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
         const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
         if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Input control rejected.'); return; }
-        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker);
+        renderProject();
       }); row.append(label, button); return [row];
     }
     if (editor.kind === 'candidate-project-v3' && CONTACT_SENSOR_DEFINITIONS[component.type]) {
@@ -14194,7 +14196,9 @@ function renderRuntimeControls() {
         const prepared = selectedCandidateContactControl(component.id, key, !component.controls[key]);
         const changed = prepared.ok ? editor.apply({ ...prepared.command, revision: editor.revision }) : prepared;
         if (!changed.ok) { showActionableError(elements.projectmessage, changed.code, 'Contact sensor control rejected.'); return; }
-        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject(); renderProject();
+        applyLifecycle({ type: 'project.edit', relevance: 'runtime', empty: false }); persistProject();
+        if (prepared.worker) worker?.postMessage(prepared.worker);
+        renderProject();
       }); row.append(label, button); return [row];
     }
     if (editor.kind === 'candidate-project-v3' && DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type]) {

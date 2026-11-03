@@ -629,18 +629,22 @@ export function candidateContactControl(session, componentId, key, value) {
       direction: value > component.controls.detent ? 'cw' : 'ccw' };
   }
   if (component.type === REED_SWITCH_TYPE && key === 'magnetPresent' && typeof value === 'boolean') {
-    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value } };
   }
   if (component.type === EMERGENCY_STOP_TYPE && key === 'latched' && typeof value === 'boolean') {
-    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value: !value } };
   }
   if (component.type === FOOT_PEDAL_TYPE && key === 'pressed' && typeof value === 'boolean') {
-    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value } };
   }
   if (CONTACT_SENSOR_DEFINITIONS[component.type]
       && key === CONTACT_SENSOR_DEFINITIONS[component.type].controlKeys[0]
       && typeof value === 'boolean') {
-    return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+    return { ok: true, command: { type: 'component.control.set', componentId, key, value },
+      worker: { command: 'control', componentId, key: 'pressed', value } };
   }
   if ([CAPACITIVE_TOUCH_TYPE, PIR_MOTION_TYPE, HALL_SWITCH_TYPE].includes(component.type)
       && key === DIGITAL_PRESENCE_SENSOR_DEFINITIONS[component.type].controlKeys[0]
