@@ -50,15 +50,16 @@ test('joystick projects to two analogue channels and an active-low switch withou
   assert.equal(projected.runtimeGraph.nets.find(({ id }) => id === 'gnd').endpoints.length, 4);
 });
 
-test('matrix keypad projects only its selected row-column contact', () => {
+test('matrix keypad projects every live contact and selects only the authored key', () => {
   const keypad = createJoystickKeypad(KEYPAD_4X4_TYPE, 'keypad-1'); keypad.controls.pressedKey = 'R2C4';
   const endpoints = ['R1','R2','R3','R4','C1','C2','C3','C4'].map((pin, index) => ({
     id: `n${index}`, endpoints: [{ component: 'board', pin: `D${index + 2}` }, { component: keypad.id, pin }],
   }));
   const projected = projectJoystickKeypads({ schema: CIRCUIT_SCHEMA, components: [keypad], nets: endpoints, junctions: [] });
-  assert.equal(projected.runtimeGraph.components.length, 1);
-  assert.deepEqual(projected.runtimeGraph.nets.map(({ id }) => id), ['n1', 'n7']);
-  assert.deepEqual(projected.runtimeGraph.components[0].controls, { pressed: true });
+  assert.equal(projected.runtimeGraph.components.length, 16);
+  assert.deepEqual(projected.runtimeGraph.nets.map(({ id }) => id), endpoints.map(({ id }) => id));
+  assert.equal(projected.runtimeGraph.components.filter(({ controls }) => controls.pressed).length, 1);
+  assert.deepEqual(projected.runtimeGraph.components.find(({ controls }) => controls.pressed).controls, { pressed: true });
 });
 
 test('runtime treats a digital-to-digital momentary contact as a GPIO bridge', () => {
@@ -83,4 +84,19 @@ test('AVR bridge propagates a scanned row output to a keypad column input', () =
   adapter.cpu.data[portDConfig.PORT] |= (1 << 2);
   adapter.setDigitalBridge('key-1', 2, 5, true);
   assert.equal(Boolean(adapter.cpu.data[portDConfig.PIN] & (1 << 5)), true);
+});
+
+test('AVR matrix bridge releases stale columns while scanning another row', () => {
+  const adapter = new Atmega328PAdapter(':00000001FF');
+  adapter.cpu.data[portDConfig.DDR] |= (1 << 2) | (1 << 3);
+  adapter.cpu.data[portDConfig.PORT] |= (1 << 2) | (1 << 3);
+  adapter.setDigitalBridge('r1c1', 2, 6, true);
+  adapter.setDigitalBridge('r2c2', 3, 7, true);
+  adapter.cpu.data[portDConfig.PORT] &= ~(1 << 2); adapter.setDigitalBridge('refresh-1', 4, 8, false);
+  assert.equal(Boolean(adapter.cpu.data[portDConfig.PIN] & (1 << 6)), false);
+  assert.equal(Boolean(adapter.cpu.data[portDConfig.PIN] & (1 << 7)), true);
+  adapter.cpu.data[portDConfig.PORT] |= (1 << 2); adapter.cpu.data[portDConfig.PORT] &= ~(1 << 3);
+  adapter.setDigitalBridge('refresh-2', 4, 8, false);
+  assert.equal(Boolean(adapter.cpu.data[portDConfig.PIN] & (1 << 6)), true);
+  assert.equal(Boolean(adapter.cpu.data[portDConfig.PIN] & (1 << 7)), false);
 });

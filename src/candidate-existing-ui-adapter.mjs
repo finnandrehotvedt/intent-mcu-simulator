@@ -823,7 +823,12 @@ export function candidateContactControl(session, componentId, key, value) {
     const validKeys = ['none', ...Array.from({ length: 4 }, (_, row) =>
       Array.from({ length: columns }, (_, column) => `R${row + 1}C${column + 1}`)).flat()];
     if (validKeys.includes(value)) {
-      return { ok: true, command: { type: 'component.control.set', componentId, key, value } };
+      const workers = [];
+      if (component.controls.pressedKey !== 'none') workers.push({ command: 'control',
+        componentId: `${componentId}-${component.controls.pressedKey.toLowerCase()}`, key: 'pressed', value: false });
+      if (value !== 'none') workers.push({ command: 'control',
+        componentId: `${componentId}-${value.toLowerCase()}`, key: 'pressed', value: true });
+      return { ok: true, command: { type: 'component.control.set', componentId, key, value }, workers };
     }
   }
   if (component.type === ROTARY_SELECTOR_TYPE && key === 'position'

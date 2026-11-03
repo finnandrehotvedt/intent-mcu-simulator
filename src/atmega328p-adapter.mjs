@@ -895,6 +895,11 @@ export class Atmega328PAdapter {
     try {
       const configFor = (pin) => { const [port, bit] = PIN_MAP[pin];
         return { port, bit, config: { B: portBConfig, C: portCConfig, D: portDConfig }[port] }; };
+      const endpoints = new Set([...this.digitalBridges.values()].flatMap(({ pinA, pinB }) => [pinA, pinB]));
+      for (const pin of endpoints) {
+        const endpoint = configFor(pin);
+        if (!(this.cpu.data[endpoint.config.DDR] & (1 << endpoint.bit))) this.#setDigitalPinNow(pin, true, false);
+      }
       for (const bridge of this.digitalBridges.values()) {
         if (!bridge.closed) continue;
         const left = configFor(bridge.pinA); const right = configFor(bridge.pinB);

@@ -14364,7 +14364,7 @@ function renderRuntimeControls() {
         const prepared = selectedCandidateContactControl(component.id, 'pressedKey', select.value);
         if (!prepared.ok) { showActionableError(elements.projectmessage, prepared.code, 'Keypad control rejected.'); return; }
         const result = applyEditor(prepared.command, `${component.label} ${select.value}`);
-        if (result.ok && prepared.worker) worker?.postMessage(prepared.worker);
+        if (result.ok) for (const command of prepared.workers ?? []) worker?.postMessage(command);
       });
       row.append(label, select); return [row];
     }

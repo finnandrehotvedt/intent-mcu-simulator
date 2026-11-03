@@ -204,7 +204,8 @@ export class RuntimeKernel {
       ...(this.modelLibraryLock ? { modelLibraryLock: this.modelLibraryLock } : {}),
     });
     probe.controls = clone(this.circuit.controls);
-    probe.setControl(componentId, key, value, { setDigitalPin() {}, setAnalogChannel() {} });
+    probe.setControl(componentId, key, value,
+      { setDigitalPin() {}, setAnalogChannel() {}, setDigitalBridge() {} });
     const event = this.inputs.enqueue(
       { type: 'control', componentId, key, value: clone(value) }, this.adapter.cpu.cycles, targetCycle,
     );

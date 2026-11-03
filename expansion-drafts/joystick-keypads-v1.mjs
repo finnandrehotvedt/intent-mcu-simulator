@@ -100,13 +100,27 @@ export function projectJoystickKeypads(value) {
       ];
     }
     if ([KEYPAD_3X4_TYPE, KEYPAD_4X4_TYPE].includes(component.type)) {
-      const contact = keypadContact(component);
-      if (!contact) { replacements.set(component.id, {}); inputs.push({ componentId: component.id, kind: 'keypad', pressedKey: 'none', runtimeId: null }); return []; }
-      const runtimeId = childId(component.id, 'key'); runtimePositionSources[runtimeId] = component.id;
-      replacements.set(component.id, { [contact.row]: { component: runtimeId, pin: 'A' }, [contact.column]: { component: runtimeId, pin: 'B' } });
-      inputs.push({ componentId: component.id, kind: 'keypad', pressedKey: component.controls.pressedKey, runtimeId });
-      return [{ id: runtimeId, type: 'button.momentary-v1', label: `${component.label} ${component.controls.pressedKey}`,
-        properties: { normallyOpen: true }, controls: { pressed: true } }];
+      const columns = component.type === KEYPAD_3X4_TYPE ? 3 : 4;
+      const contacts = Array.from({ length: 4 }, (_, row) => Array.from({ length: columns }, (_, column) => ({
+        key: `R${row + 1}C${column + 1}`, row: `R${row + 1}`, column: `C${column + 1}`,
+      }))).flat().map((contact) => ({ ...contact, runtimeId: childId(component.id, contact.key.toLowerCase()) }));
+      const map = {};
+      for (const pinId of [...Array.from({ length: 4 }, (_, index) => `R${index + 1}`),
+        ...Array.from({ length: columns }, (_, index) => `C${index + 1}`)]) {
+        const endpoints = contacts.flatMap((contact) => [
+          ...(contact.row === pinId ? [{ component: contact.runtimeId, pin: 'A' }] : []),
+          ...(contact.column === pinId ? [{ component: contact.runtimeId, pin: 'B' }] : []),
+        ]);
+        map[pinId] = endpoints[0];
+        sharedEndpoints.push({ source: `${component.id}.${pinId}`, endpoints: endpoints.slice(1) });
+      }
+      replacements.set(component.id, map);
+      for (const contact of contacts) runtimePositionSources[contact.runtimeId] = component.id;
+      inputs.push({ componentId: component.id, kind: 'keypad', pressedKey: component.controls.pressedKey,
+        runtimeIds: Object.fromEntries(contacts.map(({ key, runtimeId }) => [key, runtimeId])) });
+      return contacts.map(({ key, runtimeId }) => ({ id: runtimeId, type: 'button.momentary-v1',
+        label: `${component.label} ${key}`, properties: { normallyOpen: true },
+        controls: { pressed: component.controls.pressedKey === key } }));
     }
     return [component];
   });
