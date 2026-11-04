@@ -4,9 +4,9 @@
   "modelLibrary": {
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
-    "version": "2.0.0-configurable-shortcuts.1-current",
-    "manifestSha256": "bab5958ef190e912748e8eabdba3382f79c1e077873bfee437b1f523b74f993f",
-    "implementationSha256": "16f07e6b070524598954ea6bc6e25ccf8e2aaa00828eb615a35e576ed66a1b28"
+    "version": "2.0.0-firmware-control-coverage.1-current",
+    "manifestSha256": "b5ac8aca7b74d025e44abac6db0991eea7f4e46a723bcb66e038708737d92e2f",
+    "implementationSha256": "c6ecfb7a68f0cb84111821ca63b6c7c4a34505dce618c14c3892e0b5ba2929c7"
   },
   "brief": {
     "schema": "intent-mcu-project-brief@4",
@@ -96,14 +96,47 @@
             "controls": {}
           },
           {
-            "id": "rotary-selector-1",
+            "id": "rotary-selector-1-p1",
             "type": "button.momentary-v1",
-            "label": "Four-position rotary selector",
+            "label": "Four-position rotary selector P1",
             "properties": {
               "normallyOpen": true
             },
             "controls": {
               "pressed": true
+            }
+          },
+          {
+            "id": "rotary-selector-1-p2",
+            "type": "button.momentary-v1",
+            "label": "Four-position rotary selector P2",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "rotary-selector-1-p3",
+            "type": "button.momentary-v1",
+            "label": "Four-position rotary selector P3",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "rotary-selector-1-p4",
+            "type": "button.momentary-v1",
+            "label": "Four-position rotary selector P4",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
             }
           }
         ],
@@ -116,7 +149,19 @@
                 "pin": "GND1"
               },
               {
-                "component": "rotary-selector-1",
+                "component": "rotary-selector-1-p1",
+                "pin": "A"
+              },
+              {
+                "component": "rotary-selector-1-p2",
+                "pin": "A"
+              },
+              {
+                "component": "rotary-selector-1-p3",
+                "pin": "A"
+              },
+              {
+                "component": "rotary-selector-1-p4",
                 "pin": "A"
               }
             ]
@@ -129,7 +174,46 @@
                 "pin": "D2"
               },
               {
-                "component": "rotary-selector-1",
+                "component": "rotary-selector-1-p1",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-selector-p2",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D3"
+              },
+              {
+                "component": "rotary-selector-1-p2",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-selector-p3",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D4"
+              },
+              {
+                "component": "rotary-selector-1-p3",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-selector-p4",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D5"
+              },
+              {
+                "component": "rotary-selector-1-p4",
                 "pin": "B"
               }
             ]
@@ -144,7 +228,22 @@
             "y": 0.2,
             "rotation": 0
           },
-          "rotary-selector-1": {
+          "rotary-selector-1-p1": {
+            "x": 0.7,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "rotary-selector-1-p2": {
+            "x": 0.7,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "rotary-selector-1-p3": {
+            "x": 0.7,
+            "y": 0.5,
+            "rotation": 0
+          },
+          "rotary-selector-1-p4": {
             "x": 0.7,
             "y": 0.5,
             "rotation": 0
@@ -156,6 +255,15 @@
             "color": "#303943"
           },
           "net-selector-p1": {
+            "color": "#39dff2"
+          },
+          "net-selector-p2": {
+            "color": "#39dff2"
+          },
+          "net-selector-p3": {
+            "color": "#39dff2"
+          },
+          "net-selector-p4": {
             "color": "#39dff2"
           }
         },

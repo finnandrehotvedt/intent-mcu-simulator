@@ -17,7 +17,7 @@
     },
     {
       "path": "src/atmega328p-adapter.mjs",
-      "sha256": "985f2eb09691abc4c1ca2c65a43455af12f2dd5476340d2d80651450ba3a9acf"
+      "sha256": "cc38801e1f349a5832efc4132f616b557fff2bf70f2f4d8724221b6963099819"
     },
     {
       "path": "expansion-drafts/bme280-environment-v1.mjs",
@@ -89,7 +89,7 @@
   "externalContracts": [
     "avr8js@0.21.1"
   ],
-  "implementationSha256": "8c870d2271902e1e8abd6fe5539ba153e7345e8e2dc54fd065a730bca86ba535",
+  "implementationSha256": "73ede69758e61b2cfa9b6aa4349e29e7b27eeb0e0b5b3d6127dfe71274d2914c",
   "evidenceToolSha256": "8fc7a44096b92aab6362c70367aad905274153f9da34dd236f9c187c03917306",
-  "semanticSha256": "12b7adb647ce89b8d03c0374ec0632b345f4ce3349b1692747c9ec20ff72a3f9"
+  "semanticSha256": "a81fdbcd24ac3fedd02fd44fbd851ce4634c198ad01cf182451c9b48a95e353b"
 }

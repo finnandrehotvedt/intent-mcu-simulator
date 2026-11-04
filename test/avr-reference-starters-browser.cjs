@@ -8,9 +8,20 @@ const { chromium } = require(path.join(moduleRoot, 'playwright'));
 const base = process.env.AVR_REFERENCE_URL || 'http://127.0.0.1:18776';
 const screenshotPath = process.env.AVR_REFERENCE_SCREENSHOT || null;
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const expectedStarterCards = 34;
 
 async function load(page, id, name) {
+  if (await page.locator('#workbench-instruments-dialog').getAttribute('open') !== null) {
+    await page.click('#workbench-instruments-dialog .workbench-popup-close');
+  }
+  if (await page.locator('#example-picker-dialog').getAttribute('open') === null) {
+    await page.click('#workbench-view-simple');
+    await page.click('#beginner-examples');
+  }
   await page.click(`.starter-card[data-example="${id}"] .starter-action`);
+  if (await page.locator('#unsaved-change-dialog').getAttribute('open') !== null) {
+    await page.click('#unsaved-discard');
+  }
   await page.waitForFunction(([expectedId, expectedName]) => {
     const value = window.__M6_PROJECT__();
     return document.querySelector('#example-select').value === expectedId
@@ -18,16 +29,17 @@ async function load(page, id, name) {
       && value.project.metadata.name === expectedName
       && document.querySelector('#build-state').textContent !== 'Build succeeded';
   }, [id, name]);
-  assert(await page.locator('#run').isDisabled(), `${id}: stale Run authority`);
+  assert(await page.locator('#quick-run').isDisabled(), `${id}: stale Run authority`);
 }
 
 async function buildRun(page, id) {
-  await page.click('#build');
+  await page.click('#workbench-view-simple');
+  await page.click('#beginner-run');
   await page.waitForFunction(() => document.querySelector('#build-state').textContent === 'Build succeeded', null, { timeout: 45_000 });
-  await page.waitForFunction(() => !document.querySelector('#run').disabled, null, { timeout: 10_000 });
-  await page.click('#run');
   await page.waitForFunction(() => document.querySelector('#worker-state')?.textContent.includes('Running'), null, { timeout: 15_000 });
   assert((await page.textContent('#project-message')).length > 0, `${id}: no runtime status`);
+  await page.click('#serial-tab');
+  await page.waitForSelector('#workbench-instruments-dialog[open]');
 }
 
 async function serialHas(page, text, timeout = 15_000) {
@@ -87,8 +99,10 @@ let browser;
   });
   await page.goto(base, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__M11_READY__ === true);
-  assert(await page.locator('.starter-card').count() === 25, 'expected 25 starter cards');
-  assert(await page.locator('.starter-learning-grid').count() === 25, 'all cards must expose Learn/Try/Observe/Limits');
+  assert(await page.locator('.starter-card').count() === expectedStarterCards,
+    `expected ${expectedStarterCards} starter cards`);
+  assert(await page.locator('.starter-learning-grid').count() === expectedStarterCards,
+    'all cards must expose Learn/Try/Observe/Limits');
 
   await load(page, 'avr-ground-reference-input', 'Ground reference input');
   assert(await page.locator('[data-component-id="ground-reference-1"] [data-terminal-pin="REF"]').count() === 1, 'ground reference terminal missing');

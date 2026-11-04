@@ -25,6 +25,9 @@ const profiles = [
         const state = window[api]?.state(); const graph = state?.circuit ?? state?.project?.circuit;
         return graph?.components.some(({ id }) => id === 'potentiometer-1');
       }, profile);
+      if (await page.locator('#workbench-project-dialog').getAttribute('open') !== null) {
+        await page.locator('#workbench-project-dialog .workbench-popup-close').click();
+      }
       const before = await page.evaluate(({ api }) => {
         const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
         return { components: graph.components, nets: graph.nets,
@@ -35,21 +38,27 @@ const profiles = [
         ({ component, pin: actual }) => component === 'potentiometer-1' && actual === pin)));
       assert.equal(await page.locator(`${profile.layer} [data-component-id="potentiometer-1"]`).count(), 1);
       for (const pin of ['HIGH', 'WIPER', 'LOW']) assert.equal(await page.locator(
-        `${profile.layer} [data-component-id="potentiometer-1"] [data-endpoint="potentiometer-1.${pin}"]`).count(), 1);
-      await page.locator(`${profile.layer} [data-component-id="potentiometer-1"]`).click({ position: { x: 45, y: 35 } });
+        `${profile.layer} [data-component-id="potentiometer-1"] [data-editor-endpoint="potentiometer-1.${pin}"]`).count(), 1);
+      await page.locator(`${profile.layer} [data-component-id="potentiometer-1"]`).focus();
+      await page.keyboard.press('Enter');
       assert.deepEqual(await page.evaluate(({ api }) => window[api].state().circuitEditor.selection, profile),
         { kind: 'component', id: 'potentiometer-1' });
+      if (!await page.locator('#simple-parts-edit').isVisible()) await page.click('#toggle-catalog');
       await page.locator('#simple-parts-edit').click();
       const ohms = page.locator('#workbench-inspector-dialog [data-bounded-property="ohms"]');
       await ohms.waitFor({ state: 'visible' });
       assert.equal(await ohms.inputValue(), '10000');
       await ohms.fill('4700');
       await page.locator('#workbench-inspector-dialog [data-bounded-model-apply="potentiometer-1"]').click();
-      assert.equal(await page.evaluate(({ api }) => window[api].state().circuit.components
-        .find(({ id }) => id === 'potentiometer-1').properties.ohms, profile), 4700);
+      assert.equal(await page.evaluate(({ api }) => {
+        const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
+        return graph.components.find(({ id }) => id === 'potentiometer-1').properties.ohms;
+      }, profile), 4700);
       await page.evaluate(({ api }) => window[api].undoCircuit(), profile);
-      assert.equal(await page.evaluate(({ api }) => window[api].state().circuit.components
-        .find(({ id }) => id === 'potentiometer-1').properties.ohms, profile), 10000);
+      assert.equal(await page.evaluate(({ api }) => {
+        const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
+        return graph.components.find(({ id }) => id === 'potentiometer-1').properties.ohms;
+      }, profile), 10000);
       await page.locator('#workbench-inspector-dialog .workbench-popup-close').click();
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.selectOption('#board-select', profile.id);
@@ -57,6 +66,9 @@ const profiles = [
         const state = window[api]?.state(); const graph = state?.circuit ?? state?.project?.circuit;
         return graph?.components.some(({ id }) => id === 'potentiometer-1');
       }, profile);
+      if (await page.locator('#workbench-project-dialog').getAttribute('open') !== null) {
+        await page.locator('#workbench-project-dialog .workbench-popup-close').click();
+      }
       const after = await page.evaluate(({ api }) => {
         const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
         return { components: graph.components, nets: graph.nets,

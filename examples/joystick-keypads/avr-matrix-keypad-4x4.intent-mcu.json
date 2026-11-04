@@ -4,9 +4,9 @@
   "modelLibrary": {
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
-    "version": "2.0.0-configurable-shortcuts.1-current",
-    "manifestSha256": "bab5958ef190e912748e8eabdba3382f79c1e077873bfee437b1f523b74f993f",
-    "implementationSha256": "16f07e6b070524598954ea6bc6e25ccf8e2aaa00828eb615a35e576ed66a1b28"
+    "version": "2.0.0-firmware-control-coverage.1-current",
+    "manifestSha256": "b5ac8aca7b74d025e44abac6db0991eea7f4e46a723bcb66e038708737d92e2f",
+    "implementationSha256": "c6ecfb7a68f0cb84111821ca63b6c7c4a34505dce618c14c3892e0b5ba2929c7"
   },
   "brief": {
     "schema": "intent-mcu-project-brief@4",
@@ -96,7 +96,62 @@
             "controls": {}
           },
           {
-            "id": "keypad-4x4-1-key",
+            "id": "keypad-4x4-1-r1c1",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R1C1",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r1c2",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R1C2",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r1c3",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R1C3",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r1c4",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R1C4",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r2c1",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R2C1",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r2c2",
             "type": "button.momentary-v1",
             "label": "4×4 matrix keypad R2C2",
             "properties": {
@@ -105,9 +160,144 @@
             "controls": {
               "pressed": true
             }
+          },
+          {
+            "id": "keypad-4x4-1-r2c3",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R2C3",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r2c4",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R2C4",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r3c1",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R3C1",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r3c2",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R3C2",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r3c3",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R3C3",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r3c4",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R3C4",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r4c1",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R4C1",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r4c2",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R4C2",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r4c3",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R4C3",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
+          },
+          {
+            "id": "keypad-4x4-1-r4c4",
+            "type": "button.momentary-v1",
+            "label": "4×4 matrix keypad R4C4",
+            "properties": {
+              "normallyOpen": true
+            },
+            "controls": {
+              "pressed": false
+            }
           }
         ],
         "nets": [
+          {
+            "id": "net-keypad-4x4-1-c1",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D6"
+              },
+              {
+                "component": "keypad-4x4-1-r1c1",
+                "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r2c1",
+                "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r3c1",
+                "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r4c1",
+                "pin": "B"
+              }
+            ]
+          },
           {
             "id": "net-keypad-4x4-1-c2",
             "endpoints": [
@@ -116,8 +306,95 @@
                 "pin": "D7"
               },
               {
-                "component": "keypad-4x4-1-key",
+                "component": "keypad-4x4-1-r1c2",
                 "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r2c2",
+                "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r3c2",
+                "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r4c2",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-keypad-4x4-1-c3",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D8"
+              },
+              {
+                "component": "keypad-4x4-1-r1c3",
+                "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r2c3",
+                "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r3c3",
+                "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r4c3",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-keypad-4x4-1-c4",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D9"
+              },
+              {
+                "component": "keypad-4x4-1-r1c4",
+                "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r2c4",
+                "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r3c4",
+                "pin": "B"
+              },
+              {
+                "component": "keypad-4x4-1-r4c4",
+                "pin": "B"
+              }
+            ]
+          },
+          {
+            "id": "net-keypad-4x4-1-r1",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D2"
+              },
+              {
+                "component": "keypad-4x4-1-r1c1",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r1c2",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r1c3",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r1c4",
+                "pin": "A"
               }
             ]
           },
@@ -129,7 +406,69 @@
                 "pin": "D3"
               },
               {
-                "component": "keypad-4x4-1-key",
+                "component": "keypad-4x4-1-r2c1",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r2c2",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r2c3",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r2c4",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-keypad-4x4-1-r3",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D4"
+              },
+              {
+                "component": "keypad-4x4-1-r3c1",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r3c2",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r3c3",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r3c4",
+                "pin": "A"
+              }
+            ]
+          },
+          {
+            "id": "net-keypad-4x4-1-r4",
+            "endpoints": [
+              {
+                "component": "board-1",
+                "pin": "D5"
+              },
+              {
+                "component": "keypad-4x4-1-r4c1",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r4c2",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r4c3",
+                "pin": "A"
+              },
+              {
+                "component": "keypad-4x4-1-r4c4",
                 "pin": "A"
               }
             ]
@@ -144,7 +483,82 @@
             "y": 0.2,
             "rotation": 0
           },
-          "keypad-4x4-1-key": {
+          "keypad-4x4-1-r1c1": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r1c2": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r1c3": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r1c4": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r2c1": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r2c2": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r2c3": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r2c4": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r3c1": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r3c2": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r3c3": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r3c4": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r4c1": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r4c2": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r4c3": {
+            "x": 0.7,
+            "y": 0.52,
+            "rotation": 0
+          },
+          "keypad-4x4-1-r4c4": {
             "x": 0.7,
             "y": 0.52,
             "rotation": 0
@@ -152,10 +566,28 @@
         },
         "wireRoutes": {},
         "wireStyles": {
+          "net-keypad-4x4-1-c1": {
+            "color": "#39dff2"
+          },
           "net-keypad-4x4-1-c2": {
             "color": "#39dff2"
           },
+          "net-keypad-4x4-1-c3": {
+            "color": "#39dff2"
+          },
+          "net-keypad-4x4-1-c4": {
+            "color": "#39dff2"
+          },
+          "net-keypad-4x4-1-r1": {
+            "color": "#39dff2"
+          },
           "net-keypad-4x4-1-r2": {
+            "color": "#39dff2"
+          },
+          "net-keypad-4x4-1-r3": {
+            "color": "#39dff2"
+          },
+          "net-keypad-4x4-1-r4": {
             "color": "#39dff2"
           }
         },

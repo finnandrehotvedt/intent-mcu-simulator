@@ -29,11 +29,11 @@ test('generated private runtime and evidence-tool closures are exact and fresh',
   assert.deepEqual(manifest.externalContracts, ['avr8js@0.21.1']);
 });
 
-test('approved BME280 runtime increment preserves X49 runtime dependencies and private-owner isolation', async () => {
+test('reviewed control-runtime basis preserves X49 dependencies and private-owner isolation', async () => {
   const immutableRuntime = {
-    'src/atmega328p-adapter.mjs': '985f2eb09691abc4c1ca2c65a43455af12f2dd5476340d2d80651450ba3a9acf',
+    'src/atmega328p-adapter.mjs': 'cc38801e1f349a5832efc4132f616b557fff2bf70f2f4d8724221b6963099819',
     'expansion-drafts/bme280-environment-v1.mjs': '3e901aae7073c6e58497a27042b377801e22cd19964569cb14fe8cf8bfa149eb',
-    'src/runtime-kernel.mjs': '93f88d4dd9472a3c7cedf0396fad0c2cba617c8ef2ab535736434334d7cdfc84',
+    'src/runtime-kernel.mjs': 'd907fd221f906acdcf5a60c6c1fad05886a8f99cc4fb8c7195ffed7a420d0fae',
     'src/simulator.worker.mjs': '2da738b07f9ec8f2fbdf550c5f21f9ee5cfe9376a3233b5cc8857ef5bfc425b3',
   };
   for (const [path, hash] of Object.entries(immutableRuntime)) {

@@ -39,11 +39,14 @@ async function selectResistorByKeyboard(page) {
 async function loadBlinkExample(page) {
   await page.click('#project-files-open');
   await page.click('#project-demo');
-  await page.click('.starter-card[data-example="blink"]');
+  await page.click('.starter-card[data-example="blink"] .starter-action');
   if (await page.locator('#unsaved-change-dialog').isVisible()) await page.click('#unsaved-discard');
   await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.some(
     (component) => component.id === 'resistor-1',
   ));
+  if (await page.locator('#workbench-project-dialog').getAttribute('open') !== null) {
+    await page.locator('#workbench-project-dialog .workbench-popup-close').click();
+  }
 }
 
 async function anchors(page) {
@@ -134,7 +137,8 @@ async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) 
       page.on('pageerror', (error) => errors.push(error.message));
       page.on('request', (request) => {
         const record = { method: request.method(), url: request.url() };
-        if (/\/(?:api|compile|run|scenario)(?:\/|$)/u.test(new URL(request.url()).pathname)) {
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())
+          && /\/(?:api|compile|run|scenario)(?:\/|$)/u.test(new URL(request.url()).pathname)) {
           report.producerRequests.push(record);
         }
         if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) report.mutatingRequests.push(record);
@@ -142,6 +146,7 @@ async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) 
       });
       assert.equal((await page.goto(base, { waitUntil: 'domcontentloaded' }))?.status(), 200);
       await page.waitForFunction(() => window.__M11_READY__ === true);
+      await page.click('#workbench-view-advanced');
       await loadBlinkExample(page);
       const storageKeysBefore = await page.evaluate(() => Object.keys(localStorage).sort());
       const initialProject = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
@@ -344,7 +349,16 @@ async function assertRejectedFileIsAtomic(page, filePath, expectedCode, before) 
 
       assert.equal(await page.evaluate(() => window.__X55_WORKERS__), 0);
       assert.equal(await page.evaluate(() => window.__M6_STATE__.runtimeWorkerCreations), 0);
-      assert.deepEqual(await page.evaluate(() => Object.keys(localStorage).sort()), storageKeysBefore);
+      const storageKeysAfter = await page.evaluate(() => Object.keys(localStorage).sort());
+      const expectedProfileDraftPrefixes = profiles.slice(1).map(
+        (profile) => `intent-mcu.profile-draft.v1.${profile}.tab.`,
+      );
+      assert.deepEqual(storageKeysAfter.filter((key) => !expectedProfileDraftPrefixes
+        .some((prefix) => key.startsWith(prefix))), storageKeysBefore);
+      for (const prefix of expectedProfileDraftPrefixes) {
+        assert.equal(storageKeysAfter.filter((key) => key.startsWith(prefix)).length, 1,
+          `missing or duplicate parked profile draft ${prefix}`);
+      }
       assert.deepEqual(await context.cookies(), []);
       assert.equal(errors.length, 0, errors.join(' | '));
       assert((await page.evaluate(() => document.documentElement.scrollWidth
