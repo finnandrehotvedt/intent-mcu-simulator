@@ -1,8 +1,9 @@
 Intent MCU Simulator browser-session API protocol
 Version: intent-mcu-browser-session-request@1
 Public Lab: https://lab.teachthecompany.com/
-Endpoint: POST https://lab.teachthecompany.com/api/session/v1
-Reference client: https://lab.teachthecompany.com/api/session/v1/client.mjs
+Registered development preview: https://lab-preview.rust.finnandre.no/
+Endpoint: same-origin POST /api/session/v1 on either exact registered HTTPS origin
+Reference client: same-origin /api/session/v1/client.mjs
 
 The API is off by default in every browser tab. The user opens API access and
 creates one temporary, one-use pairing. The secret must never enter a prompt,
@@ -10,6 +11,10 @@ chat, URL, command argument, log or source control. The Lab-generated local
 .intentpair ticket is the sole secret-bearing file exception: it is short-lived,
 one-use, must never be shared, and the reference client deletes it immediately
 after strict parsing. Hidden stdin remains a legacy local fallback.
+The ticket origin must exactly match one of the two registered HTTPS origins
+above. HTTP, subdomains, suffix lookalikes, paths, query strings, fragments and
+credentials fail closed. Test-only loopback still requires its explicit local
+opt-in and does not authorize another remote origin.
 
 Transport operations
 owner.register, owner.heartbeat, pairing.create, pairing.claim,

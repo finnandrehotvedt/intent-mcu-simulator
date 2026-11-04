@@ -54,7 +54,8 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
           bodyOverflow: body.scrollWidth - body.clientWidth,
           checkbox: { width: checkbox.getBoundingClientRect().width,
             height: checkbox.getBoundingClientRect().height },
-          prompt, clipboard: await navigator.clipboard.readText(),
+          prompt, promptOrigin: prompt.includes(`Lab: ${location.origin}/`),
+          clipboard: await navigator.clipboard.readText(),
           links: [...dialogNode.querySelectorAll('.api-resource-links a')].map((node) => node.href),
           secret: dialogNode.querySelector('[data-secret]').value,
           copyStatus: dialogNode.querySelector('[data-copy-status]').textContent,
@@ -67,13 +68,14 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
       assert.ok(metrics.bodyOverflow <= 0, `${view.name} body overflow ${metrics.bodyOverflow}`);
       assert.ok(metrics.checkbox.width <= 20 && metrics.checkbox.height <= 20);
       assert.equal(metrics.clipboard, metrics.prompt);
+      assert.equal(metrics.promptOrigin, true);
       assert.equal(metrics.secret, '');
       assert.match(metrics.copyStatus, /No pairing secret was included/);
       assert.equal(metrics.headerEyebrow, 'API ACCESS');
       assert.deepEqual(metrics.steps, ['Copy Codex instructions', 'Create a pairing', 'Open the pairing ticket']);
       assert.deepEqual(metrics.links, [
-        'https://lab.teachthecompany.com/api/session/v1/protocol.txt',
-        'https://lab.teachthecompany.com/api/session/v1/client.mjs',
+        `${origin}/api/session/v1/protocol.txt`,
+        `${origin}/api/session/v1/client.mjs`,
       ]);
       const screenshot = process.env[`API_CODEX_${view.name.toUpperCase()}_SCREENSHOT`];
       if (screenshot) await page.screenshot({ path: screenshot, fullPage: false });

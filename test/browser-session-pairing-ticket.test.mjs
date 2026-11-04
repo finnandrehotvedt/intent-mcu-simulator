@@ -276,13 +276,30 @@ test('missing, oversized and expired tickets fail closed without secret output',
   secretSafe(expiredResult); assert.match(expiredResult.stderr, /API_PAIRING_TICKET_SHAPE/u); await absent(expired.ticketPath);
 });
 
+test('registered development preview origin passes strict origin parsing without a network request', async (context) => {
+  const { directory, ticketPath } = await fixture(context,
+    JSON.stringify(ticket('https://lab-preview.rust.finnandre.no')));
+  const preloadPath = path.join(directory, 'block-fetch.cjs');
+  await writeFile(preloadPath,
+    "globalThis.fetch = async () => { throw new Error('SYNTHETIC_FETCH_BLOCKED'); };\n");
+  const result = await run(['--ticket', ticketPath], { NODE_OPTIONS: `--require=${preloadPath}` });
+  secretSafe(result);
+  assert.match(result.stderr, /SYNTHETIC_FETCH_BLOCKED/u);
+  assert.doesNotMatch(result.stderr, /API_PAIRING_TICKET_ORIGIN/u);
+  await absent(ticketPath);
+});
+
 test('foreign, credentialed, path, query and insecure non-loopback origins make zero requests', async (context) => {
   let requests = 0;
   const server = createServer((_request, response) => { requests += 1; response.end('{}'); });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   context.after(() => new Promise((resolve) => server.close(resolve)));
   const port = server.address().port;
-  const origins = ['https://example.invalid', `http://user:pass@127.0.0.1:${port}`,
+  const origins = ['https://example.invalid',
+    'https://lab-preview.rust.finnandre.no.example.invalid',
+    'https://evil.lab-preview.rust.finnandre.no',
+    'http://lab-preview.rust.finnandre.no',
+    `http://user:pass@127.0.0.1:${port}`,
     `http://127.0.0.1:${port}/path`, `http://127.0.0.1:${port}?query=1`,
     `http://127.0.0.1:${port}#fragment`, 'http://192.0.2.10:8123', `http://127.0.0.1:${port}`];
   for (const [index, origin] of origins.entries()) {

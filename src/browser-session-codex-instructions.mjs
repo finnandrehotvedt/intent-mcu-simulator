@@ -1,14 +1,30 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Finn Andre Hotvedt and IntentForce
 
-export const API_SESSION_PROTOCOL_URL = 'https://lab.teachthecompany.com/api/session/v1/protocol.txt';
-export const API_SESSION_CLIENT_URL = 'https://lab.teachthecompany.com/api/session/v1/client.mjs';
+export const PRODUCTION_LAB_ORIGIN = 'https://lab.teachthecompany.com';
+export const DEVELOPMENT_PREVIEW_LAB_ORIGIN = 'https://lab-preview.rust.finnandre.no';
+export const API_SESSION_PROTOCOL_PATH = '/api/session/v1/protocol.txt';
+export const API_SESSION_CLIENT_PATH = '/api/session/v1/client.mjs';
 
-export const CODEX_PAIRING_INSTRUCTIONS = `Work with my open Intent MCU Simulator project through its temporary browser-session API.
+export function apiSessionUrlsForOrigin(origin) {
+  const exactOrigin = new URL(origin).origin;
+  return Object.freeze({
+    origin: exactOrigin,
+    protocol: new URL(API_SESSION_PROTOCOL_PATH, `${exactOrigin}/`).href,
+    client: new URL(API_SESSION_CLIENT_PATH, `${exactOrigin}/`).href,
+  });
+}
 
-Lab: https://lab.teachthecompany.com/
-Protocol v1: ${API_SESSION_PROTOCOL_URL}
-Reference client: ${API_SESSION_CLIENT_URL}
+export const API_SESSION_PROTOCOL_URL = apiSessionUrlsForOrigin(PRODUCTION_LAB_ORIGIN).protocol;
+export const API_SESSION_CLIENT_URL = apiSessionUrlsForOrigin(PRODUCTION_LAB_ORIGIN).client;
+
+export function codexPairingInstructionsForOrigin(origin) {
+  const resources = apiSessionUrlsForOrigin(origin);
+  return `Work with my open Intent MCU Simulator project through its temporary browser-session API.
+
+Lab: ${resources.origin}/
+Protocol v1: ${resources.protocol}
+Reference client: ${resources.client}
 
 Safety and authority:
 - First read the versioned protocol and download the reference client from those public URLs. Do not invent an SDK, endpoint, command, pin, component ID, net ID, revision, or scope.
@@ -42,3 +58,6 @@ Local setup and run:
 Lifetime truth: session mode sends a quiet authenticated heartbeat every 60 seconds from the same memory-only client process. Each accepted heartbeat renews the 120-second idle lease and its bounded 15-minute renewal horizon only while the original browser owner tab is also alive and heartbeating. This provides browser-session-style continuity across normal AI chat turns without cookies, accounts, disk capabilities or a daemon. Closing the client, closing or reloading the owner tab, Revoke, two missed client heartbeats, or authority loss still fails closed and requires a fresh pairing. One-shot mode never renews a lease.
 
 Do not claim that this chat itself has the API tool. Prepare a task-specific nonsecret plan only after discovery, explain the local ticket step, and wait for me to run that step when human input is required.`;
+}
+
+export const CODEX_PAIRING_INSTRUCTIONS = codexPairingInstructionsForOrigin(PRODUCTION_LAB_ORIGIN);

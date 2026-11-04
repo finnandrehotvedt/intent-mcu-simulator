@@ -84,7 +84,10 @@ if (ticketMode) {
   try { ticketUrl = new URL(ticket?.origin); }
   catch { throw new Error('API_PAIRING_TICKET_ORIGIN'); }
   const canonicalOrigin = ticketUrl.origin;
-  const productionOrigin = canonicalOrigin === 'https://lab.teachthecompany.com';
+  const registeredHttpsOrigin = new Set([
+    'https://lab.teachthecompany.com',
+    'https://lab-preview.rust.finnandre.no',
+  ]).has(canonicalOrigin);
   const loopbackPort = Number(ticketUrl.port);
   const explicitLoopback = process.env.INTENT_MCU_ALLOW_LOOPBACK_TICKET === '1'
     && ['127.0.0.1', 'localhost'].includes(ticketUrl.hostname)
@@ -102,7 +105,7 @@ if (ticketMode) {
   }
   if (ticket.origin !== canonicalOrigin || ticketUrl.username || ticketUrl.password
       || ticketUrl.pathname !== '/' || ticketUrl.search || ticketUrl.hash
-      || (!productionOrigin && !explicitLoopback)) throw new Error('API_PAIRING_TICKET_ORIGIN');
+      || (!registeredHttpsOrigin && !explicitLoopback)) throw new Error('API_PAIRING_TICKET_ORIGIN');
   origin = ticket.origin; pairingSecret = ticket.pairing_secret; ticketScopes = ticket.scopes;
 }
 const endpoint = new URL('/api/session/v1', origin);

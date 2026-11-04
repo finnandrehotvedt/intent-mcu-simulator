@@ -6,7 +6,8 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import { API_SESSION_CLIENT_URL, API_SESSION_PROTOCOL_URL,
-  CODEX_PAIRING_INSTRUCTIONS } from '../src/browser-session-codex-instructions.mjs';
+  CODEX_PAIRING_INSTRUCTIONS, DEVELOPMENT_PREVIEW_LAB_ORIGIN,
+  apiSessionUrlsForOrigin, codexPairingInstructionsForOrigin } from '../src/browser-session-codex-instructions.mjs';
 
 test('copyable Codex instructions are public, self-contained and secret-safe', () => {
   assert.match(CODEX_PAIRING_INSTRUCTIONS, /https:\/\/lab\.teachthecompany\.com\//);
@@ -31,6 +32,17 @@ test('copyable Codex instructions are public, self-contained and secret-safe', (
   assert.match(CODEX_PAIRING_INSTRUCTIONS, /two missed client heartbeats/);
   assert.doesNotMatch(CODEX_PAIRING_INSTRUCTIONS, /printf|PAIRING_SECRET=/);
   assert.match(CODEX_PAIRING_INSTRUCTIONS, /Never auto-undo/);
+});
+
+test('pairing instructions bind the registered preview to exact same-origin resources', () => {
+  const resources = apiSessionUrlsForOrigin(DEVELOPMENT_PREVIEW_LAB_ORIGIN);
+  const prompt = codexPairingInstructionsForOrigin(DEVELOPMENT_PREVIEW_LAB_ORIGIN);
+  assert.equal(resources.protocol, 'https://lab-preview.rust.finnandre.no/api/session/v1/protocol.txt');
+  assert.equal(resources.client, 'https://lab-preview.rust.finnandre.no/api/session/v1/client.mjs');
+  assert.match(prompt, /Lab: https:\/\/lab-preview\.rust\.finnandre\.no\//u);
+  assert.ok(prompt.includes(resources.protocol));
+  assert.ok(prompt.includes(resources.client));
+  assert.doesNotMatch(prompt, /Bearer [A-Za-z0-9_-]{20,}/u);
 });
 
 test('build exposes versioned protocol, complete client and exact metaprompt', async () => {

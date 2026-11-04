@@ -9,8 +9,8 @@ import { STM32_BOARD_DEFINITION, STM32_PUBLIC_COMPONENT_CATALOG, validateStm32Ci
 import { BOUNDED_3V3_UI_COMPONENTS, validateBounded3v3AuthoringGraph } from '../src/bounded-3v3-authoring-contracts.mjs';
 import { CANDIDATE_UI_COMPONENTS } from '../src/candidate-existing-ui-adapter.mjs';
 import { API03_PROFILE_MATRIX, prepareApiBatch, summarizeApiChanges } from '../src/browser-session-edit.mjs';
-import { API_SESSION_CLIENT_URL, API_SESSION_PROTOCOL_URL,
-  CODEX_PAIRING_INSTRUCTIONS } from '../src/browser-session-codex-instructions.mjs';
+import { apiSessionUrlsForOrigin,
+  codexPairingInstructionsForOrigin } from '../src/browser-session-codex-instructions.mjs';
 
 const endpoint = '/api/session/v1';
 const makeId = (prefix) => `${prefix}-${crypto.randomUUID()}`;
@@ -162,6 +162,8 @@ function execute(request, current, context) {
 }
 
 export function installBrowserSessionOwner() {
+  const pairingResources = apiSessionUrlsForOrigin(location.origin);
+  const pairingInstructions = codexPairingInstructionsForOrigin(location.origin);
   const button = document.createElement('button'); button.type = 'button'; button.textContent = 'API access';
   const nav = document.querySelector('#workbench-popup-controls'); if (!nav) return;
   nav.append(button);
@@ -176,7 +178,7 @@ export function installBrowserSessionOwner() {
       <section class="api-codex-prompt" aria-labelledby="api-codex-prompt-title">
         <div class="api-codex-prompt-heading"><div><p class="eyebrow">API ACCESS</p><h3 id="api-codex-prompt-title">Give these instructions to Codex</h3></div><button type="button" data-copy-instructions>Copy instructions</button></div>
         <textarea data-codex-instructions readonly spellcheck="false" aria-label="Codex pairing instructions"></textarea>
-        <p class="api-resource-links"><a href="${API_SESSION_PROTOCOL_URL}">Protocol v1</a><a href="${API_SESSION_CLIENT_URL}" download>Download client.mjs</a></p>
+        <p class="api-resource-links"><a href="${pairingResources.protocol}">Protocol v1</a><a href="${pairingResources.client}" download>Download client.mjs</a></p>
         <p data-copy-status class="api-copy-status" role="status">The pairing secret is intentionally not included.</p>
       </section>
       <section class="api-pairing-controls" aria-label="Temporary API pairing">
@@ -195,10 +197,10 @@ export function installBrowserSessionOwner() {
   const editScope = dialog.querySelector('[data-edit-scope]');
   const instructions = dialog.querySelector('[data-codex-instructions]');
   const copyStatus = dialog.querySelector('[data-copy-status]');
-  instructions.value = CODEX_PAIRING_INSTRUCTIONS;
+  instructions.value = pairingInstructions;
   dialog.querySelector('[data-copy-instructions]').addEventListener('click', async () => {
     try {
-      await navigator.clipboard.writeText(CODEX_PAIRING_INSTRUCTIONS);
+      await navigator.clipboard.writeText(pairingInstructions);
       copyStatus.textContent = 'Instructions copied. No pairing secret was included.';
     } catch {
       instructions.focus(); instructions.select();
