@@ -444,7 +444,7 @@ void pulseWidth(unsigned int highUs){noInterrupts();PORTB|=_BV(PB2);delayMicrose
 void setup(){pinMode(SIGNAL,OUTPUT);Serial.begin(115200);} void loop(){for(byte i=0;i<3;i++){for(byte frame=0;frame<20;frame++)pulseWidth(pulses[i]);Serial.println(labels[i]);}}
 `,
   'avr-dc-motor-l298n': `const byte IN1=7,IN2=8,ENA=9;
-void command(bool a,bool b,byte enable,const char* label){digitalWrite(IN1,a);digitalWrite(IN2,b);analogWrite(ENA,enable);Serial.println(label);delay(400);}
+void command(bool a,bool b,byte enable,const char* label){digitalWrite(IN1,a);digitalWrite(IN2,b);analogWrite(ENA,enable);Serial.println(label);delay(2000);}
 void setup(){pinMode(IN1,OUTPUT);pinMode(IN2,OUTPUT);pinMode(ENA,OUTPUT);Serial.begin(115200);} void loop(){command(HIGH,LOW,128,"FORWARD 50");command(HIGH,HIGH,255,"BRAKE");command(LOW,HIGH,191,"REVERSE 75");command(LOW,LOW,0,"COAST");}
 `,
   'avr-dc-motor-tb6612fng': `const byte IN1=7,IN2=8,PWM=9,STBY=6;

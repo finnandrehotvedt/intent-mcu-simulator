@@ -94,7 +94,7 @@ const baselineProjectHashes = Object.freeze({
   'avr-speaker-signal': '6f4b0b20c5f7e167eea67b10eecb86790ff96ec6155bade946ad86d5d554fa0e',
   'avr-hobby-servo': '75e807253b36f7790e0acb684bd6fd7a529b50287145faf3ae0e568f93a013e6',
   'avr-continuous-servo': 'b83345e6cabc21094e45b6be04bd63c04e76f80208d4b684ded002f0e3b84a70',
-  'avr-dc-motor-l298n': 'f64e37176b9f86d9a06fd89088cb05c26e40176457cd80d60e16a1055d2d4284',
+  'avr-dc-motor-l298n': 'ece676d26cca6426165011297b944a78515b86a863b0a43a28d86b55947f9bcb',
   'avr-dc-motor-tb6612fng': '2a1e6ee5c668cb0e42885b83483447c6de01ff58a08a9e44c44b0a17e7cdd0ee',
   'avr-dc-motor-drv8833': 'c28525b6f39b72f033315516d282a85ede78e3f8d713d4cc5d2a20d12fb0a0a0',
   'avr-bipolar-stepper-a4988': 'bd94eb865729f621af26b485545187fca695b14c43c742bbf32f67fe98cb7eeb',

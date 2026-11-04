@@ -81,7 +81,7 @@
         "files": [
           {
             "name": "main.ino",
-            "content": "const byte IN1=7,IN2=8,ENA=9;\nvoid command(bool a,bool b,byte enable,const char* label){digitalWrite(IN1,a);digitalWrite(IN2,b);analogWrite(ENA,enable);Serial.println(label);delay(400);}\nvoid setup(){pinMode(IN1,OUTPUT);pinMode(IN2,OUTPUT);pinMode(ENA,OUTPUT);Serial.begin(115200);} void loop(){command(HIGH,LOW,128,\"FORWARD 50\");command(HIGH,HIGH,255,\"BRAKE\");command(LOW,HIGH,191,\"REVERSE 75\");command(LOW,LOW,0,\"COAST\");}\n"
+            "content": "const byte IN1=7,IN2=8,ENA=9;\nvoid command(bool a,bool b,byte enable,const char* label){digitalWrite(IN1,a);digitalWrite(IN2,b);analogWrite(ENA,enable);Serial.println(label);delay(2000);}\nvoid setup(){pinMode(IN1,OUTPUT);pinMode(IN2,OUTPUT);pinMode(ENA,OUTPUT);Serial.begin(115200);} void loop(){command(HIGH,LOW,128,\"FORWARD 50\");command(HIGH,HIGH,255,\"BRAKE\");command(LOW,HIGH,191,\"REVERSE 75\");command(LOW,LOW,0,\"COAST\");}\n"
           }
         ]
       },

@@ -259,8 +259,8 @@
       },
       "expectedBehavior": "Compiled direction and PWM commands produce matching visible coast, forward, reverse and brake command intent.",
       "firmwareLimits": "Ideal paired command observer only; no motor supply, RPM, torque, current, heat, load, inertia or physical bridge/motor accuracy.",
-      "sourceSha256": "213f93eafb8f71e276510a0fba46b8d58db88055ac9cb351201008ebad0be6ef",
-      "projectSha256": "866ee1327b9fffcbdcf53c02e72631ee1294d9a1b7cb1367df96411365aff279",
+      "sourceSha256": "ce003377c2ef137067d28b1060d01b6a29bf823e020009311763b4d26be5bc75",
+      "projectSha256": "6fb2f1bb499c0aa6082a1fff158204fad235e17251666bafaebe05e54a87dabf",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
