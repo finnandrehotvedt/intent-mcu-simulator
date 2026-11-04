@@ -44,3 +44,29 @@ test('indicator examples contain the exact qualified component models', async ()
       (component) => component.type === entry.pairedComponentType), `${entry.id}:pair`);
   }
 });
+
+test('CMP-038 manifest labels match the actual temperature example PWM wiring', async () => {
+  const manifest = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
+  const entry = manifest.entries.find(({ requirementIds }) => requirementIds.includes('CMP-038'));
+  assert.deepEqual(entry.namedPins, {
+    R: 'D5 through 220 Ω',
+    G: 'D6 through 220 Ω',
+    B: 'D9 through 220 Ω',
+    COM: 'GND1',
+  });
+  const envelope = JSON.parse(await readFile(new URL(entry.file, ROOT), 'utf8'));
+  const circuit = envelope.project.candidateCircuit;
+  const boardPinFor = (channel) => {
+    const channelNet = circuit.nets.find(({ endpoints }) => endpoints.some(
+      ({ component, pin }) => component === 'rgb-led-1' && pin === channel,
+    ));
+    const resistor = channelNet.endpoints.find(({ component }) => component.startsWith('resistor-'));
+    return circuit.nets.find(({ id }) => id.endsWith(`${resistor.component.split('-').at(-1)}-drive`))
+      .endpoints.find(({ component }) => component === 'board-1').pin;
+  };
+  assert.deepEqual(Object.fromEntries(['R', 'G', 'B'].map((channel) =>
+    [channel, boardPinFor(channel)])), { R: 'D5', G: 'D6', B: 'D9' });
+  assert(circuit.nets.find(({ id }) => id === 'net-example-ground').endpoints.some(
+    ({ component, pin }) => component === 'rgb-led-1' && pin === 'COM',
+  ));
+});

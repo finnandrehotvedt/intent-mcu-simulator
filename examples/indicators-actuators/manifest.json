@@ -17,9 +17,9 @@
       "file": "avr-rgb-temperature.intent-mcu.json",
       "componentType": "output.rgb-led-common-cathode-v1",
       "namedPins": {
-        "R": "D3 through 220 Ω",
-        "G": "D5 through 220 Ω",
-        "B": "D6 through 220 Ω",
+        "R": "D5 through 220 Ω",
+        "G": "D6 through 220 Ω",
+        "B": "D9 through 220 Ω",
         "COM": "GND1"
       },
       "expectedBehavior": "Three independently current-limited compiled PWM outputs produce a visible relative RGB mix.",

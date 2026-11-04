@@ -31,7 +31,7 @@ const starter = (id) => createAvrReferenceStarter(id).project;
 const definitions = [
   { id: 'avr-common-cathode-rgb-led', requirementIds: ['CMP-038'], file: 'avr-rgb-temperature.intent-mcu.json',
     bytes: JSON.stringify(sourceEnvelope), componentType: 'output.rgb-led-common-cathode-v1',
-    namedPins: { R: 'D3 through 220 Ω', G: 'D5 through 220 Ω', B: 'D6 through 220 Ω', COM: 'GND1' },
+    namedPins: { R: 'D5 through 220 Ω', G: 'D6 through 220 Ω', B: 'D9 through 220 Ω', COM: 'GND1' },
     expectedBehavior: 'Three independently current-limited compiled PWM outputs produce a visible relative RGB mix.',
     firmwareLimits: 'Ideal common-cathode relative PWM colour only; no wavelength, luminous intensity, current matching or thermal accuracy.' },
   { id: 'avr-traffic-light-sequence', requirementIds: ['CMP-041'], file: 'avr-traffic-light.intent-mcu.json',
