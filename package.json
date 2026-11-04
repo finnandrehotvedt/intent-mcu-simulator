@@ -18,7 +18,7 @@
     "test:api02:browser": "node test/browser-session-actual-browser.cjs",
     "test:api03": "node --test --test-concurrency=1 test/browser-session-canonical-edit.test.mjs test/browser-session-relay.test.mjs",
     "test:api03:browser": "node test/browser-session-edit-actual-browser.cjs",
-    "test:api04": "node --test --test-concurrency=1 test/browser-session-api04.test.mjs test/browser-session-canonical-edit.test.mjs test/browser-session-relay.test.mjs",
+    "test:api04": "node --test --test-concurrency=1 test/browser-session-api04.test.mjs test/browser-session-canonical-edit.test.mjs test/browser-session-edit-client-freshness.test.mjs test/browser-session-relay.test.mjs",
     "test:input-controls": "node scripts/generate-input-control-examples.mjs && node --test --test-concurrency=1 test/input-control-example-artifacts.test.mjs",
     "test:power-references": "node scripts/generate-power-reference-example.mjs && node --test --test-concurrency=1 test/power-reference-integration.test.mjs test/power-reference-example-artifacts.test.mjs test/component-support-matrix.test.mjs",
     "test:power-references:browser": "npm run build && node test/power-reference-integration-browser.cjs",

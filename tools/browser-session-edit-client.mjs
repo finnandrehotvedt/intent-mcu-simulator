@@ -8,7 +8,9 @@ import { createInterface } from 'node:readline';
 import { stdin, stderr, stdout } from 'node:process';
 
 const PUBLIC_ERROR = /^(?:API|PROJECT_CONTACT|MODEL_LIBRARY|EDITOR|COMPONENT_PROPERTY|RP2040|C3|STM32)_[A-Z0-9_]+$/u;
-const publicSessionErrorCode = (error) => typeof error?.message === 'string' && PUBLIC_ERROR.test(error.message)
+const PUBLIC_EXACT_ERRORS = new Set(['INVALID_COMPONENT_PROPERTIES']);
+const publicSessionErrorCode = (error) => typeof error?.message === 'string'
+  && (PUBLIC_ERROR.test(error.message) || PUBLIC_EXACT_ERRORS.has(error.message))
   ? error.message : 'API_SESSION_FAILED';
 
 function validateDiscoveredPlan(candidate, components, catalog) {
@@ -227,12 +229,21 @@ async function discoverProject() {
   const catalog = staticDiscovery?.catalog ?? await accepted('components.catalog');
   const components = await accepted('components.list');
   const nets = await accepted('nets.list');
-  const componentPins = { ...(staticDiscovery?.componentPins ?? {}) };
-  for (const component of components.components) if (!componentPins[component.id]) {
-    componentPins[component.id] = (await accepted('component.pins', { component_id: component.id })).pins;
+  const connectedEndpoints = new Set(nets.nets.flatMap((net) => net.endpoints
+    .map((endpoint) => `${endpoint.component}.${endpoint.pin}`)));
+  const cachedPinDefinitions = staticDiscovery?.componentPinDefinitions ?? {};
+  const componentPinDefinitions = {}; const componentPins = {};
+  for (const component of components.components) {
+    const cached = cachedPinDefinitions[component.id];
+    const definitions = cached?.type === component.type ? cached.pins
+      : (await accepted('component.pins', { component_id: component.id })).pins
+        .map(({ connected: _connected, ...pin }) => pin);
+    componentPinDefinitions[component.id] = { type: component.type, pins: definitions };
+    componentPins[component.id] = definitions.map((pin) => ({ ...pin,
+      connected: connectedEndpoints.has(`${component.id}.${pin.id}`) }));
   }
   const validation = await accepted('circuit.validate');
-  staticDiscovery = { capabilities, catalog, componentPins };
+  staticDiscovery = { capabilities, catalog, componentPinDefinitions };
   return { discovery: { profile: catalog.profile, project_id: claim.projectId, revision,
     commands: capabilities.commands, components: components.components, nets: nets.nets,
     pins: componentPins, validation: validation.validation,
