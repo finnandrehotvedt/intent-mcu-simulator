@@ -61,7 +61,7 @@ async function loadStarter(page, id, name) {
     await loadStarter(page, 'avr-ground-reference-input', 'Ground reference input');
 
     if (!(await page.locator('#component-catalog').isVisible())) await page.click('#toggle-catalog');
-    await page.locator('.catalog-item[data-type="reference.power-5v-v1"]').click();
+    await page.locator('#catalog-list .catalog-item[data-type="reference.power-5v-v1"]').click();
     await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.components.some(
       (component) => component.id === 'power-reference-1',
     ));

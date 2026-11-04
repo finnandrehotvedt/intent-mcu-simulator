@@ -100,8 +100,14 @@ async function assertArtwork(page, layer = '#component-layer') {
     });
     for (const type of ['transistor.bjt-npn-v1', 'transistor.bjt-pnp-v1',
       'transistor.mosfet-n-channel-v1']) {
+      await page.locator('#catalog-search').evaluate((node, value) => {
+        node.value = value; node.dispatchEvent(new Event('input', { bubbles: true }));
+      }, type);
       assert.equal(await page.locator(`#catalog-list .catalog-item[data-type="${type}"]`).count(), 1, type);
     }
+    await page.locator('#catalog-search').evaluate((node) => {
+      node.value = ''; node.dispatchEvent(new Event('input', { bubbles: true }));
+    });
     if (await page.locator('#workbench-parts-dialog').evaluate((node) => node.open)) {
       await page.click('#workbench-parts-dialog .workbench-popup-close');
     }
@@ -141,7 +147,7 @@ async function assertArtwork(page, layer = '#component-layer') {
       }, profile);
       const list = profile.id === 'board.rp2040-pico-v1' ? '#pico-parts-list'
         : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-parts-list' : '#stm32-parts-list';
-      assert.equal(await page.locator(`${list} .catalog-item`).count(), 22);
+      assert.equal(await page.locator(`${list} .catalog-item`).count(), 80);
       await assertArtwork(page, profile.layer);
       const state = await page.evaluate(({ api }) => {
         const value = window[api].state(); const graph = value.circuit ?? value.project.circuit;
