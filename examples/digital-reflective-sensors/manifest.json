@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-firmware-control-coverage.1-current",
-    "manifestSha256": "b5ac8aca7b74d025e44abac6db0991eea7f4e46a723bcb66e038708737d92e2f",
-    "implementationSha256": "c6ecfb7a68f0cb84111821ca63b6c7c4a34505dce618c14c3892e0b5ba2929c7"
+    "manifestSha256": "e828a66478c64877ea7b30b82b54a2bfe33b224d6cbf68fac76d831909f3c5ab",
+    "implementationSha256": "358eb2ddc3aac937f81a9a81c43cb0d788653f58348a29c8f98bfa68a8d958d1"
   },
   "entries": [
     {
@@ -16,7 +16,7 @@
         "CMP-123"
       ],
       "file": "avr-digital-reflective-sensors.intent-mcu.json",
-      "projectSha256": "117652aafdd4089aca30f572567f95e6bbe8d6b31a56ce42381c9f105a162366",
+      "projectSha256": "8e651b3cfcb1f46354228f902d6ab29df37131da8758b25ff9b9b7bf7b1950d8",
       "sourceSha256": "182f5c189c0081304298878ba96c12fcf0158e6b391a0ea318dbad75af1b8b48",
       "expectedBehavior": "D7 and D8 report independent active-low reflected-obstacle and dark-line states.",
       "namedPins": {

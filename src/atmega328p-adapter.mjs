@@ -31,6 +31,12 @@ export const CLOCK_HZ = 16_000_000;
 export const TRACE_LIMIT = 100_000;
 export const SERIAL_LIMIT = 4_096;
 export const I2C_LIMIT = 8_192;
+export const SOFTWARE_SERVO_PULSE_LIMITS = Object.freeze({
+  frameCyclesMinimum: 160_000,
+  frameCyclesMaximum: 480_000,
+  highCyclesMinimum: 16_000,
+  highCyclesMaximum: 32_000,
+});
 export { USART_RX_OBSERVATION_LATENESS_LIMIT };
 const SAMPLE_LIMIT = 4_096;
 const UNSUPPORTED_LIMIT = 256;
@@ -107,6 +113,25 @@ export function boundedPush(target, entry, limit) {
   const dropped = target.length - limit;
   target.splice(0, dropped);
   return dropped;
+}
+
+export function measuredOutputPwm(transitions, { hardwarePwmActive = false } = {}) {
+  if (!Array.isArray(transitions)) return null;
+  const rising = transitions.filter((entry) => entry?.level === true
+    && Number.isSafeInteger(entry.cycle)).slice(-2);
+  if (rising.length !== 2) return null;
+  const falling = transitions.find((entry) => entry?.level === false
+    && Number.isSafeInteger(entry.cycle)
+    && entry.cycle > rising[0].cycle && entry.cycle < rising[1].cycle);
+  const periodCycles = rising[1].cycle - rising[0].cycle;
+  const highCycles = falling ? falling.cycle - rising[0].cycle : null;
+  if (!falling || periodCycles <= 0 || highCycles <= 0) return null;
+  const measuredSoftwareServoPulse = periodCycles >= SOFTWARE_SERVO_PULSE_LIMITS.frameCyclesMinimum
+    && periodCycles <= SOFTWARE_SERVO_PULSE_LIMITS.frameCyclesMaximum
+    && highCycles >= SOFTWARE_SERVO_PULSE_LIMITS.highCyclesMinimum
+    && highCycles <= SOFTWARE_SERVO_PULSE_LIMITS.highCyclesMaximum;
+  if (!hardwarePwmActive && !measuredSoftwareServoPulse) return null;
+  return { periodCycles, highCycles, duty: highCycles / periodCycles };
 }
 
 function voltageForInput(input, adc) {
@@ -1128,21 +1153,11 @@ export class Atmega328PAdapter {
       const output = Boolean(this.cpu.data[config.DDR] & mask);
       const pullup = !output && Boolean(this.cpu.data[config.PORT] & mask);
       const transitions = tracesByPin.get(pin) ?? [];
-      const rising = transitions.filter((entry) => entry.level).slice(-2);
-      let pwm = null;
       const pwmOutput = PWM_OUTPUTS[pin];
-      if (output && pwmOutput && (this.cpu.data[pwmOutput[0].TCCRA] & pwmOutput[1]) && rising.length === 2) {
-        const falling = transitions.find((entry) => !entry.level
-          && entry.cycle > rising[0].cycle && entry.cycle < rising[1].cycle);
-        const periodCycles = rising[1].cycle - rising[0].cycle;
-        if (falling && periodCycles > 0) {
-          pwm = {
-            periodCycles,
-            highCycles: falling.cycle - rising[0].cycle,
-            duty: (falling.cycle - rising[0].cycle) / periodCycles,
-          };
-        }
-      }
+      const hardwarePwmActive = Boolean(
+        pwmOutput && (this.cpu.data[pwmOutput[0].TCCRA] & pwmOutput[1]),
+      );
+      const pwm = output ? measuredOutputPwm(transitions, { hardwarePwmActive }) : null;
       return {
         pin: `D${pin}`,
         mode: output ? (pwm ? 'DIGITAL_PWM' : 'OUTPUT') : pullup ? 'INPUT_PULLUP' : 'INPUT',

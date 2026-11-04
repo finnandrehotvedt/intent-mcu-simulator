@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-firmware-control-coverage.1-current",
-    "manifestSha256": "b5ac8aca7b74d025e44abac6db0991eea7f4e46a723bcb66e038708737d92e2f",
-    "implementationSha256": "c6ecfb7a68f0cb84111821ca63b6c7c4a34505dce618c14c3892e0b5ba2929c7"
+    "manifestSha256": "e828a66478c64877ea7b30b82b54a2bfe33b224d6cbf68fac76d831909f3c5ab",
+    "implementationSha256": "358eb2ddc3aac937f81a9a81c43cb0d788653f58348a29c8f98bfa68a8d958d1"
   },
   "entries": [
     {
@@ -23,7 +23,7 @@
         "P3": "GND2",
         "P4": "5V"
       },
-      "projectSha256": "51cb4845cc33c4f8bd28937c4f5423602cdbb224a064b65447bb7ac9d26a4c67",
+      "projectSha256": "fdef7f466039c611b4caa0eeb8f7e3509abc27758b6933ccf2d1d71543c720bf",
       "sourceSha256": "f6f6cf5f930411aac87b5a6c5e026885e4a56c88b4366619f65cc9364639597d",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
@@ -46,7 +46,7 @@
         "B": "D6 through 330 Ω",
         "COM": "5V"
       },
-      "projectSha256": "844bee9d0b8b91b5c93eea136cf096819ce45a25f44860996693cc4d97e72dc2",
+      "projectSha256": "1cf1123d07aebbf4d99c584396f0ca291744c2ce97329d9ea0acb92b5c874db4",
       "sourceSha256": "4922f5b3ef3c8848a1ddf16dac5bcbeef02c1f00e235f4b1b941e4ccfd928b31",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
@@ -67,7 +67,7 @@
         "anodes": "A1–A10 through 330 Ω to D2–D11",
         "cathodes": "K1–K10 to explicit 0 V reference"
       },
-      "projectSha256": "22f2b8714438f95576cf23115086d070d658feeb04c329c368f385e4221efcf1",
+      "projectSha256": "272ade7944bd3b1a2d2f16f03b1406fa8336dfe3bdb5901dd56b140dbe8cd9a8",
       "sourceSha256": "2822f3cefa6bbfedb50b5efbfeec1d742648ec4910eb8f6be985faffbc6c85aa",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",

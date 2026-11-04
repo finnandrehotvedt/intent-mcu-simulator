@@ -256179,7 +256179,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "src/atmega328p-adapter.mjs",
-      "sha256": "cc38801e1f349a5832efc4132f616b557fff2bf70f2f4d8724221b6963099819"
+      "sha256": "36ba2de8798aa202f473a3ab506ce153b42e16cb1807417e03c71e4c8123e87a"
     },
     {
       "path": "src/x43-avr-stack-profile.mjs",
@@ -256662,7 +256662,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "cc8ca03076c46047a5d06077880ccdfb1f59356d7dd3ee4ff9f26901a3026909"
     }
   ],
-  "implementationSha256": "c6ecfb7a68f0cb84111821ca63b6c7c4a34505dce618c14c3892e0b5ba2929c7",
+  "implementationSha256": "358eb2ddc3aac937f81a9a81c43cb0d788653f58348a29c8f98bfa68a8d958d1",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "exact cbab9eef8119ff3009dcf524bd2e9664a7d18406 source and image basis; every prior identity remains an immutable migration-only anchor",
@@ -256672,7 +256672,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-configurable-shortcuts.1-current",
     "semanticDisposition": "retains prior model and electrical contracts while adding reviewed compiled-AVR execution adapters for matrix keypads, rotary selector and independent motor-encoder detents; narrow-profile claims remain unchanged"
   },
-  "manifestSha256": "b5ac8aca7b74d025e44abac6db0991eea7f4e46a723bcb66e038708737d92e2f",
+  "manifestSha256": "e828a66478c64877ea7b30b82b54a2bfe33b224d6cbf68fac76d831909f3c5ab",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
