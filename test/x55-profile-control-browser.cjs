@@ -25,8 +25,8 @@ function expectedAvrControls() {
     pause: { text: 'Pause', title: '', disabled: true },
     reset: { text: 'Reset', title: '', disabled: true },
     stop: {
-      text: 'Stop unavailable',
-      title: 'Stop is unavailable for the AVR browser runtime; use Pause or Reset.',
+      text: 'Stop',
+      title: 'No AVR runtime session is active.',
       disabled: true,
     },
   };
@@ -67,7 +67,8 @@ async function controlState(page) {
     page.on('request', (request) => {
       const url = new URL(request.url());
       const item = { method: request.method(), path: url.pathname };
-      if (/\/(?:api|compile|run|scenario)(?:\/|$)/u.test(url.pathname)) report.producerRequests.push(item);
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())
+        && /\/(?:api|compile|run|scenario)(?:\/|$)/u.test(url.pathname)) report.producerRequests.push(item);
       if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) report.mutatingRequests.push(item);
       if (url.origin !== new URL(base).origin) report.thirdPartyRequests.push(item);
     });
@@ -76,9 +77,10 @@ async function controlState(page) {
     if (await page.locator('#walkthrough').getAttribute('open') !== null) {
       await page.locator('#walkthrough button').last().click();
     }
+    await page.click('#workbench-view-advanced');
     await page.click('#project-files-open');
     await page.click('#project-demo');
-    await page.locator('.starter-card[data-example="blink"]').click();
+    await page.locator('.starter-card[data-example="blink"] .starter-action:visible').click();
     if (await page.locator('#unsaved-change-dialog').isVisible()) await page.click('#unsaved-discard');
     await page.waitForFunction(() => window.__M6_PROJECT__().circuit.components.length > 0);
 

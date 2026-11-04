@@ -41,7 +41,7 @@ const base = process.env.BEGINNER_START_URL || 'http://127.0.0.1:18932';
 
       await page.click('#beginner-examples');
       assert.equal(await page.locator('#example-picker-dialog').evaluate((node) => node.open), true);
-      assert.equal(await page.locator('.starter-card').filter({ visible: true }).count(), 24);
+      assert.equal(await page.locator('.starter-card').filter({ visible: true }).count(), 34);
       await page.keyboard.press('Escape');
 
       await page.click('#beginner-scratch');
