@@ -204,9 +204,9 @@
         "GND": "GND1"
       },
       "expectedBehavior": "Valid 1–2 ms pulses in bounded frames map to visible 0–180 degree command intent.",
-      "firmwareLimits": "Ideal AVR command observer only; no motion, torque, load, current, backlash or physical accuracy.",
-      "sourceSha256": "20c99909a75a8b5dede030162b02ddbe931c4983c8e93536f8e98416bebadb77",
-      "projectSha256": "5ae175b5766e5016ff707e6de4901cf003c86b1342efcbb5ecbeda1365078898",
+      "firmwareLimits": "Ideal AVR command observer only; each 1–2 ms high pulse blocks interrupt work; no motion, torque, load, current, backlash or physical accuracy.",
+      "sourceSha256": "0a20269a4ec11e8d3f8b70367043f33e139bd60a23477f080cdcf902c54824c1",
+      "projectSha256": "f974795a8953b17ac0cc161e60aaa7e60c03711049551fc860a8b20329a8cdba",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -228,9 +228,9 @@
         "GND": "GND1"
       },
       "expectedBehavior": "Valid bounded pulses map to visible reverse, stopped and forward command intent.",
-      "firmwareLimits": "Ideal AVR command observer only; no RPM, torque, load, current, inertia or physical accuracy.",
-      "sourceSha256": "360ed27c4f7f3d034137c4fd0a663543733a7265ef5561ffb8ba4eee6c8cb87c",
-      "projectSha256": "0c8b1ddbfebdac21a26984883d911df2a82a387c0fdb6565cbaf53989a344ac6",
+      "firmwareLimits": "Ideal AVR command observer only; each 1–2 ms high pulse blocks interrupt work; no RPM, torque, load, current, inertia or physical accuracy.",
+      "sourceSha256": "c257315accfbe8da3c1b95030ce8a8e4420c5f7c80843c8e56550f2d91e955ba",
+      "projectSha256": "0716c5fd15e4440215b5e617e38cef3202b26c5a1884433c84ddb63b532b7f65",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
