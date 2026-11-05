@@ -36,17 +36,24 @@ const anchors = (page, selector) => page.evaluate((root) => Object.fromEntries(
     };
   });
   const page = await context.newPage();
+  await page.route('**/api/page-views', (route) => route.fulfill({ status: 200,
+    contentType: 'application/json', body: '{"status":"disabled"}' }));
   const producerRequests = [];
   page.on('request', (request) => {
-    if (/\/(?:api|compile|run|scenario)(?:\/|$)/u.test(new URL(request.url()).pathname)) {
+    const pathname = new URL(request.url()).pathname;
+    if (pathname !== '/api/page-views' && /\/(?:api|compile|run|scenario)(?:\/|$)/u.test(pathname)) {
       producerRequests.push(request.url());
     }
   });
   try {
     assert.equal((await page.goto(base, { waitUntil: 'domcontentloaded' }))?.status(), 200);
     await page.waitForFunction(() => window.__M11_READY__ === true);
+    await page.click('#workbench-view-advanced');
     await page.click('#project-files-open'); await page.click('#project-demo');
-    await page.click('.starter-card[data-example="blink"]');
+    await page.click('.starter-card[data-example="blink"] .starter-action');
+    await page.waitForFunction(() => !document.querySelector('#example-picker-dialog').open);
+    await page.click('#workbench-project-dialog .workbench-popup-close');
+    await page.waitForFunction(() => !document.querySelector('#workbench-project-dialog').open);
     const avrCard = page.locator('#component-layer [data-component-id="led-1"]');
     await avrCard.click(); await page.click('#toggle-inspector');
     await page.click('#component-editor-drawing-tab');

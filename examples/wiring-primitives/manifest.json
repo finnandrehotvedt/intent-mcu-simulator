@@ -3,9 +3,9 @@
   "modelLibrary": {
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
-    "version": "2.0.0-firmware-control-coverage.1-current",
-    "manifestSha256": "e828a66478c64877ea7b30b82b54a2bfe33b224d6cbf68fac76d831909f3c5ab",
-    "implementationSha256": "358eb2ddc3aac937f81a9a81c43cb0d788653f58348a29c8f98bfa68a8d958d1"
+    "version": "2.0.0-invalid-property-feedback.1-current",
+    "manifestSha256": "27ec8821b40cae33627ffc931a22eaba2c41bab7171607c55562788721202d83",
+    "implementationSha256": "e4e49c9d091f90a983369dee1b463ffbb5e0a94263472ee134c0cb3849a1bb70"
   },
   "requirementIds": [
     "CMP-019"
@@ -40,7 +40,7 @@
       ],
       "file": "avr-explicit-junction-crossing.intent-mcu.json",
       "profile": "board.atmega328p-16mhz-v1",
-      "projectSha256": "15c56e22cc5d995871d062d2bce51b0400a03dc5e7b60e7dc914990d703cc68a",
+      "projectSha256": "d15978c78cbe4eb7424da2ad87e168d27a86d69d2076a72600877a5a23b63654",
       "sourceSha256": "41a0f9060221af6d28f8ff2fa6ff67fb593ace58717ffebf50c063e4e1275a28",
       "junction": {
         "id": "junction-ground",
@@ -84,7 +84,7 @@
       ],
       "file": "pico-explicit-junction-crossing.intent-mcu.json",
       "profile": "board.rp2040-pico-v1",
-      "projectSha256": "529f4e71c6c4e383f16fac0d632d831680a4700583ab0c0c7bcf8ab7cfae0ae0",
+      "projectSha256": "0cd7bfab7d8bc1edbfe4ca432787bbd7f49710e4c8df995d36a8ce3132ba5a51",
       "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
       "junction": {
         "id": null,
@@ -125,7 +125,7 @@
       ],
       "file": "esp32-c3-explicit-junction-crossing.intent-mcu.json",
       "profile": "board.esp32-c3-devmodule-v1",
-      "projectSha256": "d3ee67ca61fdd51bcad7795dacff9ae1cd4b5d31ed37a2729fd2f37dca869cc3",
+      "projectSha256": "32aa8ca7cb6dfbd46df1acdb8276162525b944a33b04f16d7f625263950335a9",
       "sourceSha256": "d936fc50b2c874d6af660ece56abbb024c86e7b30462c403542b8d2166b85480",
       "junction": {
         "id": null,
@@ -166,7 +166,7 @@
       ],
       "file": "stm32-explicit-junction-crossing.intent-mcu.json",
       "profile": "board.stm32f429zi-nucleo144-v1",
-      "projectSha256": "cbf438d54068e6ced759f2a19adbca470719656211691845ecc770a9b76e0b6f",
+      "projectSha256": "8d8c53c2f0092cc39055957a7d536d89d2ba54d85291635b5bcb69ae773724f4",
       "sourceSha256": "cfc2a242e56429ee1062308dd8e0653ecbf57456eea0090b354816bfc56eb8d0",
       "junction": {
         "id": null,

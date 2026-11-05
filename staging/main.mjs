@@ -13670,6 +13670,31 @@ function addComponent(type, point = null) {
   }
 }
 
+function formatPropertyContractBound(value) {
+  return Number(value).toLocaleString('en-US', { maximumSignificantDigits: 15 });
+}
+
+function propertyContractInstruction(contract) {
+  if (['number', 'integer'].includes(contract.kind)) {
+    const kind = contract.kind === 'integer' ? 'whole number' : 'number';
+    const unit = contract.unit ? ` ${contract.unit}` : '';
+    if (typeof contract.minimum === 'number' && typeof contract.maximum === 'number') {
+      return `Enter a ${kind} from ${formatPropertyContractBound(contract.minimum)} to ${formatPropertyContractBound(contract.maximum)}${unit}.`;
+    }
+    if (typeof contract.minimum === 'number') {
+      return `Enter a ${kind} of at least ${formatPropertyContractBound(contract.minimum)}${unit}.`;
+    }
+    if (typeof contract.maximum === 'number') {
+      return `Enter a ${kind} no greater than ${formatPropertyContractBound(contract.maximum)}${unit}.`;
+    }
+    return `Enter a valid ${kind}${unit}.`;
+  }
+  if (contract.kind === 'enum' && Array.isArray(contract.values) && contract.values.length) {
+    return `Choose one of the supported values: ${contract.values.join(', ')}.`;
+  }
+  return 'Enter a value supported by this field.';
+}
+
 function renderPropertyEditor(component) {
   if (!component || !Object.keys(component.properties).length) { elements.propertyeditor.replaceChildren(); return; }
   const definition = uiComponentCatalog[component.type];
@@ -13750,15 +13775,40 @@ function renderPropertyEditor(component) {
       if (typeof value === 'number') input.step = contract.kind === 'integer' ? '1' : 'any';
     }
     input.dataset.property = key;
+    label.htmlFor = `${component.id}-${key}`; input.id = label.htmlFor;
+    const fieldError = document.createElement('p');
+    fieldError.id = `${input.id}-error`; fieldError.className = 'property-field-error';
+    fieldError.setAttribute('role', 'alert'); fieldError.hidden = true;
+    input.setAttribute('aria-describedby', fieldError.id); input.setAttribute('aria-invalid', 'false');
+    const clearFieldError = () => {
+      input.setAttribute('aria-invalid', 'false'); fieldError.textContent = ''; fieldError.hidden = true;
+    };
+    const showFieldError = (reason = 'contract') => {
+      input.setAttribute('aria-invalid', 'true');
+      fieldError.textContent = reason === 'contract'
+        ? `Value not accepted. ${propertyContractInstruction(contract)} The saved project is unchanged.`
+        : 'This change cannot be applied right now. The saved project is unchanged.';
+      fieldError.hidden = false;
+    };
+    const numericValueAccepted = () => input.value.trim() !== '' && Number.isFinite(Number(input.value))
+      && input.checkValidity() && (contract.kind !== 'integer' || Number.isInteger(Number(input.value)));
+    const contractValueAccepted = () => typeof value === 'number'
+      ? numericValueAccepted()
+      : contract.kind === 'enum' && Array.isArray(contract.values)
+        ? contract.values.includes(input.value)
+        : input.checkValidity();
     let committing = false;
     input.addEventListener('change', () => {
       if (committing) return;
-      committing = true;
       const next = typeof value === 'number' ? Number(input.value) : typeof value === 'boolean' ? input.value === 'true' : input.value;
+      if (!contractValueAccepted()) { showFieldError(); return; }
+      clearFieldError();
+      if (next === value) return;
+      committing = true;
       const result = applyEditor({ type: 'component.property.set', componentId: component.id, key, value: next }, `Updated ${component.id}.${key}`);
-      if (!result?.ok) committing = false;
+      if (!result?.ok) { showFieldError(result.code === 'INVALID_COMPONENT_PROPERTIES' ? 'contract' : 'blocked'); committing = false; }
     });
-    label.htmlFor = `${component.id}-${key}`; input.id = label.htmlFor; row.append(label, input); return row;
+    row.append(label, input, fieldError); return row;
   });
   elements.propertyeditor.replaceChildren(...rows);
 }
@@ -17038,6 +17088,7 @@ document.querySelector('#workbench-inspector-dialog').addEventListener('close', 
   for (const cancel of document.querySelectorAll('#workbench-inspector-dialog [data-component-editor-cancel]')) {
     cancel.click();
   }
+  renderInspector();
 });
 elements.rotatecomponent.addEventListener('click', () => {
   if (!selectedComponentId) return;

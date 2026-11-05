@@ -54,7 +54,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-configurable-shortcuts-1@64',
+  id: 'intent-mcu-model-bundle-current-invalid-property-feedback-1@66',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -569,6 +569,13 @@ export const PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMEN
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-visible-runtime-controls-1@63',
   manifestVersion: '2.0.0-visible-runtime-controls.1-current',
+  migrationOnly: true,
+});
+
+export const PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-firmware-control-coverage-1@65',
+  manifestVersion: '2.0.0-firmware-control-coverage.1-current',
   migrationOnly: true,
 });
 

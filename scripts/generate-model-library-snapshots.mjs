@@ -53,6 +53,9 @@ const PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_FIRMWARE_CONTROL_COVERAGE_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_FIRMWARE_CONTROL_COVERAGE_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -404,16 +407,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-firmware-control-coverage.1-current',
-  'intent-mcu-model-bundle-current-firmware-control-coverage-1@65',
+  '2.0.0-invalid-property-feedback.1-current',
+  'intent-mcu-model-bundle-current-invalid-property-feedback-1@66',
   currentImplementation,
   {
-    priorVersion: PRE_FIRMWARE_CONTROL_COVERAGE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_FIRMWARE_CONTROL_COVERAGE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'retains prior model and electrical contracts while adding reviewed compiled-AVR execution adapters for matrix keypads, rotary selector and independent motor-encoder detents; narrow-profile claims remain unchanged',
-    presentationDisposition: 'retains configurable shortcuts and exposes the reviewed controls through the existing simple and advanced workbench without adding component types',
-    baselineClosureDisposition: 'exact cbab9eef8119ff3009dcf524bd2e9664a7d18406 source and image basis; every prior identity remains an immutable migration-only anchor',
+    semanticDisposition: 'retains the firmware-control-coverage model, electrical and runtime contracts unchanged',
+    presentationDisposition: 'adds field-bound generic Inspector rejection feedback without changing component types or specialized resistor and LED preview semantics',
+    baselineClosureDisposition: 'exact 7af7e50395322660029dfbb9be32ec6845414ae7 source basis; the prior @65 identity remains an immutable migration-only anchor',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -489,6 +492,7 @@ export const PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${
 export const PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_FIRMWARE_CONTROL_COVERAGE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_FIRMWARE_CONTROL_COVERAGE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

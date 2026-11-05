@@ -25,6 +25,7 @@ import {
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_LOCK,
@@ -154,6 +155,29 @@ test('locks resolve only against the trusted catalogue, never a supplied self-ha
     'MODEL_LIBRARY_LOCK_SHAPE');
 });
 
+test('the 7af7 firmware-control lock remains an exact migration-only identity', () => {
+  assert.equal(PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_LOCK.version,
+    '2.0.0-firmware-control-coverage.1-current');
+  assert.equal(PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+    'e828a66478c64877ea7b30b82b54a2bfe33b224d6cbf68fac76d831909f3c5ab');
+  assert.equal(PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_LOCK.implementationSha256,
+    '358eb2ddc3aac937f81a9a81c43cb0d788653f58348a29c8f98bfa68a8d958d1');
+  const resolved = resolveModelLibrary(PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.role, 'pre-invalid-property-feedback-current-migration');
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(
+    PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  assert.equal(preview.ok, true);
+  assert.equal(preview.migrationRequired, true);
+  assert.deepEqual(preview.semanticChanges, []);
+  assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 90);
+});
+
 test('the immediately preceding LCD lock reopens losslessly as migration-only data', () => {
   assert.equal(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
     '1e2e94a3d88ce7bcc50a058536858897578b6cc3e13f5b4936a7a6003b11fe1f');
@@ -241,7 +265,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
     [CURRENT_MODEL_LIBRARY_LOCK,
-      'intent-mcu-model-bundle-current-configurable-shortcuts-1@64'],
+      'intent-mcu-model-bundle-current-invalid-property-feedback-1@66'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -266,7 +290,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 55);
+  assert.equal(historical.length, 56);
   for (const manifest of historical.slice(1)) {
     const lock = { schema: 'intent-mcu-model-library-lock@2', libraryId: manifest.libraryId,
       version: manifest.version, manifestSha256: manifest.manifestSha256,

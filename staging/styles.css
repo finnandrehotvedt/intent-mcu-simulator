@@ -1257,6 +1257,8 @@ button:disabled, select:disabled { opacity: .42; }
 .appearance-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .property-row { display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: center; }
 .property-row label { margin: 0; }
+.property-field-error { grid-column: 1 / -1; margin: -2px 0 2px; color: #ffb3b3; font-size: .68rem; line-height: 1.4; }
+.property-row input[aria-invalid="true"] { border-color: #ff7b7b; outline: 2px solid rgba(255,123,123,.28); outline-offset: 1px; }
 .net-members { min-height: 74px; margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #07141f; color: #c2d2da; font: .73rem/1.45 ui-monospace, monospace; overflow-wrap: anywhere; }
 .wire-bends { display: grid; gap: 6px; margin: 8px 0; color: var(--muted); font-size: .72rem; }
 .wire-bends button { width: 100%; min-height: 34px; text-align: left; }

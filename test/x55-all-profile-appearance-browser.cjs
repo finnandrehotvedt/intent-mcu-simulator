@@ -50,15 +50,19 @@ async function snapshot(page, profile) {
     };
   });
   const page = await context.newPage();
+  await page.route('**/api/page-views', (route) => route.fulfill({ status: 200,
+    contentType: 'application/json', body: '{"status":"disabled"}' }));
   const producerRequests = [];
   page.on('request', (request) => {
-    if (/\/(?:api|compile|run|scenario)(?:\/|$)/u.test(new URL(request.url()).pathname)) {
+    const pathname = new URL(request.url()).pathname;
+    if (pathname !== '/api/page-views' && /\/(?:api|compile|run|scenario)(?:\/|$)/u.test(pathname)) {
       producerRequests.push({ method: request.method(), url: request.url() });
     }
   });
   try {
     assert.equal((await page.goto(base, { waitUntil: 'domcontentloaded' }))?.status(), 200);
     await page.waitForFunction(() => window.__M11_READY__ === true);
+    await page.click('#workbench-view-advanced');
     const report = [];
     for (const profile of profiles) {
       await page.selectOption('#board-select', profile.option);

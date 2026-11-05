@@ -25,6 +25,8 @@
     "test:basic-components": "node scripts/generate-basic-component-examples.mjs && node --test --test-concurrency=1 test/basic-component-example-artifacts.test.mjs test/trimmer-potentiometer.test.mjs",
     "test:trimmer": "node scripts/generate-basic-component-examples.mjs && node --test --test-concurrency=1 test/trimmer-potentiometer.test.mjs test/basic-component-example-artifacts.test.mjs",
     "test:trimmer:browser": "npm run build && node test/trimmer-potentiometer-browser.cjs",
+    "test:invalid-property-feedback:browser": "npm run build && node test/invalid-property-feedback-browser.cjs",
+    "test:invalid-property-legacy-lock:browser": "npm run build && node test/invalid-property-legacy-lock-browser.cjs",
     "test:traffic-light": "node scripts/generate-indicator-actuator-examples.mjs && node --test --test-concurrency=1 test/traffic-light-module.test.mjs test/indicator-actuator-example-artifacts.test.mjs",
     "test:traffic-light:browser": "npm run build && node test/traffic-light-module-browser.cjs",
     "test:dht11": "node --test --test-concurrency=1 test/dht11-temperature-humidity.test.mjs",
