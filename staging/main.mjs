@@ -99,6 +99,13 @@ import {
 } from '../src/source-diagnostics.mjs';
 import { createLifecycleState, transitionLifecycle } from '../src/lifecycle.mjs';
 import {
+  AVR_RUNTIME_READY_GRACE_MS,
+  AVR_RUNTIME_READY_TIMEOUT_MS,
+  AVR_RUNTIME_WATCHDOG_GRACE_MS,
+  AVR_RUNTIME_WATCHDOG_TIMEOUT_MS,
+  createRuntimeSilenceGuard,
+} from '../src/runtime-silence-guard.mjs';
+import {
   MODEL_RUNTIME_BINDING_SCHEMA, RUNTIME_BINDING_SCHEMA, validateWorkerRuntimeIdentity,
 } from '../src/runtime-identity.mjs';
 import {
@@ -831,7 +838,17 @@ let runtimeRenderTimer = null;
 let pendingRuntimeRender = null;
 let runtimeWorkerCreations = 0;
 let runtimeReadyDeadlineTimer = null;
-const RUNTIME_READY_DEADLINE_MS = 5_000;
+let runtimeReadyDeadlineGuard = null;
+const runtimeWatchdogGuard = createRuntimeSilenceGuard({
+  timeoutMs: AVR_RUNTIME_WATCHDOG_TIMEOUT_MS,
+  graceMs: AVR_RUNTIME_WATCHDOG_GRACE_MS,
+});
+function clearRuntimeReadyDeadline() {
+  if (runtimeReadyDeadlineTimer !== null) clearTimeout(runtimeReadyDeadlineTimer);
+  runtimeReadyDeadlineTimer = null;
+  runtimeReadyDeadlineGuard?.reset();
+  runtimeReadyDeadlineGuard = null;
+}
 const TAB_DRAFT_ID_KEY = 'intent-mcu.active-draft-id.v1';
 const TAB_PROFILE_KEY = 'intent-mcu.active-profile.v1';
 const DRAFT_REGISTRY_KEY = 'intent-mcu.draft-registry.v1';
@@ -12298,8 +12315,8 @@ function stopRuntime(message = 'No current artifact loaded', {
     { clearResults: true, render: false },
   );
   workerToken += 1;
-  if (runtimeReadyDeadlineTimer !== null) clearTimeout(runtimeReadyDeadlineTimer);
-  runtimeReadyDeadlineTimer = null;
+  clearRuntimeReadyDeadline();
+  runtimeWatchdogGuard.reset();
   worker?.terminate();
   worker = null;
   currentRuntimeWorkerIdentity = null;
@@ -15505,8 +15522,7 @@ async function loadArtifact(hex, artifactIdentity, {
   let workerReady = false;
   const ownsWorker = () => token === workerToken && worker === loadWorker;
   const terminateOwnedWorker = () => {
-    if (runtimeReadyDeadlineTimer !== null) clearTimeout(runtimeReadyDeadlineTimer);
-    runtimeReadyDeadlineTimer = null;
+    clearRuntimeReadyDeadline();
     loadWorker.terminate();
     if (worker === loadWorker) { worker = null; currentRuntimeWorkerIdentity = null; }
   };
@@ -15651,21 +15667,20 @@ async function loadArtifact(hex, artifactIdentity, {
     const acceptedMessage = applyLifecycle({ type: 'runtime.message', binding: runtimeBinding, message: data });
     if (!acceptedMessage.accepted) return;
     if (data.kind === 'error' || data.kind === 'stopped-error') {
-      if (runtimeReadyDeadlineTimer !== null) clearTimeout(runtimeReadyDeadlineTimer);
-      runtimeReadyDeadlineTimer = null;
+      clearRuntimeReadyDeadline();
       publish({ runtimeLoadState: 'failed' });
     }
     if (x40SharedTimeline && !x40TimelineRetainsForWorkerMessage(x40SharedTimeline, data)) {
       clearX40SharedTimeline('A later worker message invalidated the prior shared timeline.');
     }
-    lastWorkerMessage = performance.now(); running = data.paused === false && data.kind !== 'error';
+    lastWorkerMessage = performance.now(); runtimeWatchdogGuard.reset();
+    running = data.paused === false && data.kind !== 'error';
     x47WorkerStatus = { worker: loadWorker, workerToken: token,
       runtimeIdentity: structuredClone(identity), cycle: data.cycle, paused: data.paused,
       kind: data.kind, sequence: ++x47WorkerStatusSequence };
     if (data.kind === 'ready') {
       workerReady = true;
-      if (runtimeReadyDeadlineTimer !== null) clearTimeout(runtimeReadyDeadlineTimer);
-      runtimeReadyDeadlineTimer = null;
+      clearRuntimeReadyDeadline();
       setRuntimeEnabled(true);
       publish({ runtimeLoadState: 'ready' });
       if (beginnerRunIntent
@@ -15729,10 +15744,33 @@ async function loadArtifact(hex, artifactIdentity, {
   elements.artifact.textContent = artifactIdentity.slice(0, 12);
   if (!ownsWorker()) { terminateOwnedWorker(); return; }
   publish({ runtimeLoadState: 'loading' });
-  runtimeReadyDeadlineTimer = setTimeout(() => {
-    failRuntimeStartup('RUNTIME_WORKER_READY_TIMEOUT',
-      `The runtime worker did not become ready within ${RUNTIME_READY_DEADLINE_MS / 1000} seconds.`);
-  }, RUNTIME_READY_DEADLINE_MS);
+  const runtimeReadyStartedAt = performance.now();
+  const readyGuard = createRuntimeSilenceGuard({
+    timeoutMs: AVR_RUNTIME_READY_TIMEOUT_MS,
+    graceMs: AVR_RUNTIME_READY_GRACE_MS,
+  });
+  runtimeReadyDeadlineGuard = readyGuard;
+  const checkRuntimeReadyDeadline = () => {
+    if (!ownsWorker() || workerReady || runtimeReadyDeadlineGuard !== readyGuard) return;
+    const assessment = readyGuard.assess({
+      active: true,
+      now: performance.now(),
+      lastObservedAt: runtimeReadyStartedAt,
+    });
+    if (assessment.expired) {
+      failRuntimeStartup('RUNTIME_WORKER_READY_TIMEOUT',
+        `The runtime worker did not become ready within ${AVR_RUNTIME_READY_TIMEOUT_MS / 1000} seconds plus the event-loop grace period.`);
+      return;
+    }
+    runtimeReadyDeadlineTimer = setTimeout(
+      checkRuntimeReadyDeadline,
+      assessment.retryAfterMs ?? AVR_RUNTIME_READY_GRACE_MS,
+    );
+  };
+  runtimeReadyDeadlineTimer = setTimeout(
+    checkRuntimeReadyDeadline,
+    AVR_RUNTIME_READY_TIMEOUT_MS,
+  );
   loadWorker.postMessage({
     command: 'init', hex, circuit: frozen.runtimeCircuit,
     modelLibraryLock: frozen.modelLibraryLock,
@@ -18232,8 +18270,15 @@ window.addEventListener('blur', () => {
 window.addEventListener('resize', () => requestAnimationFrame(() => requestAnimationFrame(drawCircuitWires)));
 
 setInterval(() => {
-  if (running && performance.now() - lastWorkerMessage > 2_000) {
+  const now = performance.now();
+  const assessment = runtimeWatchdogGuard.assess({
+    active: running,
+    now,
+    lastObservedAt: Math.min(lastWorkerMessage, now),
+  });
+  if (assessment.expired) {
     const binding = lifecycle.runtimeBinding;
+    runtimeWatchdogGuard.reset();
     running = false; worker?.terminate(); worker = null; setRuntimeEnabled(false);
     runtimeInteractionLocked = false;
     setCanvasInteractionMode('select', { force: true });
@@ -18241,7 +18286,8 @@ setInterval(() => {
     if (binding) applyLifecycle({ type: 'runtime.message', binding, message: state });
     publish({ runtime: state }); elements.workerstate.textContent = 'Stopped — rebuild the current project';
     cancelThermostatExperiment('Experiment unresolved: worker watchdog expired. Nothing was marked passed.', { clearResults: false });
-    showActionableError(elements.projectmessage, 'WORKER_WATCHDOG', 'No worker message arrived within 2000 ms.');
+    showActionableError(elements.projectmessage, 'WORKER_WATCHDOG',
+      `No worker message arrived within ${AVR_RUNTIME_WATCHDOG_TIMEOUT_MS} ms plus the event-loop grace period.`);
   }
 }, 250);
 

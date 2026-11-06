@@ -37,12 +37,14 @@ function contentType(file) {
   assert.equal(createHash('sha256').update(retainedHex).digest('hex'), retainedHexSha256,
     'retained actual compiler bytes changed');
   let serverBuildRequests = 0;
+  const missingRequests = [];
   let buildSequence = 0;
   const server = http.createServer((request, response) => {
     const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
     if (pathname.startsWith('/api/build')) serverBuildRequests += 1;
     const file = path.resolve(root, pathname === '/' ? 'index.html' : pathname.replace(/^\//u, ''));
     if (!file.startsWith(`${root}${path.sep}`) || !fs.existsSync(file)) {
+      missingRequests.push(pathname);
       response.writeHead(404); response.end(); return;
     }
     response.setHeader('Content-Type', contentType(file));
@@ -53,19 +55,27 @@ function contentType(file) {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    const closeProjectDialog = async () => {
+      if (await page.locator('#workbench-project-dialog').evaluate((node) => node.open)) {
+        await page.click('#workbench-project-dialog .workbench-popup-close');
+      }
+    };
     const failures = [];
     const intercepted = [];
     page.on('pageerror', (error) => failures.push(error.stack || error.message));
     page.on('console', (message) => {
       if (message.type() === 'error') failures.push(message.text());
     });
+    await page.route('**/api/page-views', (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: '{"status":"disabled"}',
+    }));
     await page.route((url) => url.pathname.startsWith('/api/build'), async (route) => {
       const request = route.request();
       intercepted.push(`${request.method()} ${new URL(request.url()).pathname}`);
       if (request.method() === 'POST') {
         const jobId = [
           'current-ready-render', 'migrated-recovery-ready-render',
-          'retained-ready-render', 'stalled-ready-render',
+          'retained-ready-render', 'delayed-ready-render', 'stalled-ready-render',
         ][buildSequence]
           ?? `unexpected-ready-render-${buildSequence}`;
         buildSequence += 1;
@@ -96,13 +106,17 @@ function contentType(file) {
     if (await page.locator('#walkthrough').getAttribute('open') !== null) {
       await page.locator('#walkthrough button').last().click();
     }
+    if (!await page.locator('#project-files-open').isVisible()) {
+      await page.click('#workbench-more > summary');
+    }
     await page.click('#project-files-open');
     await page.click('#project-demo');
-    await page.click('.starter-card[data-example="avr-thermostat-boundary-v1"]');
+    await page.click('.starter-card[data-example="avr-thermostat-boundary-v1"] .starter-action');
     await page.waitForFunction(() => window.__M6_STATE__.graph?.components?.some(
       (component) => component.id === 'temperature-sensor-1',
     ));
     assert.match(await page.locator('#model-library-summary').textContent(), /current/u);
+    await closeProjectDialog();
     await page.click('#quick-build');
     await page.waitForFunction(() => window.__M6_STATE__?.buildState === 'succeeded');
     await page.waitForFunction(() => window.__M6_STATE__?.runtime?.kind === 'ready');
@@ -183,6 +197,7 @@ function contentType(file) {
     assert.match(await page.locator('#model-library-summary').textContent(),
       /2\.0\.0-x48-current-source-integration\.1-current.*retained/u);
     const requestsBeforeMigrationGuard = intercepted.length;
+    await closeProjectDialog();
     await page.click('#quick-build');
     await page.waitForFunction(() => window.__M6_STATE__?.buildState === 'migration-required');
     const migrationGuard = await page.evaluate(() => ({
@@ -226,6 +241,7 @@ function contentType(file) {
       await page.click('#unsaved-discard');
     }
     await page.waitForFunction(() => document.querySelector('#model-library-summary').textContent.includes('current'));
+    await closeProjectDialog();
     await page.click('#quick-build');
     await page.waitForFunction(() => window.__M6_STATE__?.buildState === 'succeeded');
     await page.waitForFunction(() => window.__M6_STATE__?.runtime?.kind === 'ready');
@@ -294,6 +310,7 @@ function contentType(file) {
       await page.click('#unsaved-discard');
     }
     await page.waitForFunction(() => document.querySelector('#model-library-summary').textContent.includes('retained'));
+    await closeProjectDialog();
     await page.click('#quick-build');
     await page.waitForFunction(() => window.__M6_STATE__?.buildState === 'succeeded');
     await page.waitForFunction(() => window.__M6_STATE__?.runtime?.kind === 'ready');
@@ -324,6 +341,53 @@ function contentType(file) {
     assert.equal(page.workers().length, 1, 'actual retained-model simulator worker was not created');
 
     await page.evaluate(() => {
+      const PriorWorker = window.Worker;
+      window.Worker = class DelayedReadyWorker {
+        constructor(...args) {
+          this.native = new PriorWorker(...args);
+          this.listeners = new Map();
+        }
+        addEventListener(type, listener, options) {
+          if (type !== 'message') {
+            this.native.addEventListener(type, listener, options);
+            return;
+          }
+          const delayed = (event) => {
+            const deliver = () => listener(new MessageEvent('message', {
+              data: structuredClone(event.data),
+            }));
+            if (event.data?.kind === 'ready') setTimeout(deliver, 6_000);
+            else deliver();
+          };
+          this.listeners.set(listener, delayed);
+          this.native.addEventListener(type, delayed, options);
+        }
+        removeEventListener(type, listener, options) {
+          this.native.removeEventListener(type, this.listeners.get(listener) ?? listener, options);
+          this.listeners.delete(listener);
+        }
+        postMessage(...args) { this.native.postMessage(...args); }
+        terminate() { this.native.terminate(); }
+      };
+    });
+    const delayedReadyStartedAt = Date.now();
+    await closeProjectDialog();
+    await page.click('#quick-build');
+    await page.waitForFunction(() => window.__M6_STATE__?.buildState === 'succeeded');
+    await page.waitForFunction(() => window.__M6_STATE__?.runtimeLoadState === 'ready', null,
+      { timeout: 12_000 });
+    const delayedReady = await page.evaluate(() => ({
+      workerState: document.querySelector('#worker-state').textContent,
+      runDisabled: document.querySelector('#run').disabled,
+      quickRunDisabled: document.querySelector('#quick-run').disabled,
+      runtimeLoadState: window.__M6_STATE__.runtimeLoadState,
+    }));
+    assert(Date.now() - delayedReadyStartedAt >= 5_500, 'ready was not actually delayed beyond five seconds');
+    assert.deepEqual(delayedReady, {
+      workerState: 'Paused', runDisabled: false, quickRunDisabled: false, runtimeLoadState: 'ready',
+    });
+
+    await page.evaluate(() => {
       window.Worker = class SilentRuntimeWorker {
         addEventListener() {}
         removeEventListener() {}
@@ -331,9 +395,10 @@ function contentType(file) {
         terminate() {}
       };
     });
+    await closeProjectDialog();
     await page.click('#quick-build');
     await page.waitForFunction(() => window.__M6_STATE__?.buildState === 'succeeded');
-    await page.waitForFunction(() => window.__M6_STATE__?.runtimeLoadState === 'failed', null, { timeout: 7_000 });
+    await page.waitForFunction(() => window.__M6_STATE__?.runtimeLoadState === 'failed', null, { timeout: 20_000 });
     const timeout = await page.evaluate(() => ({
       workerState: document.querySelector('#worker-state').textContent,
       projectMessage: document.querySelector('#project-message').textContent,
@@ -350,13 +415,14 @@ function contentType(file) {
       'POST /api/build', 'GET /api/build/current-ready-render',
       'POST /api/build', 'GET /api/build/migrated-recovery-ready-render',
       'POST /api/build', 'GET /api/build/retained-ready-render',
+      'POST /api/build', 'GET /api/build/delayed-ready-render',
       'POST /api/build', 'GET /api/build/stalled-ready-render',
     ]);
     assert.equal(serverBuildRequests, 0, 'a compiler producer request reached the server');
-    assert.deepEqual(failures, []);
+    assert.deepEqual(failures, [], JSON.stringify({ missingRequests }));
     process.stdout.write(`${JSON.stringify({
       status: 'pass', scope: 'actual-worker-ready-render', current, historicalOpen, migrationGuard,
-      migratedRecovery: migrated, retained: ready, timeout,
+      migratedRecovery: migrated, retained: ready, delayedReady, timeout,
       retainedHexSha256, productionCsp: true,
       compilerProducerRequests: 0, firmwareRuns: 0,
     })}\n`);

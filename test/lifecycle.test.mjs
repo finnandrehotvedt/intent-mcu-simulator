@@ -10,9 +10,34 @@ import {
   projectChangeRelevance,
   transitionLifecycle,
 } from '../src/lifecycle.mjs';
+import { createRuntimeSilenceGuard } from '../src/runtime-silence-guard.mjs';
 
 const artifactIdentity = 'a'.repeat(64);
 const inputIdentity = 'b'.repeat(64);
+
+test('runtime silence guard gives delayed browser tasks one bounded acknowledgement round', () => {
+  const guard = createRuntimeSilenceGuard({ timeoutMs: 2_000, graceMs: 1_000 });
+  assert.deepEqual(guard.assess({ active: true, now: 1_500, lastObservedAt: 0 }), {
+    expired: false, phase: 'monitoring', retryAfterMs: 500,
+  });
+  assert.deepEqual(guard.assess({ active: true, now: 2_500, lastObservedAt: 0 }), {
+    expired: false, phase: 'grace', retryAfterMs: 1_000,
+  });
+  assert.deepEqual(guard.assess({ active: true, now: 2_750, lastObservedAt: 2_700 }), {
+    expired: false, phase: 'monitoring', retryAfterMs: 1_950,
+  });
+  assert.deepEqual(guard.assess({ active: true, now: 5_000, lastObservedAt: 2_700 }), {
+    expired: false, phase: 'grace', retryAfterMs: 1_000,
+  });
+  assert.deepEqual(guard.assess({ active: true, now: 6_000, lastObservedAt: 2_700 }), {
+    expired: true, phase: 'expired', retryAfterMs: null,
+  });
+  assert.deepEqual(guard.assess({ active: false, now: 6_001, lastObservedAt: 2_700 }), {
+    expired: false, phase: 'inactive', retryAfterMs: null,
+  });
+  assert.throws(() => createRuntimeSilenceGuard({ timeoutMs: 0, graceMs: 1 }),
+    /RUNTIME_SILENCE_TIMEOUT/u);
+});
 
 function buildReady(initial = createLifecycleState({ empty: false })) {
   const started = transitionLifecycle(initial, { type: 'build.start' });
