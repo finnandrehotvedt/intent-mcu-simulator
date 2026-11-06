@@ -12,7 +12,7 @@ import {
 
 const HASH = /^[0-9a-f]{64}$/u;
 const IMAGE_ID = /^sha256:[0-9a-f]{64}$/u;
-const PRIVATE_SOURCE_PATH = /^\/srv\/(?:codex-workspaces\/intentforce-station\/handoffs|intent-mcu-progress-preview\/private-dependencies)\/[A-Za-z0-9][A-Za-z0-9._-]{0,159}\/private-dependencies$/u;
+const PRIVATE_SOURCE_PATH = /^\/srv\/(?:codex-workspaces\/(?:intentforce-station|rust-station)\/handoffs|intent-mcu-progress-preview\/private-dependencies)\/[A-Za-z0-9][A-Za-z0-9._-]{0,159}\/private-dependencies$/u;
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && Object.getPrototypeOf(value) === Object.prototype
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());

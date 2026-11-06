@@ -67,6 +67,12 @@ test('private lock is exact, digest-bound, receipt-scoped and read-only', () => 
   const normalized = normalizeCompilerImageLock(lock());
   assert.equal(normalized.privateDependency.policyId, VISUINO_WATER_TANK_POLICY_ID);
   assert(Object.isFrozen(normalized.privateDependency));
+  const vm103 = lock();
+  vm103.privateDependency.sourcePath = '/srv/codex-workspaces/rust-station/handoffs/receipt-fixed/private-dependencies';
+  assert.equal(
+    normalizeCompilerImageLock(vm103).privateDependency.sourcePath,
+    vm103.privateDependency.sourcePath,
+  );
   const mutations = [
     (value) => { value.privateDependency.policyId += '-other'; },
     (value) => { value.privateDependency.sourcePath = '/tmp/private-dependencies'; },
@@ -79,6 +85,14 @@ test('private lock is exact, digest-bound, receipt-scoped and read-only', () => 
   ];
   for (const mutate of mutations) {
     const value = lock(); mutate(value);
+    assert.throws(() => normalizeCompilerImageLock(value), { code: 'INVALID_IMAGE_LOCK' });
+  }
+  for (const sourcePath of [
+    '/srv/codex-workspaces/other-station/handoffs/receipt-fixed/private-dependencies',
+    '/srv/codex-workspaces/rust-station/handoffs/receipt-fixed/nested/private-dependencies',
+    '/srv/codex-workspaces/rust-station/handoffs/../receipt-fixed/private-dependencies',
+  ]) {
+    const value = lock(); value.privateDependency.sourcePath = sourcePath;
     assert.throws(() => normalizeCompilerImageLock(value), { code: 'INVALID_IMAGE_LOCK' });
   }
 });
