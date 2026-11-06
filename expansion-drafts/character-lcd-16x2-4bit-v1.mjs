@@ -268,6 +268,36 @@ function normalizeLcdOptions(options = {}) {
   return Object.freeze({ columns, rows, rowOffsets: Object.freeze([...rowOffsets]), customGlyphs });
 }
 
+function normalizeInitializationTiming(options = {}) {
+  const firstRepeatedInitGapCycles = options.firstRepeatedInitGapCycles
+    ?? CHARACTER_LCD_TIMING.firstRepeatedInitGapCycles;
+  const laterInitGapCycles = options.laterInitGapCycles
+    ?? CHARACTER_LCD_TIMING.laterInitGapCycles;
+  if (!Number.isSafeInteger(firstRepeatedInitGapCycles)
+      || firstRepeatedInitGapCycles < CHARACTER_LCD_TIMING.instructionMinimumCycles
+      || firstRepeatedInitGapCycles > CHARACTER_LCD_TIMING.firstRepeatedInitGapCycles
+      || !Number.isSafeInteger(laterInitGapCycles)
+      || laterInitGapCycles < CHARACTER_LCD_TIMING.instructionMinimumCycles
+      || laterInitGapCycles > CHARACTER_LCD_TIMING.laterInitGapCycles) {
+    throw new TypeError('CHARACTER_LCD_INITIALIZATION_TIMING');
+  }
+  return Object.freeze({ firstRepeatedInitGapCycles, laterInitGapCycles });
+}
+
+function normalizeInitializationCommandSequences(options = {}) {
+  const standard = CHARACTER_LCD_INITIALIZATION.commands;
+  const clearBeforeEntryMode = [0x28, 0x0c, 0x01, 0x06];
+  const sequences = options.initializationCommandSequences ?? [standard];
+  if (!Array.isArray(sequences) || sequences.length < 1
+      || sequences.some((commands) => !Array.isArray(commands)
+        || ![standard, clearBeforeEntryMode].some((supported) =>
+          supported.length === commands.length
+          && supported.every((value, index) => value === commands[index])))) {
+    throw new TypeError('CHARACTER_LCD_INITIALIZATION_COMMANDS');
+  }
+  return Object.freeze(sequences.map((commands) => Object.freeze([...commands])));
+}
+
 function blankRows(geometry) {
   return Array.from({ length: geometry.rows }, () => Array(geometry.columns).fill(0x20));
 }
@@ -277,6 +307,8 @@ export class CharacterLcd4BitDecoder {
     if (!validSignalMap(mapping)) throw new TypeError('CHARACTER_LCD_SIGNAL_MAP');
     this.mapping = Object.freeze({ ...mapping });
     this.geometry = normalizeLcdOptions(options);
+    this.initializationTiming = normalizeInitializationTiming(options);
+    this.initializationCommandSequences = normalizeInitializationCommandSequences(options);
     this.reverse = new Map(Object.entries(mapping).map(([signal, pin]) => [Number(pin.slice(1)), signal]));
     this.reset();
   }
@@ -294,6 +326,7 @@ export class CharacterLcd4BitDecoder {
     this.error = null;
     this.initNibbleIndex = 0;
     this.initCommandIndex = 0;
+    this.initializationCommandCandidates = [...this.initializationCommandSequences];
     this.lastInitCycle = null;
     this.readyCycle = 0;
     this.enableRiseCycle = null;
@@ -312,8 +345,8 @@ export class CharacterLcd4BitDecoder {
   }
 
   #minimumInitGap() {
-    if (this.initNibbleIndex === 1) return CHARACTER_LCD_TIMING.firstRepeatedInitGapCycles;
-    return CHARACTER_LCD_TIMING.laterInitGapCycles;
+    if (this.initNibbleIndex === 1) return this.initializationTiming.firstRepeatedInitGapCycles;
+    return this.initializationTiming.laterInitGapCycles;
   }
 
   #latchNibble(cycle) {
@@ -362,11 +395,17 @@ export class CharacterLcd4BitDecoder {
   }
 
   #writeCommand(command, cycle) {
-    if (this.initCommandIndex < CHARACTER_LCD_INITIALIZATION.commands.length) {
-      const expected = CHARACTER_LCD_INITIALIZATION.commands[this.initCommandIndex];
-      if (command !== expected) {
-        return this.#reject('CHARACTER_LCD_INIT_COMMAND', [this.initCommandIndex, expected, command]);
+    const initializationCommandCount = this.initializationCommandSequences[0].length;
+    if (this.initCommandIndex < initializationCommandCount) {
+      const expected = [...new Set(this.initializationCommandCandidates
+        .map((commands) => commands[this.initCommandIndex]))];
+      if (!expected.includes(command)) {
+        return this.#reject('CHARACTER_LCD_INIT_COMMAND', [
+          this.initCommandIndex, expected.length === 1 ? expected[0] : expected, command,
+        ]);
       }
+      this.initializationCommandCandidates = this.initializationCommandCandidates
+        .filter((commands) => commands[this.initCommandIndex] === command);
       this.initCommandIndex += 1;
       if ((command & 0xf8) === 0x08) {
         this.displayOn = Boolean(command & 0x04);
@@ -377,7 +416,7 @@ export class CharacterLcd4BitDecoder {
       this.readyCycle = cycle + (command === 0x01
         ? CHARACTER_LCD_TIMING.clearHomeMinimumCycles
         : CHARACTER_LCD_TIMING.instructionMinimumCycles);
-      if (this.initCommandIndex === CHARACTER_LCD_INITIALIZATION.commands.length) {
+      if (this.initCommandIndex === initializationCommandCount) {
         this.status = 'ready';
       }
       return true;
@@ -524,7 +563,7 @@ export class CharacterLcd4BitDecoder {
       displayOn: this.displayOn,
       cursorOn: this.cursorOn,
       blinkOn: this.blinkOn,
-      initialized: this.initCommandIndex === CHARACTER_LCD_INITIALIZATION.commands.length,
+      initialized: this.initCommandIndex === this.initializationCommandSequences[0].length,
       initNibbleIndex: this.initNibbleIndex,
       initCommandIndex: this.initCommandIndex,
       readyCycle: this.readyCycle,

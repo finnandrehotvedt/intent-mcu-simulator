@@ -25,6 +25,7 @@ import {
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_LOCK,
@@ -78,6 +79,10 @@ const stable = (value) => {
   return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])]));
 };
 const sha256 = (value) => createHash('sha256').update(JSON.stringify(stable(value))).digest('hex');
+const PCF8574_LCD_TYPE = 'output.character-lcd-16x2-pcf8574-v1';
+const withoutPcf8574GeometryChange = (changes) => changes.filter(
+  ({ componentType }) => componentType !== PCF8574_LCD_TYPE,
+);
 const profiles = [
   'board.atmega328p-16mhz-v1', 'board.rp2040-pico-v1',
   'board.esp32-c3-devmodule-v1', 'board.stm32f429zi-nucleo144-v1',
@@ -173,9 +178,31 @@ test('the 7af7 firmware-control lock remains an exact migration-only identity', 
   );
   assert.equal(preview.ok, true);
   assert.equal(preview.migrationRequired, true);
-  assert.deepEqual(preview.semanticChanges, []);
+  assert.equal(preview.semanticChanges.length, 1);
+  assert.deepEqual(preview.semanticChanges[0].changes.map(({ category, path }) => ({ category, path })), [
+    { category: 'model-identity', path: 'componentVersion' },
+    { category: 'model-identity', path: 'modelVersion' },
+    { category: 'documented-limitations', path: 'support.limitations' },
+    { category: 'property-added', path: 'properties.geometry' },
+  ]);
+  assert.equal(preview.semanticChanges[0].componentType, PCF8574_LCD_TYPE);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 90);
+  assert.equal(preview.unchanged.length, 89);
+});
+
+test('the immediately previous current lock is the exact migration anchor for PCF8574 20x4', () => {
+  assert.equal(PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_LOCK.version,
+    '2.0.0-invalid-property-feedback.1-current');
+  assert.equal(resolveModelLibrary(PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_LOCK).role,
+    'pre-pcf8574-20x4-current-migration');
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(preview.semanticChanges.length, 1);
+  assert.equal(preview.semanticChanges[0].componentType, PCF8574_LCD_TYPE);
+  assert.deepEqual(preview.rendererChanges, []);
+  assert.equal(preview.unchanged.length, 89);
 });
 
 test('the immediately preceding LCD lock reopens losslessly as migration-only data', () => {
@@ -265,7 +292,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
     [CURRENT_MODEL_LIBRARY_LOCK,
-      'intent-mcu-model-bundle-current-invalid-property-feedback-1@66'],
+      'intent-mcu-model-bundle-current-pcf8574-20x4-1@67'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -290,7 +317,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 56);
+  assert.equal(historical.length, 57);
   for (const manifest of historical.slice(1)) {
     const lock = { schema: 'intent-mcu-model-library-lock@2', libraryId: manifest.libraryId,
       version: manifest.version, manifestSha256: manifest.manifestSha256,
@@ -565,7 +592,7 @@ test('the pre-public-visibility lock remains an exact migration anchor before DH
     PRE_DHT11_PUBLIC_VISIBILITY_CURRENT_MODEL_LIBRARY_LOCK,
   );
   assert.equal(preview.ok, true);
-  assert.deepEqual(preview.semanticChanges.map(({ profile, componentType, kind }) => ({
+  assert.deepEqual(withoutPcf8574GeometryChange(preview.semanticChanges).map(({ profile, componentType, kind }) => ({
     profile, componentType, kind,
   })), [{
     profile: 'board.atmega328p-16mhz-v1', componentType: 'driver.a4988-step-dir-v1', kind: 'added',
@@ -613,7 +640,7 @@ test('the pre-public-visibility lock remains an exact migration anchor before DH
     kind: 'added',
   }]);
   assert.equal(preview.rendererChanges.length, 0);
-  assert.equal(preview.unchanged.length, 73);
+  assert.equal(preview.unchanged.length, 72);
 });
 
 test('the pre-open-example lock remains exact migration data before DHT22', () => {
@@ -627,7 +654,7 @@ test('the pre-open-example lock remains exact migration data before DHT22', () =
   ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const preview = modelLibraryMigrationPreview(PRE_DHT11_OPEN_EXAMPLE_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
-  assert.deepEqual(preview.semanticChanges.map(({ profile, componentType, kind }) => ({
+  assert.deepEqual(withoutPcf8574GeometryChange(preview.semanticChanges).map(({ profile, componentType, kind }) => ({
     profile, componentType, kind,
   })), [{
     profile: 'board.atmega328p-16mhz-v1', componentType: 'driver.a4988-step-dir-v1', kind: 'added',
@@ -675,7 +702,7 @@ test('the pre-open-example lock remains exact migration data before DHT22', () =
     kind: 'added',
   }]);
   assert.equal(preview.rendererChanges.length, 0);
-  assert.equal(preview.unchanged.length, 73);
+  assert.equal(preview.unchanged.length, 72);
 });
 
 test('the immediate pre-DHT22 lock remains exact migration-only data', () => {
@@ -689,7 +716,7 @@ test('the immediate pre-DHT22 lock remains exact migration-only data', () => {
   ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
   const preview = modelLibraryMigrationPreview(PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
-  assert.deepEqual(preview.semanticChanges.map(({ profile, componentType, kind }) => ({
+  assert.deepEqual(withoutPcf8574GeometryChange(preview.semanticChanges).map(({ profile, componentType, kind }) => ({
     profile, componentType, kind,
   })), [{
     profile: 'board.atmega328p-16mhz-v1', componentType: 'driver.a4988-step-dir-v1', kind: 'added',
@@ -737,7 +764,7 @@ test('the immediate pre-DHT22 lock remains exact migration-only data', () => {
     kind: 'added',
   }]);
   assert.equal(preview.rendererChanges.length, 0);
-  assert.equal(preview.unchanged.length, 73);
+  assert.equal(preview.unchanged.length, 72);
 });
 
 test('retained behavior is a dependency-closed historical source graph with no current imports', async () => {

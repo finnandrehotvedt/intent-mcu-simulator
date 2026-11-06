@@ -15250,12 +15250,14 @@ function renderPcf8574LcdRuntime(message) {
     let record = characterLcdRuntime.get(support.componentId);
     if (!record || message.cycle < record.cycle || records.length < record.traceLength) {
       record = { decoder: modelLibraryImplementationFor(AVR_PROFILE)
-        .createPcf8574LcdDecoder(support.runtimeProjection.address), cycle: 0, traceLength: 0 };
+        .createPcf8574LcdDecoder(support.runtimeProjection.address,
+          support.runtimeProjection.geometry), cycle: 0, traceLength: 0 };
       characterLcdRuntime.set(support.componentId, record);
     }
     const snapshot = record.decoder.consume(records, { i2cDrops: message.retentionDrops?.i2c ?? 0 });
     record.traceLength = records.length; record.cycle = message.cycle;
-    const decodedLines = snapshot.displayOn ? snapshot.lines : ['', ''];
+    const decodedLines = snapshot.displayOn ? snapshot.lines
+      : Array(support.runtimeProjection.supportedGeometry.rows).fill('');
     const observed = modelLibraryImplementationFor(AVR_PROFILE)
       .evaluateProduction(PCF8574_LCD_TYPE, { lines: decodedLines });
     if (!observed.ok) throw Object.assign(new Error(observed.code), observed);
@@ -15263,11 +15265,14 @@ function renderPcf8574LcdRuntime(message) {
     artwork.dataset.protocolState = snapshot.status;
     artwork.dataset.cursor = snapshot.cursorOn ? 'on' : 'off';
     artwork.dataset.blink = snapshot.blinkOn ? 'on' : 'off';
-    artwork.dataset.line1 = lines[0]; artwork.dataset.line2 = lines[1];
-    artwork.querySelector('[data-lcd-line="1"]')?.replaceChildren(lines[0]);
-    artwork.querySelector('[data-lcd-line="2"]')?.replaceChildren(lines[1]);
+    artwork.dataset.geometry = support.runtimeProjection.geometry;
+    for (let index = 0; index < 4; index += 1) {
+      const line = lines[index] ?? '';
+      artwork.dataset[`line${index + 1}`] = line;
+      artwork.querySelector(`[data-lcd-line="${index + 1}"]`)?.replaceChildren(line);
+    }
     const detail = snapshot.error ? snapshot.error.code : `${snapshot.transactions} acknowledged bytes`;
-    const label = `${support.componentId}, line 1 ${JSON.stringify(lines[0])}, line 2 ${JSON.stringify(lines[1])}; fixed AVR I2C address 0x27; ${detail}`;
+    const label = `${support.componentId}, ${support.runtimeProjection.geometry}, ${lines.map((line, index) => `line ${index + 1} ${JSON.stringify(line)}`).join(', ')}; fixed AVR I2C address 0x27; ${detail}`;
     artwork.setAttribute('aria-label', label);
     const title = artwork.querySelector('title'); if (title) title.textContent = label;
     published.push({ componentId: support.componentId, ...snapshot, lines });

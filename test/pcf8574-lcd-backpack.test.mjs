@@ -11,6 +11,7 @@ import { componentSupportCell } from '../src/component-support-matrix.mjs';
 import { prepareApiBatch } from '../src/browser-session-edit.mjs';
 import {
   PCF8574_LCD_ADDRESS, PCF8574_LCD_DEFINITION, PCF8574_LCD_TYPE,
+  PCF8574_LCD_GEOMETRY_20X4, PCF8574_LCD_INIT_GAP_MINIMUM_CYCLES,
   createPcf8574LcdComponent, createPcf8574LcdDecoder,
 } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
 import {
@@ -34,9 +35,37 @@ function initialized() {
   return out;
 }
 
+function mitovInitialized() {
+  const records = []; let cycle = 1_600_000;
+  const push = (value, delta = 20) => {
+    cycle += delta;
+    records.push({ cycle, kind: 'write', address: 0x27, value, acknowledged: true });
+  };
+  const nibble = (value, rs = false, gap = 600) => {
+    cycle += gap;
+    const base = (value << 4) | (rs ? 1 : 0) | 0x08;
+    push(base | 0x04);
+    push(base);
+  };
+  const byte = (value, rs = false, gap = 600) => {
+    nibble(value >> 4, rs, gap);
+    nibble(value & 0x0f, rs);
+  };
+  cycle = 1_600_000;
+  nibble(3, false, 0); nibble(3, false, 1_458);
+  nibble(3, false, 1_458); nibble(2, false, 1_458);
+  for (const value of [0x28, 0x0c, 0x01, 0x06]) {
+    byte(value, false, 600);
+    if (value === 0x01) cycle += 24_000;
+  }
+  return { records, byte };
+}
+
 test('CMP-051 declares one exact fixed-address backpack rather than a generic expander', () => {
   assert.equal(PCF8574_LCD_DEFINITION.type, PCF8574_LCD_TYPE);
   assert.equal(PCF8574_LCD_ADDRESS, 0x27);
+  assert.equal(PCF8574_LCD_INIT_GAP_MINIMUM_CYCLES, 592);
+  assert.deepEqual(PCF8574_LCD_DEFINITION.propertySchema.geometry.values, ['16x2', '20x4']);
   assert.deepEqual(PCF8574_LCD_DEFINITION.pins.map((pin) => pin.id), ['VCC', 'GND', 'SDA', 'SCL']);
   assert.match(PCF8574_LCD_DEFINITION.support.limitations.join(' '), /P0=RS.*P4\.\.P7=D4\.\.D7/u);
   assert.match(PCF8574_LCD_DEFINITION.support.limitations.join(' '), /arbitrary Wire-library compatibility/u);
@@ -124,6 +153,25 @@ test('clear, home, cursor, blink, DDRAM addressing and 16x2 wrapping remain dete
   assert.equal(updated.cursorOn, true); assert.equal(updated.blinkOn, true);
 });
 
+test('20x4 geometry decodes the exact water-tank row addresses and four visible fields', () => {
+  const trace = mitovInitialized();
+  const rows = [
+    [0x80, 'Level: 25.0%'],
+    [0xc0, 'Mode: AUTO'],
+    [0x94, 'Pump: ON'],
+    [0xd4, 'Alarm: OK'],
+  ];
+  for (const [address, text] of rows) {
+    trace.byte(address, false);
+    for (const char of text.padEnd(20)) trace.byte(char.charCodeAt(0), true);
+  }
+  const snapshot = createPcf8574LcdDecoder(0x27, PCF8574_LCD_GEOMETRY_20X4)
+    .consume(trace.records);
+  assert.equal(snapshot.status, 'ready');
+  assert.equal(snapshot.geometry, '20x4');
+  assert.deepEqual(snapshot.lines, rows.map(([, text]) => text.padEnd(20)));
+});
+
 test('wrong address, RW-high and dropped traces fail closed', () => {
   const wrong = createPcf8574LcdDecoder();
   assert.equal(wrong.consume([{ cycle: 300_000, kind: 'write', address: 0x26, value: 0 }]).status, 'awaiting-initialization');
@@ -165,4 +213,34 @@ test('candidate editor validates named 5V, GND, A4 and A5 and preserves exact un
   apply({ type: 'component.remove', componentId: 'pcf8574-lcd-1' });
   assert.equal(session.apply({ type: 'undo', revision: session.revision }).ok, true);
   assert.equal(session.saveText(), saved);
+});
+
+test('candidate editor persists and projects the existing backpack as 20x4 without a new type', () => {
+  const draft = createEditableContactDraft();
+  const session = openPortableEditorSession(canonicalContactPersistenceDraftJson(draft.project)).session;
+  const apply = (command) => {
+    const result = session.apply({ ...command, revision: session.revision });
+    assert.equal(result.ok, true, JSON.stringify(result));
+  };
+  apply({ type: 'component.add', component: createPcf8574LcdComponent(
+    'pcf8574-lcd-20x4', 'Water tank LCD', PCF8574_LCD_GEOMETRY_20X4,
+  ), position: { x: 0.7, y: 0.6 } });
+  apply({ type: 'wire.branch', netId: 'net-5v', endpoint: { component: 'pcf8574-lcd-20x4', pin: 'VCC' }, junctionId: 'junction-pcf20-vcc' });
+  apply({ type: 'wire.branch', netId: 'net-ground-branch', endpoint: { component: 'pcf8574-lcd-20x4', pin: 'GND' }, junctionId: 'junction-pcf20-ground' });
+  for (const [id, pin, boardPin] of [['sda', 'SDA', 'A4'], ['scl', 'SCL', 'A5']]) apply({
+    type: 'wire.create', net: { id: `net-pcf20-${id}`, endpoints: [
+      { component: 'pcf8574-lcd-20x4', pin }, { component: 'board-1', pin: boardPin },
+    ] },
+  });
+  assert.equal(session.runnable.ok, true);
+  const support = session.runtimeSupport.find((item) => item.componentId === 'pcf8574-lcd-20x4');
+  assert.equal(support.type, PCF8574_LCD_TYPE);
+  assert.equal(support.runtimeProjection.geometry, PCF8574_LCD_GEOMETRY_20X4);
+  assert.deepEqual(support.runtimeProjection.supportedGeometry,
+    { columns: 20, rows: 4, rowOffsets: [0x00, 0x40, 0x14, 0x54], customGlyphs: false });
+  const reopened = openPortableEditorSession(session.saveText());
+  assert.equal(reopened.ok, true);
+  assert.equal(reopened.session.runtimeSupport.find(
+    (item) => item.componentId === 'pcf8574-lcd-20x4',
+  ).runtimeProjection.geometry, PCF8574_LCD_GEOMETRY_20X4);
 });

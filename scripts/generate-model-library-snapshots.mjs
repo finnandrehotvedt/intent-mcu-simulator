@@ -56,6 +56,9 @@ const PRE_FIRMWARE_CONTROL_COVERAGE_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -407,16 +410,16 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-invalid-property-feedback.1-current',
-  'intent-mcu-model-bundle-current-invalid-property-feedback-1@66',
+  '2.0.0-pcf8574-20x4.1-current',
+  'intent-mcu-model-bundle-current-pcf8574-20x4-1@67',
   currentImplementation,
   {
-    priorVersion: PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256: PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
-    semanticDisposition: 'retains the firmware-control-coverage model, electrical and runtime contracts unchanged',
-    presentationDisposition: 'adds field-bound generic Inspector rejection feedback without changing component types or specialized resistor and LED preview semantics',
-    baselineClosureDisposition: 'exact 7af7e50395322660029dfbb9be32ec6845414ae7 source basis; the prior @65 identity remains an immutable migration-only anchor',
+    semanticDisposition: 'extends the existing fixed-address PCF8574 LCD component with authored legacy-default 16x2 or exact-row-address 20x4 geometry without adding a component type',
+    presentationDisposition: 'renders two or four bounded LCD rows from acknowledged fixed-mapping AVR TWI writes',
+    baselineClosureDisposition: 'the prior invalid-property-feedback @66 identity remains an immutable migration-only anchor',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -493,6 +496,7 @@ export const PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_MANIFEST = Objec
 export const PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_FIRMWARE_CONTROL_COVERAGE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_FIRMWARE_CONTROL_COVERAGE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

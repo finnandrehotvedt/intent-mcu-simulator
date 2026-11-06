@@ -54,7 +54,7 @@ const exactInput = (value, keys) => value && typeof value === 'object' && !Array
 // Current behavior is separately owned so future current changes cannot mutate
 // the retained pre-X56 implementation by alias or shared constant.
 export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
-  id: 'intent-mcu-model-bundle-current-invalid-property-feedback-1@66',
+  id: 'intent-mcu-model-bundle-current-pcf8574-20x4-1@67',
   manifestVersion: CURRENT_MODEL_LIBRARY_MANIFEST.version,
   definition(profile, componentType) {
     const entry = entries.get(`${profile}\u0000${componentType}`);
@@ -71,7 +71,7 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
   },
   createCharacterLcdDecoder(mapping) { return createCharacterLcd4BitDecoder(mapping); },
   createCharacterLcd20x4Decoder(mapping) { return createCharacterLcd20x4Decoder(mapping); },
-  createPcf8574LcdDecoder(address) { return createPcf8574LcdDecoder(address); },
+  createPcf8574LcdDecoder(address, geometry) { return createPcf8574LcdDecoder(address, geometry); },
   rotaryEncoderSequence(projection, direction) { return rotaryEncoderDigitalSequence(projection, direction); },
   nextEncoderDetent(component, direction) { return nextRotaryEncoderDetent(component, direction); },
   observeRgb(duties) {
@@ -468,11 +468,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
       return { ok: true, code: 'OK', result: { lines: [...input.lines], busMode: 'write-only-4bit' } };
     }
     if (componentType === 'output.character-lcd-16x2-pcf8574-v1') {
-      if (!Array.isArray(input?.lines) || input.lines.length !== 2
-          || input.lines.some((line) => typeof line !== 'string' || line.length > 16)) {
+      const geometry = input?.lines?.length === 2 ? '16x2' : input?.lines?.length === 4 ? '20x4' : null;
+      const columns = geometry === '16x2' ? 16 : geometry === '20x4' ? 20 : null;
+      if (!geometry || input.lines.some((line) => typeof line !== 'string' || line.length > columns)) {
         return failure('MODEL_LIBRARY_PRODUCTION_INPUT');
       }
-      return { ok: true, code: 'OK', result: { lines: [...input.lines], busMode: 'i2c-pcf8574-fixed-0x27' } };
+      return { ok: true, code: 'OK', result: { lines: [...input.lines], geometry,
+        busMode: 'i2c-pcf8574-fixed-0x27' } };
     }
     if (componentType === 'output.character-lcd-20x4-4bit-v1') {
       if (!Array.isArray(input?.lines) || input.lines.length !== 4
@@ -507,6 +509,13 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
     }
     return failure('MODEL_LIBRARY_PRODUCTION_UNAVAILABLE', [componentType]);
   },
+});
+
+export const PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-invalid-property-feedback-1@66',
+  manifestVersion: '2.0.0-invalid-property-feedback.1-current',
+  migrationOnly: true,
 });
 
 export const PRE_CMP041_PUBLIC_SOURCE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({

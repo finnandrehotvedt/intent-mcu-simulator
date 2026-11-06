@@ -1557,11 +1557,11 @@ function reconstructCandidate(graph, implementation, modelLibraryLock) {
   contacts.push(...pcf8574LcdProjection.displays.map((display) => ({
     componentId: display.componentId,
     type: PCF8574_LCD_TYPE,
-    state: { geometry: '16x2', busMode: 'i2c-pcf8574-fixed-0x27' },
+    state: { geometry: display.geometry, busMode: 'i2c-pcf8574-fixed-0x27' },
     runtimeProjection: clone(display),
   })));
   for (const display of pcf8574LcdProjection.displays) production(implementation, PCF8574_LCD_TYPE,
-    { lines: ['', ''] }, [display.componentId]);
+    { lines: Array(display.supportedGeometry.rows).fill('') }, [display.componentId]);
   const rotaryEncoderProjection = projectRotaryEncoders(pcf8574LcdProjection.runtimeGraph);
   if (!rotaryEncoderProjection.ok) {
     fail(`PROJECT_CONTACT_${rotaryEncoderProjection.code}`, rotaryEncoderProjection.details);

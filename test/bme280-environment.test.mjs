@@ -27,6 +27,7 @@ import {
 } from '../expansion-drafts/bme280-environment-v1.mjs';
 import { createBme280Artwork } from '../expansion-drafts/bme280-environment-artwork-v1.mjs';
 import { BME280_ENVIRONMENT_SOURCE } from '../expansion-drafts/bme280-environment-example-v1.mjs';
+import { PCF8574_LCD_TYPE } from '../expansion-drafts/pcf8574-lcd-backpack-v1.mjs';
 import { createAvrReferenceStarter } from '../src/avr-reference-starters.mjs';
 import {
   CANDIDATE_UI_COMPONENTS,
@@ -163,7 +164,7 @@ test('current model and support matrix add BME280 only to executable AVR', () =>
     ({ componentType }) => componentType === BME280_TYPE).length, 1);
 });
 
-test('terminal DHT22 model lock remains data-only and includes the exact later BME280 addition', () => {
+test('terminal DHT22 lock remains data-only through later additions and the PCF8574 contract change', () => {
   assert.equal(resolveModelLibrary(PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_LOCK).role,
     'pre-cmp094-bme280-current-migration');
   assert.equal(modelLibraryExecutionIdentity(
@@ -171,12 +172,17 @@ test('terminal DHT22 model lock remains data-only and includes the exact later B
   const preview = modelLibraryMigrationPreview(
     PRE_CMP094_BME280_CURRENT_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
-  assert(preview.semanticChanges.every(({ kind }) => kind === 'added'));
+  assert(preview.semanticChanges.filter(({ kind }) => kind === 'added').length > 0);
+  assert.deepEqual(preview.semanticChanges.filter(({ kind }) => kind !== 'added')
+    .map(({ profile, componentType, kind }) => ({ profile, componentType, kind })), [{
+    profile: 'board.atmega328p-16mhz-v1', componentType: PCF8574_LCD_TYPE,
+    kind: 'behavior-contract',
+  }]);
   assert.deepEqual(preview.semanticChanges.filter(({ componentType }) => componentType === BME280_TYPE)
     .map(({ profile, componentType, kind }) => ({ profile, componentType, kind })),
   [{ profile: 'board.atmega328p-16mhz-v1', componentType: BME280_TYPE, kind: 'added' }]);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 74);
+  assert.equal(preview.unchanged.length, 73);
 });
 
 test('rc147 BME280 lock migrates data-only into visible runtime controls without model drift', () => {
@@ -188,10 +194,15 @@ test('rc147 BME280 lock migrates data-only into visible runtime controls without
   const preview = modelLibraryMigrationPreview(
     PRE_VISIBLE_RUNTIME_CONTROLS_CURRENT_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
-  assert(preview.semanticChanges.every(({ kind }) => kind === 'added'));
+  assert(preview.semanticChanges.filter(({ kind }) => kind === 'added').length > 0);
+  assert.deepEqual(preview.semanticChanges.filter(({ kind }) => kind !== 'added')
+    .map(({ profile, componentType, kind }) => ({ profile, componentType, kind })), [{
+    profile: 'board.atmega328p-16mhz-v1', componentType: PCF8574_LCD_TYPE,
+    kind: 'behavior-contract',
+  }]);
   assert.equal(preview.semanticChanges.some(({ componentType }) => componentType === BME280_TYPE), false);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 75);
+  assert.equal(preview.unchanged.length, 74);
 });
 
 test('rc148 visible-control lock migrates data-only into configurable shortcuts without model drift', () => {
@@ -203,8 +214,13 @@ test('rc148 visible-control lock migrates data-only into configurable shortcuts 
   const preview = modelLibraryMigrationPreview(
     PRE_CONFIGURABLE_SHORTCUTS_CURRENT_MODEL_LIBRARY_LOCK, CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(preview.ok, true);
-  assert(preview.semanticChanges.every(({ kind }) => kind === 'added'));
+  assert(preview.semanticChanges.filter(({ kind }) => kind === 'added').length > 0);
+  assert.deepEqual(preview.semanticChanges.filter(({ kind }) => kind !== 'added')
+    .map(({ profile, componentType, kind }) => ({ profile, componentType, kind })), [{
+    profile: 'board.atmega328p-16mhz-v1', componentType: PCF8574_LCD_TYPE,
+    kind: 'behavior-contract',
+  }]);
   assert.equal(preview.semanticChanges.some(({ componentType }) => componentType === BME280_TYPE), false);
   assert.deepEqual(preview.rendererChanges, []);
-  assert.equal(preview.unchanged.length, 75);
+  assert.equal(preview.unchanged.length, 74);
 });
