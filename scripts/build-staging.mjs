@@ -39,10 +39,12 @@ const supportHtml = supportSource.replace(supportToken, offlineSupportMatrixHtml
 await mkdir(dist, { recursive: true });
 for (const entry of await readdir(dist)) await rm(new URL(entry, dist), { recursive: true, force: true });
 await mkdir(new URL('api/session/v1/', dist), { recursive: true });
+await mkdir(new URL('examples/', dist), { recursive: true });
 await Promise.all([
   cp(new URL('../staging/index.html', import.meta.url), new URL('index.html', dist)),
   cp(new URL('../staging/styles.css', import.meta.url), new URL('styles.css', dist)),
   cp(new URL('../staging/shortcut-command-search.mjs', import.meta.url), new URL('shortcut-command-search.js', dist)),
+  cp(new URL('../staging/public-beta-water-tank.mjs', import.meta.url), new URL('public-beta-water-tank.js', dist)),
   cp(new URL('../staging/icon.svg', import.meta.url), new URL('icon.svg', dist)),
   cp(new URL('../staging/social-card.png', import.meta.url), new URL('social-card.png', dist)),
   cp(new URL('../staging/robots.txt', import.meta.url), new URL('robots.txt', dist)),
@@ -51,6 +53,8 @@ await Promise.all([
   cp(new URL('../staging/controllers.html', import.meta.url), new URL('controllers.html', dist)),
   cp(new URL('../staging/components.html', import.meta.url), new URL('components.html', dist)),
   cp(new URL('../staging/examples.html', import.meta.url), new URL('examples.html', dist)),
+  cp(new URL('../examples/public-beta/exact-visuino-water-tank.intent-mcu.json', import.meta.url),
+    new URL('examples/exact-visuino-water-tank.intent-mcu.json', dist)),
   writeFile(new URL('support.html', dist), supportHtml),
   cp(new URL('../staging/physical-checklist.html', import.meta.url), new URL('physical-checklist.html', dist)),
   cp(new URL('../docs/API-SESSION-V1-PUBLIC.txt', import.meta.url), new URL('api/session/v1/protocol.txt', dist)),

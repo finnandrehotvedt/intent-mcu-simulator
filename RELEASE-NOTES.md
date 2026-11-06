@@ -1,5 +1,20 @@
 # Intent MCU Simulator 1.1.0-rc.149
 
+## Bounded public-beta water-tank demonstration
+
+The ordinary Simple first screen now links directly to the exact data-only
+water-tank project used for the retained video and firmware acceptance. The
+same project is visible without search in Examples. Opening it verifies a
+pinned public asset before replacing the current AVR project, keeps the normal
+unsaved-change guard, clears executable authority and requires one fresh Build.
+
+The beta journey exposes tank level, AUTO/MANUAL, manual pump demand and source
+availability, with compiled A0/D2–D4 input, D8/D9 output, LED, Serial and
+four-row LCD behavior. The private Visuino dependency stays server-side,
+digest-bound and read-only; no vendor source or archive is shipped in the app.
+This does not claim physical pump behavior, hardware validation, full83 or
+full210 completion.
+
 ## Configurable keyboard shortcuts
 
 Rc.149 adds a visible Customize keys action beside the always-visible keyboard
@@ -17,8 +32,9 @@ succeed and the visible Run action to become enabled, then starts Run once.
 It cannot bypass a disabled action and stops on Build failure, timeout, Stop or
 Esc. It cannot edit code or wiring or approve a dialog.
 
-This is a source-only candidate. No merge, deployment, public release or
-sensor publication is included.
+The rc.149 implementation was prepared as a source candidate. Its separately
+authorized deployment is a bounded public beta with exact rollback and public
+browser acceptance; later Rust-preview development does not auto-promote.
 
 ---
 

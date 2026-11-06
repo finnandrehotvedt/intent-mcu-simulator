@@ -4,6 +4,12 @@ All notable public source changes are recorded here.
 
 ## 1.1.0-rc.149 — 2026-10-27
 
+- Adds one plainly labelled public-beta water-tank action on the first Simple
+  screen and one no-search Examples card for the exact tested data-only project.
+- Pins the bundled project asset before opening it, preserves the unsaved-change
+  guard, clears executable authority and requires a fresh ordinary Build.
+- Keeps private Visuino dependencies server-side and makes no physical,
+  full83 or full210 claim.
 - Adds a visible local shortcut editor for Build, Run, Pause/Resume, Reset and
   Stop with active key labels beside the primary controls.
 - Rejects duplicate bindings, browser modifiers, authoring conflicts,
@@ -13,8 +19,8 @@ All notable public source changes are recorded here.
 - Adds default reset and one opt-in Build → successful current build → Run
   sequence that stops on disabled actions, failure, timeout, Stop or Esc.
 - Preserves rc148 runtime locking and visible primary controls.
-- This is a source-only candidate; no merge, deploy, publication or sensor
-  promotion is included.
+- Public deployment of this exact release remains a separate rollback-backed
+  beta operation; future Rust-preview development never auto-promotes.
 
 ## 1.1.0-rc.148 — 2026-10-27
 
