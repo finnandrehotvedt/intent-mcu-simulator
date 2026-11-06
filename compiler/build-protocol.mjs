@@ -9,6 +9,7 @@ import {
   validateUnavailableCandidateTarget,
 } from './candidate-target-contract.mjs';
 import { BUILD_LIMITS } from '../src/build-limits.mjs';
+import { privateSystemHeadersForRequest } from './visuino-private-policy.mjs';
 
 export { BUILD_LIMITS } from '../src/build-limits.mjs';
 
@@ -142,8 +143,12 @@ export function parseStrictJson(source) {
   return output;
 }
 
-function validateIncludes(files, board) {
-  const allowedSystemHeaders = board === BOARD_PROFILE ? AVR_SYSTEM_HEADERS : COMMON_SYSTEM_HEADERS;
+function validateIncludes(files, board, privatePolicyId) {
+  const baseSystemHeaders = board === BOARD_PROFILE ? AVR_SYSTEM_HEADERS : COMMON_SYSTEM_HEADERS;
+  const allowedSystemHeaders = new Set([
+    ...baseSystemHeaders,
+    ...privateSystemHeadersForRequest({ board, files }, privatePolicyId),
+  ]);
   const localNames = new Set(files.map((file) => file.name));
   for (const file of files) {
     for (const match of file.content.matchAll(INCLUDE_DIRECTIVE)) {
@@ -179,7 +184,7 @@ function hasUnpairedSurrogate(value) {
   return false;
 }
 
-export function normalizeBuildRequestValue(value) {
+export function normalizeBuildRequestValue(value, { privatePolicyId = null } = {}) {
   let board;
   let target = null;
   if (value?.schema === BUILD_REQUEST_SCHEMA) {
@@ -230,7 +235,7 @@ export function normalizeBuildRequestValue(value) {
   } else if (!seen.has('main.ino')) throw new BuildProtocolError('MAIN_FILE_REQUIRED');
   if (sourceBytes > BUILD_LIMITS.sourceBytes) throw new BuildProtocolError('SOURCE_LIMIT');
   files.sort((a, b) => a.name === 'main.ino' ? -1 : b.name === 'main.ino' ? 1 : a.name.localeCompare(b.name));
-  validateIncludes(files, board);
+  validateIncludes(files, board, privatePolicyId);
   const normalized = {
     schema: value.schema,
     board,
@@ -244,11 +249,11 @@ export function normalizeBuildRequestValue(value) {
   return Object.freeze(normalized);
 }
 
-export function parseAndNormalizeBuildRequest(raw) {
+export function parseAndNormalizeBuildRequest(raw, options) {
   if (Buffer.byteLength(raw, 'utf8') > BUILD_LIMITS.requestBytes) {
     throw new BuildProtocolError('REQUEST_LIMIT', 'Build request is too large', 413);
   }
-  return normalizeBuildRequestValue(parseStrictJson(raw));
+  return normalizeBuildRequestValue(parseStrictJson(raw), options);
 }
 
 export function sha256(value) {

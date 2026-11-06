@@ -15,6 +15,11 @@ import {
   sha256,
   sourceDigest,
 } from './build-protocol.mjs';
+import { verifyVisuinoPrivateDependency } from './private-dependency-verifier.mjs';
+import {
+  VISUINO_PRIVATE_MOUNT_PATH,
+  isVisuinoWaterTankRequest,
+} from './visuino-private-policy.mjs';
 
 const WORKSPACE = '/workspace';
 const SKETCH = `${WORKSPACE}/main`;
@@ -131,6 +136,8 @@ function sanitiseDiagnostics(text) {
     .replaceAll(BUILD, '<build>')
     .replaceAll(OUTPUT, '<output>')
     .replace(/\/opt\/arduino\/[^\s:]*/g, '<toolchain>')
+    .replace(/\/opt\/intent-private\/[^\s:]*/g, '<private-dependency>')
+    .replace(/\/tmp\/user\/libraries\/Mitov\/[^\s:]*/g, '<private-dependency>')
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
     .slice(0, BUILD_LIMITS.diagnosticsBytes);
   const diagnostics = [];
@@ -147,7 +154,7 @@ function sanitiseDiagnostics(text) {
   return { text: clean, diagnostics };
 }
 
-async function prepare(request) {
+async function prepare(request, privateDependency) {
   await Promise.all([
     rm(SKETCH, { recursive: true, force: true }),
     rm(BUILD, { recursive: true, force: true }),
@@ -159,6 +166,10 @@ async function prepare(request) {
     mkdir('/tmp/user', { recursive: true }), mkdir('/tmp/home', { recursive: true }),
   ]);
   await symlink('/opt/arduino/data/packages', '/tmp/data/packages');
+  if (privateDependency) {
+    await mkdir('/tmp/user/libraries', { recursive: true });
+    await symlink(`${VISUINO_PRIVATE_MOUNT_PATH}/Mitov`, '/tmp/user/libraries/Mitov');
+  }
   await Promise.all([
     writeFile('/tmp/data/package_index.json', '{"packages":[]}\n'),
     writeFile('/tmp/data/library_index.json', '{"libraries":[]}\n'),
@@ -172,10 +183,14 @@ async function main() {
   if (!exactKeys(job, ['schema', 'request', 'sourceDigest']) || job.schema !== WORKER_JOB_SCHEMA) {
     throw Object.assign(new Error('invalid worker job'), { code: 'WORKER_JOB_SHAPE' });
   }
-  const request = normalizeBuildRequestValue(job.request);
+  const privatePolicyId = process.env.INTENT_PRIVATE_DEPENDENCY_POLICY_ID ?? null;
+  const request = normalizeBuildRequestValue(job.request, { privatePolicyId });
   if (sourceDigest(request) !== job.sourceDigest) throw Object.assign(new Error('source identity mismatch'), { code: 'SOURCE_IDENTITY_MISMATCH' });
   const isolation = await isolationEvidence();
-  await prepare(request);
+  const privateDependency = isVisuinoWaterTankRequest(request, privatePolicyId)
+    ? await verifyVisuinoPrivateDependency({ policyId: privatePolicyId }) : null;
+  if (privateDependency) isolation.privateDependency = privateDependency;
+  await prepare(request, privateDependency);
   const compiler = await runCompiler();
   const output = sanitiseDiagnostics(compiler.text);
   if (compiler.overflow) return { status: 'failed', code: 'DIAGNOSTIC_LIMIT', ...output, isolation };

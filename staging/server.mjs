@@ -81,6 +81,7 @@ const broker = Object.freeze({
 const coordinator = new BuildCoordinator({
   broker,
   imageLock,
+  requestPolicyId: imageLock.privateDependency?.policyId ?? null,
   identityLockFor: (profile) => profile === 'board.atmega328p-16mhz-v1' ? imageLock
     : profile === RP2040_BOARD_PROFILE ? rp2040ImageLock : null,
   globalLimit: 1,

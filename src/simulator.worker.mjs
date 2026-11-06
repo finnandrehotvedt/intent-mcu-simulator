@@ -31,6 +31,10 @@ let x48CurrentModel = false;
 let x48TrustedAuthority = null;
 let x48Operation = null;
 let x48Epoch = 0;
+const AVR_STATUS_INTERVAL_MS = 100;
+let lastAvrStatusAt = Number.NEGATIVE_INFINITY;
+
+const monotonicNow = () => globalThis.performance?.now?.() ?? Date.now();
 
 const identityFields = () => runtimeIdentity ? {
   runtimeIdentity: structuredClone(runtimeIdentity),
@@ -48,6 +52,7 @@ function status(kind = 'status') {
     return;
   }
   const snapshot = kernel.snapshot();
+  lastAvrStatusAt = monotonicNow();
   emit({ kind, ...snapshot, led: snapshot.circuit.leds.some((item) => item.on) });
 }
 
@@ -225,6 +230,7 @@ function disposeRuntime(x47CancellationReceipts = []) {
   validatedModelExecutionContextSha256 = null;
   x47RepeatableAuthority = null;
   x47RepeatablePending = null;
+  lastAvrStatusAt = Number.NEGATIVE_INFINITY;
   return { disposedIdentity, x47CancellationReceipts };
 }
 
@@ -232,7 +238,7 @@ function pump(activeGeneration) {
   if (!running || activeGeneration !== generation) return;
   try {
     kernel.runInstructions(instructionBudget());
-    status();
+    if (monotonicNow() - lastAvrStatusAt >= AVR_STATUS_INTERVAL_MS) status();
     setTimeout(() => pump(activeGeneration), 0);
   } catch (error) {
     running = false;

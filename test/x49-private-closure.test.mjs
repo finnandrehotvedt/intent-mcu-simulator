@@ -34,7 +34,7 @@ test('reviewed control-runtime basis preserves X49 dependencies and private-owne
     'src/atmega328p-adapter.mjs': '36ba2de8798aa202f473a3ab506ce153b42e16cb1807417e03c71e4c8123e87a',
     'expansion-drafts/bme280-environment-v1.mjs': '3e901aae7073c6e58497a27042b377801e22cd19964569cb14fe8cf8bfa149eb',
     'src/runtime-kernel.mjs': 'd907fd221f906acdcf5a60c6c1fad05886a8f99cc4fb8c7195ffed7a420d0fae',
-    'src/simulator.worker.mjs': '2da738b07f9ec8f2fbdf550c5f21f9ee5cfe9376a3233b5cc8857ef5bfc425b3',
+    'src/simulator.worker.mjs': 'b332d15677972452e923d77b4eb5a159369f860d819ca4e8ce9fd71d686c5fd6',
   };
   for (const [path, hash] of Object.entries(immutableRuntime)) {
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));

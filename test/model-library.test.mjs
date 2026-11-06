@@ -25,6 +25,7 @@ import {
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_CMP093_DHT22_CURRENT_MODEL_LIBRARY_LOCK,
@@ -205,6 +206,22 @@ test('the immediately previous current lock is the exact migration anchor for PC
   assert.equal(preview.unchanged.length, 89);
 });
 
+test('the prior PCF8574 20x4 runtime identity remains a data-only migration anchor', () => {
+  assert.equal(PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_LOCK.version,
+    '2.0.0-pcf8574-20x4.1-current');
+  const resolved = resolveModelLibrary(PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.role, 'pre-runtime-input-lcd-trace-current-migration');
+  assert.equal(resolved.implementation.migrationOnly, true);
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const preview = modelLibraryMigrationPreview(PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(preview.semanticChanges.length, 0);
+  assert.equal(preview.rendererChanges.length, 0);
+  assert.equal(preview.unchanged.length, 90);
+});
+
 test('the immediately preceding LCD lock reopens losslessly as migration-only data', () => {
   assert.equal(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
     '1e2e94a3d88ce7bcc50a058536858897578b6cc3e13f5b4936a7a6003b11fe1f');
@@ -292,7 +309,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
     [CURRENT_MODEL_LIBRARY_LOCK,
-      'intent-mcu-model-bundle-current-pcf8574-20x4-1@67'],
+      'intent-mcu-model-bundle-current-runtime-input-lcd-trace-1@68'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -317,7 +334,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 57);
+  assert.equal(historical.length, 58);
   for (const manifest of historical.slice(1)) {
     const lock = { schema: 'intent-mcu-model-library-lock@2', libraryId: manifest.libraryId,
       version: manifest.version, manifestSha256: manifest.manifestSha256,

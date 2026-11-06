@@ -112,7 +112,7 @@ test('X89 broker consumes the same immutable child runtime policy assessed by re
 
 test('X89 fails closed when the assessed target broker or runtime policy differs from trusted code', async () => {
   for (const [file, from, to, blocker] of [
-    ['compiler/docker-broker.mjs', 'return dockerBuildRuntimeArguments(containerName, this.imageLock.image);',
+    ['compiler/docker-broker.mjs', 'return dockerBuildRuntimeArguments(containerName, this.imageLock.image, privateDependency);',
       "return ['run', '--network', 'host', this.imageLock.image];", 'LOCAL_TRUSTED_IMPLEMENTATION_MISMATCH:broker'],
     ['compiler/docker-runtime-policy.mjs', "network: 'none'", "network: 'host'",
       'LOCAL_TRUSTED_IMPLEMENTATION_MISMATCH:runtimePolicy'],

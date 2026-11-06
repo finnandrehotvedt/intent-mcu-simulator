@@ -53,10 +53,11 @@ async function validatedRp2040Artifact(artifact, request) {
 }
 
 export class BuildCoordinator {
-  constructor({ broker, imageLock, identityLockFor = null, globalLimit = 1, perOriginLimit = 1, queueLimit = 3, rateLimit = 12, jobLimit = 16, jobTtlMs = 5 * 60_000, now = () => Date.now() }) {
+  constructor({ broker, imageLock, identityLockFor = null, requestPolicyId = null, globalLimit = 1, perOriginLimit = 1, queueLimit = 3, rateLimit = 12, jobLimit = 16, jobTtlMs = 5 * 60_000, now = () => Date.now() }) {
     this.broker = broker;
     this.imageLock = imageLock;
     this.identityLockFor = identityLockFor ?? (() => this.imageLock);
+    this.requestPolicyId = requestPolicyId;
     this.globalLimit = globalLimit;
     this.perOriginLimit = perOriginLimit;
     this.queueLimit = queueLimit;
@@ -86,7 +87,7 @@ export class BuildCoordinator {
     this.prune();
     this.enforceRate(origin);
     if (this.jobs.size >= this.jobLimit) throw new BuildProtocolError('JOB_CAPACITY', 'Build job capacity reached', 429, retryAfterForCode('JOB_CAPACITY'));
-    const request = parseAndNormalizeBuildRequest(raw);
+    const request = parseAndNormalizeBuildRequest(raw, { privatePolicyId: this.requestPolicyId });
     if (this.queue.length >= this.queueLimit) throw new BuildProtocolError('BUILD_QUEUE_FULL', 'Build queue is full', 429, retryAfterForCode('BUILD_QUEUE_FULL'));
     const jobId = randomBytes(12).toString('hex');
     const capability = randomBytes(32).toString('base64url');

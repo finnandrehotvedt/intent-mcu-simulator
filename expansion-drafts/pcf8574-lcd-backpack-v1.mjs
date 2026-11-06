@@ -127,13 +127,26 @@ export class Pcf8574LcdDecoder {
         initializationCommandSequences: [[0x28, 0x0c, 0x06, 0x01], [0x28, 0x0c, 0x01, 0x06]] },
     );
     this.levels = { RS: false, E: false, D4: false, D5: false, D6: false, D7: false };
-    this.transactions = 0; this.lastIndex = 0; this.error = null;
+    this.transactions = 0; this.nextAbsoluteIndex = 0; this.error = null;
   }
   consume(records, { i2cDrops = 0 } = {}) {
-    if (i2cDrops) this.error = { code: 'PCF8574_LCD_TRACE_DROPPED', details: [i2cDrops] };
-    if (!Array.isArray(records) || records.length < this.lastIndex) { this.lastIndex = 0; this.error = { code: 'PCF8574_LCD_TRACE_RESET', details: [] }; }
+    const retained = Array.isArray(records) ? records : [];
+    if (!Number.isSafeInteger(i2cDrops) || i2cDrops < 0) {
+      this.error = { code: 'PCF8574_LCD_TRACE_DROPPED', details: [i2cDrops] };
+      i2cDrops = 0;
+    }
+    const absoluteEnd = i2cDrops + retained.length;
+    if (absoluteEnd < this.nextAbsoluteIndex) {
+      this.nextAbsoluteIndex = i2cDrops;
+      this.error = { code: 'PCF8574_LCD_TRACE_RESET', details: [] };
+    }
+    if (i2cDrops > this.nextAbsoluteIndex) {
+      this.error = { code: 'PCF8574_LCD_TRACE_DROPPED', details: [i2cDrops - this.nextAbsoluteIndex] };
+      this.nextAbsoluteIndex = i2cDrops;
+    }
+    const retainedStart = Math.max(0, this.nextAbsoluteIndex - i2cDrops);
     const events = [];
-    for (const record of records.slice(this.lastIndex)) {
+    for (const record of retained.slice(retainedStart)) {
       if (record.kind !== 'write' || record.address !== this.address || record.acknowledged !== true) continue;
       this.transactions += 1;
       if (record.value & (1 << PCF8574_LCD_MAPPING.RW)) { this.error = { code: 'PCF8574_LCD_READ_UNSUPPORTED', details: [record.value] }; continue; }
@@ -145,7 +158,7 @@ export class Pcf8574LcdDecoder {
         if (level !== this.levels[signal]) { this.levels[signal] = level; events.push({ cycle: record.cycle, pin: Number(signal === 'RS' ? 2 : signal === 'E' ? 3 : signal.slice(1)), level }); }
       }
     }
-    this.lastIndex = records.length;
+    this.nextAbsoluteIndex = absoluteEnd;
     const snapshot = this.lcd.consume(events);
     return { ...snapshot, ddramAddress: snapshot.address, protocol: 'i2c-pcf8574-fixed-0x27',
       address: this.address, geometry: this.geometry, transactions: this.transactions,

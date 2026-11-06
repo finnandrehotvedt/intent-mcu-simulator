@@ -11,8 +11,12 @@ export const DOCKER_BUILD_RUNTIME_POLICY = Object.freeze({
   ]),
 });
 
-export function dockerBuildRuntimeArguments(containerName, image) {
+export function dockerBuildRuntimeArguments(containerName, image, privateDependency = null) {
   const policy = DOCKER_BUILD_RUNTIME_POLICY;
+  const privateArguments = privateDependency ? [
+    '--mount', `type=bind,src=${privateDependency.sourcePath},dst=${privateDependency.mountPath},readonly`,
+    '--env', `INTENT_PRIVATE_DEPENDENCY_POLICY_ID=${privateDependency.policyId}`,
+  ] : [];
   return [
     'run', '--rm', '--name', containerName,
     '--label', 'com.intentforce.teach-lab.role=disposable-build-job',
@@ -22,6 +26,7 @@ export function dockerBuildRuntimeArguments(containerName, image) {
     '--memory-swap', `${policy.memorySwapMiB}m`, '--cpus', policy.cpus.toFixed(1),
     '--ipc', policy.ipc, '--ulimit', `nofile=${policy.nofile}`, '--ulimit', `core=${policy.core}`,
     ...policy.tmpfs.flatMap((value) => ['--tmpfs', value]),
+    ...privateArguments,
     '--env', 'HOME=/tmp/home', '--env', 'NO_UPDATE_NOTIFIER=1', '-i', image,
   ];
 }

@@ -172,6 +172,24 @@ test('20x4 geometry decodes the exact water-tank row addresses and four visible 
   assert.deepEqual(snapshot.lines, rows.map(([, text]) => text.padEnd(20)));
 });
 
+test('continuous decoder consumes new I2C records after the bounded trace rolls over', () => {
+  const trace = initialized();
+  trace.byte(0x80, false);
+  for (const char of 'Before rollover '.padEnd(16)) trace.byte(char.charCodeAt(0), true);
+  const decoder = createPcf8574LcdDecoder();
+  const firstLength = trace.records.length;
+  assert.equal(decoder.consume(trace.records, { i2cDrops: 0 }).lines[0], 'Before rollover ');
+
+  trace.byte(0x80, false);
+  for (const char of 'After rollover  '.padEnd(16)) trace.byte(char.charCodeAt(0), true);
+  const capacity = firstLength;
+  const dropped = trace.records.length - capacity;
+  const retained = trace.records.slice(dropped);
+  const updated = decoder.consume(retained, { i2cDrops: dropped });
+  assert.equal(updated.error, null);
+  assert.equal(updated.lines[0], 'After rollover  ');
+});
+
 test('wrong address, RW-high and dropped traces fail closed', () => {
   const wrong = createPcf8574LcdDecoder();
   assert.equal(wrong.consume([{ cycle: 300_000, kind: 'write', address: 0x26, value: 0 }]).status, 'awaiting-initialization');

@@ -118,6 +118,7 @@ const clone = (value) => structuredClone(value);
 const failure = (code, revision, details = []) => ({ ok: false, code, revision, details });
 const endpointKey = (endpoint) => `${endpoint.component}.${endpoint.pin}`;
 const MOMENTARY_BUTTON_TYPE = 'button.momentary-v1';
+const POTENTIOMETER_TYPES = new Set(['potentiometer.linear-v1', 'potentiometer.trimmer-v1']);
 const CANDIDATE_COMPONENT_TYPES = new Set([
   GROUND_REFERENCE_TYPE, POWER_REFERENCE_TYPE, TOGGLE_SWITCH_TYPE, SPDT_CONTACT_TYPE,
   SLIDE_SWITCH_TYPE, NC_BUTTON_TYPE, LIMIT_SWITCH_TYPE,
@@ -1006,6 +1007,22 @@ export class CandidateEditorSession {
               return failure('PROJECT_CONTACT_BASE_GRAPH_MISMATCH', this.revision);
             }
             projected.controls.pressed = command.value;
+            runtimeDirty = true;
+            break;
+          }
+          if (POTENTIOMETER_TYPES.has(component.type)) {
+            if (command.key !== 'position' || !Number.isFinite(command.value)
+                || command.value < 0 || command.value > 1) {
+              return failure('PROJECT_CONTACT_POTENTIOMETER_STATE', this.revision);
+            }
+            component.controls.position = command.value;
+            const projected = draft.project.circuit.components.find(
+              (item) => item.id === component.id,
+            );
+            if (!projected || projected.type !== component.type) {
+              return failure('PROJECT_CONTACT_BASE_GRAPH_MISMATCH', this.revision);
+            }
+            projected.controls.position = command.value;
             runtimeDirty = true;
             break;
           }

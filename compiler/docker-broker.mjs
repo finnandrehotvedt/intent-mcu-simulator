@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 import { BUILD_LIMITS, WORKER_JOB_SCHEMA, parseStrictJson, sourceDigest } from './build-protocol.mjs';
 import { parseCompilerImageLock } from './image-lock-contract.mjs';
 import { dockerBuildRuntimeArguments } from './docker-runtime-policy.mjs';
+import { isVisuinoWaterTankRequest } from './visuino-private-policy.mjs';
 
 const execFileAsync = promisify(execFile);
 const DEFAULT_LOCK = process.env.COMPILER_IMAGE_LOCK || new URL('./image-lock.json', import.meta.url);
@@ -65,8 +66,11 @@ export class DockerBuildBroker {
     this.verifiedImage = true;
   }
 
-  runtimeArguments(containerName) {
-    return dockerBuildRuntimeArguments(containerName, this.imageLock.image);
+  runtimeArguments(containerName, request = null) {
+    const dependency = this.imageLock.privateDependency;
+    const privateDependency = dependency
+      && isVisuinoWaterTankRequest(request, dependency.policyId) ? dependency : null;
+    return dockerBuildRuntimeArguments(containerName, this.imageLock.image, privateDependency);
   }
 
   async compile(request, { signal } = {}) {
@@ -82,7 +86,7 @@ export class DockerBuildBroker {
       request: wireRequest,
       sourceDigest: sourceDigest(request),
     });
-    const child = spawn(this.docker, this.runtimeArguments(containerName), {
+    const child = spawn(this.docker, this.runtimeArguments(containerName, request), {
       shell: false,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
