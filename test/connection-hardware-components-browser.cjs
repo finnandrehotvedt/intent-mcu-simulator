@@ -19,11 +19,14 @@ const parts = [
 ];
 const profiles = [
   { id: 'board.rp2040-pico-v1', api: '__RP2040_PUBLIC_WORKBENCH__', input: '#pico-open-input',
-    file: 'pico-connection-hardware-components.intent-mcu.json', layer: '#pico-editor-components' },
+    file: 'pico-connection-hardware-components.intent-mcu.json', layer: '#pico-editor-components',
+    canvas: '#pico-diagram' },
   { id: 'board.esp32-c3-devmodule-v1', api: '__ESP32C3_PUBLIC_WORKBENCH__', input: '#c3-open-input',
-    file: 'esp32-c3-connection-hardware-components.intent-mcu.json', layer: '#c3-editor-components' },
+    file: 'esp32-c3-connection-hardware-components.intent-mcu.json', layer: '#c3-editor-components',
+    canvas: '#c3-diagram' },
   { id: 'board.stm32f429zi-nucleo144-v1', api: '__STM32_PUBLIC_WORKBENCH__', input: '#stm32-open-input',
-    file: 'stm32-connection-hardware-components.intent-mcu.json', layer: '#stm32-editor-components' },
+    file: 'stm32-connection-hardware-components.intent-mcu.json', layer: '#stm32-editor-components',
+    canvas: '#stm32-diagram' },
 ];
 async function discardIfRequired(page) {
   if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
@@ -41,6 +44,32 @@ async function assertArtwork(page, layer = '#component-layer') {
       part.contacts, part.id + ':physical-contacts');
   }
 }
+async function measureGeometry(page, profile) {
+  return page.evaluate(({ layer, canvas }) => {
+    const canvasRect = document.querySelector(canvas).getBoundingClientRect();
+    const cards = [...document.querySelectorAll(`${layer} .circuit-component`)].map((node) =>
+      ({ id: node.dataset.componentId, node, rect: node.getBoundingClientRect() }));
+    const intersects = (left, right) => left.left < right.right && left.right > right.left
+      && left.top < right.bottom && left.bottom > right.top;
+    const overlaps = [];
+    for (let left = 0; left < cards.length; left += 1) {
+      for (let right = left + 1; right < cards.length; right += 1) {
+        if (intersects(cards[left].rect, cards[right].rect)) {
+          overlaps.push([cards[left].id, cards[right].id].sort());
+        }
+      }
+    }
+    let labelsOutside = 0; let labelsObscured = 0;
+    for (const label of document.querySelectorAll(`${layer} .pico-editor-pin-label`)) {
+      const rect = label.getBoundingClientRect();
+      const owner = label.closest('.circuit-component')?.dataset.componentId;
+      if (rect.left < canvasRect.left || rect.right > canvasRect.right
+          || rect.top < canvasRect.top || rect.bottom > canvasRect.bottom) labelsOutside += 1;
+      if (cards.some((card) => card.id !== owner && intersects(rect, card.rect))) labelsObscured += 1;
+    }
+    return { overlaps, labelsOutside, labelsObscured };
+  }, profile);
+}
 
 (async () => {
   let origin;
@@ -57,7 +86,7 @@ async function assertArtwork(page, layer = '#component-layer') {
   origin = 'http://127.0.0.1:' + server.address().port;
   const browser = await chromium.launch({ headless: true });
   try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, acceptDownloads: true });
     page.setDefaultTimeout(60_000);
     const errors = []; const outside = []; let buildRequests = 0;
     await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
@@ -150,6 +179,7 @@ async function assertArtwork(page, layer = '#component-layer') {
       .some(({ id }) => id === 'breadboard-1'));
     await assertArtwork(page);
 
+    const geometries = [];
     for (const profile of profiles) {
       await page.selectOption('#board-select', profile.id);
       await page.waitForFunction(({ api }) => Boolean(window[api]?.state().active), profile);
@@ -164,6 +194,7 @@ async function assertArtwork(page, layer = '#component-layer') {
         : profile.id === 'board.esp32-c3-devmodule-v1' ? '#c3-parts-list' : '#stm32-parts-list';
       assert.equal(await page.locator(list + ' .catalog-item').count(), 80);
       await assertArtwork(page, profile.layer);
+      geometries.push({ profile: profile.id, ...await measureGeometry(page, profile) });
       const state = await page.evaluate(({ api }) => {
         const value = window[api].state(); const graph = value.circuit ?? value.project.circuit;
         return { validation: value.circuitEditor.validation,
@@ -175,10 +206,12 @@ async function assertArtwork(page, layer = '#component-layer') {
       assert.equal(state.components, 3, profile.id); assert.equal(state.nets, 2, profile.id);
       assert.deepEqual(state.endpointCounts, [3, 3], profile.id);
     }
+    assert.deepEqual(geometries, profiles.map(({ id }) =>
+      ({ profile: id, overlaps: [], labelsOutside: 0, labelsObscured: 0 })));
     assert.equal(buildRequests, 0); assert.deepEqual(outside, []); assert.deepEqual(errors, []);
     process.stdout.write(JSON.stringify({ ok: true, profiles: 4, parts: 2,
       logicalHandles: 10, physicalContacts: 44, nativeAddMouseKeyboardUndoRedo: true,
-      buildRequests }) + '\n');
+      geometries, buildRequests }) + '\n');
   } finally {
     await browser.close(); await new Promise((resolve) => server.close(resolve));
   }

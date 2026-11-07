@@ -96,10 +96,12 @@ const narrow = [
     normalize: normalizeRp2040PublicProject, board: 'pico-1', sourcePin: 'GP1', ground: 'GND8' },
   { id: 'esp32-c3', profile: 'board.esp32-c3-devmodule-v1', schema: C3_PUBLIC_PROJECT_SCHEMA,
     source: C3_PUBLIC_SOURCE, Editor: Esp32C3CircuitEditor, boardDefinition: ESP32C3_BOARD_DEFINITION,
-    normalize: normalizeEsp32C3PublicProject, board: 'c3-1', sourcePin: 'GPIO3', ground: 'GND8' },
+    normalize: normalizeEsp32C3PublicProject, board: 'c3-1', sourcePin: 'GPIO3', ground: 'GND8',
+    boardPosition: { x: 0.78, y: 0.52 } },
   { id: 'stm32', profile: 'board.stm32f429zi-nucleo144-v1', schema: STM32_EDITABLE_PROJECT_SCHEMA,
     source: STM32_PUBLIC_SOURCE, Editor: Stm32CircuitEditor, boardDefinition: STM32_BOARD_DEFINITION,
-    normalize: normalizeStm32PublicProject, board: 'stm32-1', sourcePin: 'PB1', ground: 'GND20' },
+    normalize: normalizeStm32PublicProject, board: 'stm32-1', sourcePin: 'PB1', ground: 'GND20',
+    boardPosition: { x: 0.78, y: 0.52 } },
 ];
 const adapters = {
   [AVR]: { schemas: ['intent-mcu-project-contact-persistence@1'], prepare(value) {
@@ -148,6 +150,10 @@ addEntry({ id: 'avr-connection-hardware-components', profile: AVR,
   board: 'board-1', sourcePin: 'D2', ground: 'GND1' });
 for (const item of narrow) {
   const editor = new item.Editor();
+  if (item.boardPosition) {
+    const result = editor.moveComponent(item.board, item.boardPosition.x, item.boardPosition.y);
+    if (!result.ok) throw new Error('CONNECTION_HARDWARE_' + item.id + '_BOARD_POSITION:' + result.code);
+  }
   for (const componentId of ['resistor-1', 'led-1']) {
     editor.select({ kind: 'component', id: componentId });
     const result = editor.deleteSelected();
