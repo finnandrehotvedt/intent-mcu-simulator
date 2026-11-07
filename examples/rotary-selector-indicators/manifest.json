@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-candidate-api-transaction-history.1-current",
-    "manifestSha256": "45631cb68350fec85f7f0c2de8a342d9e1e579c89011b7453e1fa0bb7c679041",
-    "implementationSha256": "a327d3e30e9e0c15e799e04401ea7427c6040999194a85928df60ed3e131d685"
+    "manifestSha256": "2ec7c704b54622be65c7b23fd207cb309c112a631176435a36b8b936442943c7",
+    "implementationSha256": "4826a5d1a292331134dafc8f31d2f4eb3bb1ef9dc37dfcd82bfcc95dc8109a41"
   },
   "entries": [
     {
@@ -23,7 +23,7 @@
         "P3": "GND2",
         "P4": "5V"
       },
-      "projectSha256": "791753a5373be16a521d547ebeda1aebf8c70a9e4663baf2fcf0487eb0e879e5",
+      "projectSha256": "1374874dba73ce2fe015208aa905506da0e4dbdb56ea0c6d01e7122cb7856d2c",
       "sourceSha256": "f6f6cf5f930411aac87b5a6c5e026885e4a56c88b4366619f65cc9364639597d",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
@@ -46,7 +46,7 @@
         "B": "D6 through 330 Ω",
         "COM": "5V"
       },
-      "projectSha256": "4d8ceddcd48a47b0349fa7269a63d65a5b05e4bba5d6cd324e5a274b05452199",
+      "projectSha256": "6f6ac23185759b7369e7c8ceac0fbca1df505a26306e84e78819f8c764c2259d",
       "sourceSha256": "4922f5b3ef3c8848a1ddf16dac5bcbeef02c1f00e235f4b1b941e4ccfd928b31",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
@@ -67,7 +67,7 @@
         "anodes": "A1–A10 through 330 Ω to D2–D11",
         "cathodes": "K1–K10 to explicit 0 V reference"
       },
-      "projectSha256": "007c11027aea04e53e14ca6f8be55ddd68497d32f9187452e15db3d84c9bd6e6",
+      "projectSha256": "a71645c004bf74211f624819f755f6fe73ecfa5c3454cdd1ad8a5e2493df946c",
       "sourceSha256": "2822f3cefa6bbfedb50b5efbfeec1d742648ec4910eb8f6be985faffbc6c85aa",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",

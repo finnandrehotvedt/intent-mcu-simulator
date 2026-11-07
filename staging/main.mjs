@@ -14,7 +14,8 @@ import { NPN_BJT_TYPE, PNP_BJT_TYPE, N_CHANNEL_MOSFET_TYPE,
   validateTransistorAuthoringGraph } from '../expansion-drafts/transistor-components-v1.mjs';
 import { FUSE_TYPE, RESETTABLE_FUSE_PTC_TYPE, CIRCUIT_PROTECTION_DEFINITIONS,
   validateCircuitProtectionAuthoringGraph } from '../expansion-drafts/circuit-protection-components-v1.mjs';
-import { CONNECTION_HARDWARE_DEFINITIONS,
+import { CONNECTION_HARDWARE_DEFINITIONS, MINI_BREADBOARD_TYPE,
+  TERMINAL_BLOCK_2_POSITION_TYPE,
   validateConnectionHardwareAuthoringGraph } from '../expansion-drafts/connection-hardware-components-v1.mjs';
 import { OPTOCOUPLER_TYPE, P_CHANNEL_MOSFET_TYPE,
   SEMICONDUCTOR_ACTIVE_DEFINITIONS,
@@ -13633,6 +13634,8 @@ function candidateComponentPrefix(type) {
       [N_CHANNEL_MOSFET_TYPE]: 'nmos',
       [FUSE_TYPE]: 'fuse',
       [RESETTABLE_FUSE_PTC_TYPE]: 'ptc',
+      [MINI_BREADBOARD_TYPE]: 'breadboard',
+      [TERMINAL_BLOCK_2_POSITION_TYPE]: 'terminal-block',
       [P_CHANNEL_MOSFET_TYPE]: 'pmos',
       [OPTOCOUPLER_TYPE]: 'optocoupler',
   }[type] ?? null;
@@ -13732,6 +13735,8 @@ function addComponent(type, point = null) {
       [N_CHANNEL_MOSFET_TYPE]: { x: 0.84, y: 0.08 },
       [FUSE_TYPE]: { x: 0.28, y: 0.04 },
       [RESETTABLE_FUSE_PTC_TYPE]: { x: 0.44, y: 0.04 },
+      [MINI_BREADBOARD_TYPE]: { x: 0.38, y: 0.5 },
+      [TERMINAL_BLOCK_2_POSITION_TYPE]: { x: 0.72, y: 0.5 },
       [P_CHANNEL_MOSFET_TYPE]: { x: 0.56, y: 0.04 },
       [OPTOCOUPLER_TYPE]: { x: 0.76, y: 0.04 },
     }[type];

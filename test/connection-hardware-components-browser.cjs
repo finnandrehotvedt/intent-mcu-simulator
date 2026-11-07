@@ -93,7 +93,11 @@ async function assertArtwork(page, layer = '#component-layer') {
       /Build\/Run blocked: CONNECTION_HARDWARE_MODEL_UNAVAILABLE/u);
     assert.deepEqual(await page.evaluate(() => window.__M6_PROJECT__().candidateCircuit.nets
       .map(({ endpoints }) => endpoints.length)), [3, 3]);
+    const nativeAddBaseline = await page.evaluate(() => JSON.stringify(window.__M6_PROJECT__()));
 
+    await page.click('#toggle-catalog');
+    await page.waitForFunction(() => document.querySelector('#simple-parts-drawer')
+      .getAttribute('aria-hidden') === 'false');
     await page.evaluate(() => {
       const select = document.querySelector('#catalog-status'); select.value = 'all';
       select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -106,13 +110,39 @@ async function assertArtwork(page, layer = '#component-layer') {
       assert.equal(await page.locator('#catalog-list .catalog-item[data-type="' + type + '"]').count(),
         1, type);
     }
-    await page.locator('#catalog-search').evaluate((node) => {
-      node.value = ''; node.dispatchEvent(new Event('input', { bubbles: true }));
-    });
-    if (await page.locator('#workbench-parts-dialog').evaluate((node) => node.open)) {
-      await page.click('#workbench-parts-dialog .workbench-popup-close');
-    }
+    const searchCatalog = async (type) => page.locator('#catalog-search').evaluate((node, value) => {
+      node.value = value; node.dispatchEvent(new Event('input', { bubbles: true }));
+    }, type);
+    await searchCatalog('wiring.breadboard-mini-4-row-v1');
+    await page.locator('#catalog-list .catalog-item[data-type="wiring.breadboard-mini-4-row-v1"]').click();
+    await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.components
+      .some(({ id }) => id === 'breadboard-2'));
+    await searchCatalog('connector.terminal-block-2-position-v1');
+    const terminalCard = page.locator(
+      '#catalog-list .catalog-item[data-type="connector.terminal-block-2-position-v1"]');
+    await terminalCard.focus(); await terminalCard.press('Enter');
+    await page.waitForFunction(() => window.__M6_PROJECT__().candidateCircuit.components
+      .some(({ id }) => id === 'terminal-block-2'));
+    assert.doesNotMatch(await page.locator('#project-message').textContent(),
+      /Add rejected|UNKNOWN_COMPONENT_TYPE/u);
+    await page.click('#toggle-catalog');
+    await page.waitForFunction(() => document.querySelector('#simple-parts-drawer')
+      .getAttribute('aria-hidden') === 'true');
     await page.click('#project-files-open');
+    await page.waitForFunction(() => document.querySelector('#workbench-project-dialog').open);
+    assert.equal(await page.locator('#undo').isEnabled(), true);
+    await page.click('#undo');
+    await page.waitForFunction(() => !window.__M6_PROJECT__().candidateCircuit.components
+      .some(({ id }) => id === 'terminal-block-2'));
+    await page.click('#undo');
+    await page.waitForFunction((baseline) => JSON.stringify(window.__M6_PROJECT__()) === baseline,
+      nativeAddBaseline);
+    await page.click('#redo'); await page.click('#redo');
+    await page.waitForFunction(() => ['breadboard-2', 'terminal-block-2'].every((id) =>
+      window.__M6_PROJECT__().candidateCircuit.components.some((component) => component.id === id)));
+    await page.click('#undo'); await page.click('#undo');
+    await page.waitForFunction((baseline) => JSON.stringify(window.__M6_PROJECT__()) === baseline,
+      nativeAddBaseline);
     const [download] = await Promise.all([page.waitForEvent('download'), page.click('#project-save')]);
     const savedPath = await download.path(); assert.ok(savedPath && fs.statSync(savedPath).size > 1000);
     await page.setInputFiles('#project-open-input', savedPath); await discardIfRequired(page);
@@ -147,7 +177,8 @@ async function assertArtwork(page, layer = '#component-layer') {
     }
     assert.equal(buildRequests, 0); assert.deepEqual(outside, []); assert.deepEqual(errors, []);
     process.stdout.write(JSON.stringify({ ok: true, profiles: 4, parts: 2,
-      logicalHandles: 10, physicalContacts: 44, buildRequests }) + '\n');
+      logicalHandles: 10, physicalContacts: 44, nativeAddMouseKeyboardUndoRedo: true,
+      buildRequests }) + '\n');
   } finally {
     await browser.close(); await new Promise((resolve) => server.close(resolve));
   }

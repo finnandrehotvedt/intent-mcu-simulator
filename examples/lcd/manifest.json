@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-candidate-api-transaction-history.1-current",
-    "manifestSha256": "45631cb68350fec85f7f0c2de8a342d9e1e579c89011b7453e1fa0bb7c679041",
-    "implementationSha256": "a327d3e30e9e0c15e799e04401ea7427c6040999194a85928df60ed3e131d685"
+    "manifestSha256": "2ec7c704b54622be65c7b23fd207cb309c112a631176435a36b8b936442943c7",
+    "implementationSha256": "4826a5d1a292331134dafc8f31d2f4eb3bb1ef9dc37dfcd82bfcc95dc8109a41"
   },
   "entries": [
     {
@@ -115,7 +115,7 @@
           "sha256": "b44d1fb8110182417c70fc39e85153d7e557c673eecb201c72acab2a4fd8b07c"
         }
       ],
-      "projectSha256": "684251dc56abdbfb6711e84bd4e73551c31b54f652058edd059d7ba9b8a44adb"
+      "projectSha256": "164496809a796a4c73a2524f8a6f33d85a124e916f42cd154d7249003bce04ca"
     },
     {
       "id": "pcf8574-lcd-backpack",
@@ -193,7 +193,7 @@
           "sha256": "4fdce12246f4eb202259a492795ac93f5b59ce56678c357dbb30120ca3e6c809"
         }
       ],
-      "projectSha256": "e3869fea8539a53f9e32059d8d3f3967661efa11991f6122c5afedb6ce58008b"
+      "projectSha256": "5bf6eb829f91a1cc270162f4445e1910f0105d1ed475d69cac75fe5015cc8606"
     },
     {
       "id": "avr-character-lcd-20x4-cgram",
@@ -301,7 +301,7 @@
           "sha256": "4950c66f1669022ffa91528ee5e557bd789833caa08e961bd374c1a8eea63f3e"
         }
       ],
-      "projectSha256": "e2e9c2dc5ca290cb4c9c752aae73197c5da34d1009fff2356305e164894ffbe6"
+      "projectSha256": "b6f41ec77573dd958bf7b70dd8388345d3bff952e86e1e4dc6749d75ab9f76c1"
     }
   ]
 }

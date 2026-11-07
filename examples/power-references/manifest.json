@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-candidate-api-transaction-history.1-current",
-    "manifestSha256": "45631cb68350fec85f7f0c2de8a342d9e1e579c89011b7453e1fa0bb7c679041",
-    "implementationSha256": "a327d3e30e9e0c15e799e04401ea7427c6040999194a85928df60ed3e131d685"
+    "manifestSha256": "2ec7c704b54622be65c7b23fd207cb309c112a631176435a36b8b936442943c7",
+    "implementationSha256": "4826a5d1a292331134dafc8f31d2f4eb3bb1ef9dc37dfcd82bfcc95dc8109a41"
   },
   "entries": [
     {
@@ -33,7 +33,7 @@
         "board.stm32f429zi-nucleo144-v1": "the exact 5 V source is unavailable; do not infer it from the separate 3.3 V ground authoring symbol"
       },
       "sourceSha256": "5854f593dc58d767ec91dc74ddb7741da8a1a7e05b304375cb6d3775a70566ba",
-      "projectSha256": "e39ae9e7ffdc0c8f9f72516796664d241309efd847c6b6cdb77f95980ad60cea",
+      "projectSha256": "4b9cd7f42670eacc0fabb35d93d0165b29f0ee17946309f993ab79d9e2c7d4ab",
       "provenance": "Original project-owned reference contracts, SVG artwork, circuit factory and canonical project envelope."
     }
   ]

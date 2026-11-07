@@ -313624,7 +313624,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "4429b18051f605dd1bf2ade38d29572636f71edcbcd1240e8c5ef893a8e58d59"
+      "sha256": "e296a96cf2184e7ff4c2de8a1a8b0710c8d80d8faa74b1abdbf0e388056ff881"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -314023,7 +314023,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "c98dca54490c17c868d45364b8aee49d139b6368865edb344c1bc0858362e122"
     }
   ],
-  "implementationSha256": "a327d3e30e9e0c15e799e04401ea7427c6040999194a85928df60ed3e131d685",
+  "implementationSha256": "4826a5d1a292331134dafc8f31d2f4eb3bb1ef9dc37dfcd82bfcc95dc8109a41",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "the preview 9242 candidate-session @69 identity remains an immutable migration-only anchor",
@@ -314033,7 +314033,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-runtime-deadline-grace.1-current",
     "semanticDisposition": "preserves all ninety model cells and all firmware-visible runtime behavior"
   },
-  "manifestSha256": "45631cb68350fec85f7f0c2de8a342d9e1e579c89011b7453e1fa0bb7c679041",
+  "manifestSha256": "2ec7c704b54622be65c7b23fd207cb309c112a631176435a36b8b936442943c7",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",
