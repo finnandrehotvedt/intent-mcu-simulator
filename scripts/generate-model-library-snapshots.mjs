@@ -65,6 +65,26 @@ const PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_MANIFEST =
 const PRE_RUNTIME_DEADLINE_GRACE_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_RUNTIME_DEADLINE_GRACE_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
+const PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? (() => {
+    const previous = structuredClone(existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST);
+    if (previous.manifestSha256 !== '396a0b77c18468b2bea766ca3bdcc395d011bd110957879eb3960d7e046ec7ce'
+        || previous.implementationSha256 !== '4acca2a70597a38de49b13c7ca098ed53e342917bf09c651e56cf5e72a3ab6f7') {
+      throw new Error('PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_SOURCE_IDENTITY');
+    }
+    const stagingMain = previous.implementationMembers.filter(
+      (member) => member.path === 'staging/main.mjs',
+    );
+    if (stagingMain.length !== 1
+        || stagingMain[0].sha256 !== '4429b18051f605dd1bf2ade38d29572636f71edcbcd1240e8c5ef893a8e58d59') {
+      throw new Error('PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_MEMBER_IDENTITY');
+    }
+    stagingMain[0].sha256 = '8e173bfb1c98752cfdf9f13abf740f7e70e9b45badf2f817f79d154ce88bc78c';
+    previous.implementationSha256 = '01035938b2c3a9e99a04bc35c4da49fddb8af076534ec199e8bcc9f010c0d48c';
+    previous.manifestSha256 = '88bc0f7643dc5512ee9c24986a4eaad033976b18e6fafd9823540abb0ca568f2';
+    return previous;
+  })();
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -225,6 +245,16 @@ const stable = (value) => {
   return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])]));
 };
 const sha256 = (value) => createHash('sha256').update(JSON.stringify(stable(value))).digest('hex');
+const preNonAvrInspectorAggregate = structuredClone(
+  PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MANIFEST,
+);
+delete preNonAvrInspectorAggregate.manifestSha256;
+if (sha256(preNonAvrInspectorAggregate)
+    !== PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256
+    || sha256(PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MANIFEST.implementationMembers)
+      !== PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MANIFEST.implementationSha256) {
+  throw new Error('PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_INTEGRITY');
+}
 const definitions = { ...COMPONENT_CATALOG, ...CANDIDATE_UI_COMPONENTS,
   ...RP2040_PICO_COMPONENT_CATALOG, ...ESP32C3_PUBLIC_COMPONENT_CATALOG,
   ...STM32_PUBLIC_COMPONENT_CATALOG };
@@ -505,6 +535,7 @@ export const PRE_INVALID_PROPERTY_FEEDBACK_CURRENT_MODEL_LIBRARY_MANIFEST = Obje
 export const PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RUNTIME_DEADLINE_GRACE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_DEADLINE_GRACE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);

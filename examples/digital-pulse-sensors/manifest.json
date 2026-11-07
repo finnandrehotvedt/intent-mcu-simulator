@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-runtime-deadline-grace.1-current",
-    "manifestSha256": "396a0b77c18468b2bea766ca3bdcc395d011bd110957879eb3960d7e046ec7ce",
-    "implementationSha256": "4acca2a70597a38de49b13c7ca098ed53e342917bf09c651e56cf5e72a3ab6f7"
+    "manifestSha256": "67c125f8f774246969bafc599d5176c51381851fd19d64b409335d6f313cf43d",
+    "implementationSha256": "9f04cdc3614969398b0c3a5509760492fccc4b0c2dc964158bd6a82834eebd1e"
   },
   "entries": [
     {
@@ -16,7 +16,7 @@
         "CMP-112"
       ],
       "file": "avr-digital-pulse-sensors.intent-mcu.json",
-      "projectSha256": "56f33c0f2511466377bc8ca8d470e1098a31d19fa19847c47f0aa73b6c8037df",
+      "projectSha256": "1c9d0c0236a729d599f138e1363597ba25ed65957b4e14ee547d74aca8864beb",
       "sourceSha256": "f59a4d830c2eb6852e0a9c5cfa015ae02d65151dcaf4e7917f21cb8936cf14b1",
       "expectedBehavior": "Manual LOW→HIGH changes on D4 and D5 are counted as independent rising edges; no automatic pulse train, flow rate or wind speed is generated.",
       "namedPins": {

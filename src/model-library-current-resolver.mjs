@@ -511,6 +511,14 @@ export const CURRENT_MODEL_LIBRARY_IMPLEMENTATION = Object.freeze({
   },
 });
 
+export const PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION =
+Object.freeze({
+  ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
+  id: 'intent-mcu-model-bundle-current-runtime-deadline-grace-1@69',
+  manifestVersion: '2.0.0-runtime-deadline-grace.1-current',
+  migrationOnly: true,
+});
+
 export const PRE_RUNTIME_DEADLINE_GRACE_CURRENT_MODEL_LIBRARY_MIGRATION_IMPLEMENTATION = Object.freeze({
   ...CURRENT_MODEL_LIBRARY_IMPLEMENTATION,
   id: 'intent-mcu-model-bundle-current-runtime-input-lcd-trace-1@68',

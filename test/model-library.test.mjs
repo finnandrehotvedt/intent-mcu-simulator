@@ -24,7 +24,8 @@ import {
   createTemperatureLcdThresholdExample,
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_LOCK, PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK,
+  CURRENT_MODEL_LIBRARY_LOCK, PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_RUNTIME_DEADLINE_GRACE_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_LOCK,
@@ -239,6 +240,60 @@ test('the pre-deadline-grace current lock remains exact migration-only data', ()
   assert.equal(preview.unchanged.length, 90);
 });
 
+test('the previous public 6ba/33ea lock remains exact migration-only data', () => {
+  assert.deepEqual(PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK, {
+    schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models',
+    version: '2.0.0-runtime-deadline-grace.1-current',
+    manifestSha256: '88bc0f7643dc5512ee9c24986a4eaad033976b18e6fafd9823540abb0ca568f2',
+    implementationSha256: '01035938b2c3a9e99a04bc35c4da49fddb8af076534ec199e8bcc9f010c0d48c',
+  });
+  const resolved = resolveModelLibrary(
+    PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.role, 'pre-nonavr-inspector-property-loop-current-migration');
+  assert.equal(resolved.implementation.migrationOnly, true);
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const allowed = modelLibraryExecutionIdentity(
+    PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK,
+    { allowMigrationOnly: true },
+  );
+  assert.equal(allowed.ok, true);
+  assert.equal(allowed.identity.executableAuthority, false);
+  const preview = modelLibraryMigrationPreview(
+    PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  assert.equal(preview.ok, true);
+  assert.equal(preview.migrationRequired, true);
+  assert.equal(preview.semanticChanges.length, 0);
+  assert.equal(preview.rendererChanges.length, 0);
+  assert.equal(preview.unchanged.length, 90);
+  for (const [profileId, circuit] of [
+    ['board.atmega328p-16mhz-v1', DEFAULT_CIRCUIT],
+    ['board.rp2040-pico-v1', createRp2040PicoCircuitDraft()],
+    ['board.esp32-c3-devmodule-v1', createEsp32C3CircuitDraft()],
+    ['board.stm32f429zi-nucleo144-v1', createStm32CircuitDraft()],
+  ]) {
+    const admitted = validateProjectModelLibrary(
+      PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK,
+      profileId, { circuit },
+    );
+    assert.equal(admitted.ok, true, profileId);
+    assert.equal(admitted.manifestVersion, '2.0.0-runtime-deadline-grace.1-current');
+  }
+  const manifest = historicalModelLibraryManifests().find(
+    (candidate) => candidate.manifestSha256
+      === PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
+  );
+  assert(manifest);
+  const aggregate = structuredClone(manifest); delete aggregate.manifestSha256;
+  assert.equal(sha256(aggregate), manifest.manifestSha256);
+  assert.equal(sha256(manifest.implementationMembers), manifest.implementationSha256);
+});
+
 test('the immediately preceding LCD lock reopens losslessly as migration-only data', () => {
   assert.equal(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
     '1e2e94a3d88ce7bcc50a058536858897578b6cc3e13f5b4936a7a6003b11fe1f');
@@ -351,7 +406,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 58);
+  assert.equal(historical.length, 59);
   for (const manifest of historical.slice(1)) {
     const lock = { schema: 'intent-mcu-model-library-lock@2', libraryId: manifest.libraryId,
       version: manifest.version, manifestSha256: manifest.manifestSha256,
