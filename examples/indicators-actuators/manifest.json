@@ -4,9 +4,9 @@
   "modelLibrary": {
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
-    "version": "2.0.0-runtime-deadline-grace.1-current",
-    "manifestSha256": "67c125f8f774246969bafc599d5176c51381851fd19d64b409335d6f313cf43d",
-    "implementationSha256": "9f04cdc3614969398b0c3a5509760492fccc4b0c2dc964158bd6a82834eebd1e"
+    "version": "2.0.0-candidate-api-transaction-history.1-current",
+    "manifestSha256": "45631cb68350fec85f7f0c2de8a342d9e1e579c89011b7453e1fa0bb7c679041",
+    "implementationSha256": "a327d3e30e9e0c15e799e04401ea7427c6040999194a85928df60ed3e131d685"
   },
   "entries": [
     {
@@ -25,7 +25,7 @@
       "expectedBehavior": "Three independently current-limited compiled PWM outputs produce a visible relative RGB mix.",
       "firmwareLimits": "Ideal common-cathode relative PWM colour only; no wavelength, luminous intensity, current matching or thermal accuracy.",
       "sourceSha256": "b44d1fb8110182417c70fc39e85153d7e557c673eecb201c72acab2a4fd8b07c",
-      "projectSha256": "28995feec5bf5405606297c4b9d78eeb42584a14c3114894ebbb3f80062f838d",
+      "projectSha256": "47cf9764e082b80a8e335a58aa87412f4b827b8c06c30a0596396ad15d427d5a",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -50,7 +50,7 @@
       "expectedBehavior": "Compiled firmware visibly sequences red, red plus amber, green and amber lamps with matching Serial phase labels.",
       "firmwareLimits": "Ideal common-cathode AVR indicator only; no physical optics, load, fault or road-signal timing compliance.",
       "sourceSha256": "6c9777b20030fd3ee4fd017e93d5919def8c1cf8f5edbeb3e9d2ebafefd14300",
-      "projectSha256": "345900def2be43c4f6ff8cf146a9289f7bd3fecae4ed5797e60e27d1e0f35c55",
+      "projectSha256": "e46169a12c1019ac02260012b6a1807df820150a51392353baf50dead4dfcb44",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -79,7 +79,7 @@
       "expectedBehavior": "Compiled segment patterns display 0, 1, 2 and 8 and agree with Serial labels.",
       "firmwareLimits": "One ideal common-cathode digit; no decimal point, multiplexing, driver IC or physical brightness.",
       "sourceSha256": "1e75cd6f5afd21941f923cb8d845356456645d1231bd4381208326520b2c28a0",
-      "projectSha256": "6742b71e88dc6761a6039f3fe6f4cfdb6b2962728ec1781c79b8d3aafd1fcaf9",
+      "projectSha256": "1c92707949ac3e9e1984abef055804fab5b91d26f813b8c59394cb0b248edca7",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -112,7 +112,7 @@
       "expectedBehavior": "Compiled firmware scans 1, 2, 3 and 4 across four active-low digit selects and the visible latched display agrees with Serial DISPLAY 1234.",
       "firmwareLimits": "Ideal sampled AVR multiplex observer only; no transistor driver, package-current, refresh-rate, ghosting, brightness or physical display accuracy.",
       "sourceSha256": "5db9194b964a8f1a63df00ae2d821460be7367f8f8259cf3f5be1b151bb7c725",
-      "projectSha256": "6146987ae324c0bcbc62e3ac0338007686c5e05fa3d34b5e109eb51b5580e4c2",
+      "projectSha256": "6674cbbf9996e920673f8098b78031506a4c08d8eac39d5531b14235796195c1",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -136,7 +136,7 @@
       "expectedBehavior": "Compiled D8 alternates the visible enabled/disabled state and matching Serial BUZZER ON/OFF lines.",
       "firmwareLimits": "Silent logical indicator only; no browser audio, oscillator, frequency, sound pressure or physical current model.",
       "sourceSha256": "0b598076ab9afc84f5c3a79e2b438288d289c5ded30d28b553f4b86c5992adc8",
-      "projectSha256": "a1bd3a266a58a9703a28a694c3a4e46c7ed59e04e00163795378d76b9d4c78e2",
+      "projectSha256": "5d261c3fd74ef383fc7e4ae4ae88fb3e0295bcad45ecbad2965298e96edde301",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -159,7 +159,7 @@
       "expectedBehavior": "Compiled D9 transitions produce visible driven/rest and transition-activity states with matching Serial markers.",
       "firmwareLimits": "AVR-only silent visual observer; no audio, calibrated frequency, loudness, current, loading or physical piezo accuracy.",
       "sourceSha256": "12dfbff11db264be3adbaf6505c67f3d65a03d29424655abbf956572ef68ce2d",
-      "projectSha256": "47a9f4859dd05dc8550493c13619fe6227de7d345daf1d49a830455953c2e128",
+      "projectSha256": "2082ac6de99d34ad027061764af1de8b018efa3ced285a968d23c5f120414a2c",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -182,7 +182,7 @@
       "expectedBehavior": "Compiled D10 transitions produce visible driven/rest and transition activity.",
       "firmwareLimits": "Visual observer only; no audio, impedance, power, calibrated frequency, loudness or physical speaker accuracy.",
       "sourceSha256": "9007b161da0b511563437ffbee1aa78bf44ddabe514cecb7baff07d0fa554fec",
-      "projectSha256": "4f2354a08e66a4749446d36ae071a85ea65e5034973070f8dd6800c6d984be96",
+      "projectSha256": "a61a513f58ddbccc8fb829411de36736fd83af47bf32dabce5363ef492e2a455",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -206,7 +206,7 @@
       "expectedBehavior": "Valid 1–2 ms pulses in bounded frames map to visible 0–180 degree command intent.",
       "firmwareLimits": "Ideal AVR command observer only; each 1–2 ms high pulse blocks interrupt work; no motion, torque, load, current, backlash or physical accuracy.",
       "sourceSha256": "0a20269a4ec11e8d3f8b70367043f33e139bd60a23477f080cdcf902c54824c1",
-      "projectSha256": "3bcee74b62234c053e8415dc4018b62f2de88e75ee483a87c2e717afd02507e7",
+      "projectSha256": "445d743fd78aee979b6c95383bf2d7b22b27936452bb14de5a01df7e2c5f13b1",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -230,7 +230,7 @@
       "expectedBehavior": "Valid bounded pulses map to visible reverse, stopped and forward command intent.",
       "firmwareLimits": "Ideal AVR command observer only; each 1–2 ms high pulse blocks interrupt work; no RPM, torque, load, current, inertia or physical accuracy.",
       "sourceSha256": "c257315accfbe8da3c1b95030ce8a8e4420c5f7c80843c8e56550f2d91e955ba",
-      "projectSha256": "e7a749719f96b927c1370c09a76a40fcaa190d3a2c94791324b2a45a51b7c7c5",
+      "projectSha256": "420f298bcb302116487d3229c2d0cd688d340127782a26cd3c707ef00a46a167",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",
@@ -260,7 +260,7 @@
       "expectedBehavior": "Compiled direction and PWM commands produce matching visible coast, forward, reverse and brake command intent.",
       "firmwareLimits": "Ideal paired command observer only; no motor supply, RPM, torque, current, heat, load, inertia or physical bridge/motor accuracy.",
       "sourceSha256": "ce003377c2ef137067d28b1060d01b6a29bf823e020009311763b4d26be5bc75",
-      "projectSha256": "33ade4be0af2014d415d64b875a874993f37891d2f7cbf0bc6eb3073515c439e",
+      "projectSha256": "ced95a4e413237c684ea4729a660295cada797f0b49c1d9110ded348c3fcdb87",
       "profileBehavior": {
         "board.atmega328p-16mhz-v1": "authoring and executable adapter available after a fresh isolated Build",
         "board.rp2040-pico-v1": "this exact component model is unavailable",

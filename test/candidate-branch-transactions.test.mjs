@@ -136,6 +136,43 @@ test('candidate API property batch reports the exact model error and rejects all
   assert.equal(session.undoStack.length, 0);
 });
 
+test('candidate API retains consecutive transaction identities through exact Undo and Redo', () => {
+  const session = new CandidateEditorSession(createContactPersistenceExample().project);
+  const baseline = session.saveText();
+  const firstTransaction = 'api-consecutive-first';
+  const secondTransaction = 'api-consecutive-second';
+  const batch = (transactionId, value) => session.apply({
+    type: 'edit.batch', revision: session.revision, transactionId,
+    commands: [{ type: 'component.property.set', componentId: 'resistor-1', key: 'ohms', value }],
+  });
+  const travel = (type, transactionId) => session.apply({
+    type, revision: session.revision, transactionId,
+  });
+
+  assert.equal(batch(firstTransaction, 330).ok, true);
+  const firstState = session.saveText();
+  assert.notEqual(firstState, baseline);
+  assert.equal(batch(secondTransaction, 470).ok, true);
+  const secondState = session.saveText();
+  assert.notEqual(secondState, firstState);
+
+  const wrong = travel('edit.undo', firstTransaction);
+  assert.equal(wrong.code, 'API_UNDO_CONFLICT');
+  assert.equal(session.saveText(), secondState);
+  assert.equal(travel('edit.undo', secondTransaction).ok, true);
+  assert.equal(session.saveText(), firstState);
+  assert.equal(travel('edit.undo', firstTransaction).ok, true);
+  assert.equal(session.saveText(), baseline);
+
+  assert.equal(travel('edit.redo', firstTransaction).ok, true);
+  assert.equal(session.saveText(), firstState);
+  assert.equal(travel('edit.redo', secondTransaction).ok, true);
+  assert.equal(session.saveText(), secondState);
+
+  assert.equal(apply(session, { type: 'project.rename', name: 'Manual history head' }).ok, true);
+  assert.equal(travel('edit.undo', secondTransaction).code, 'API_UNDO_CONFLICT');
+});
+
 test('electrically unsafe candidate reconnect rejects before history commit', () => {
   const created = createContactPersistenceExample();
   assert.equal(created.ok, true);

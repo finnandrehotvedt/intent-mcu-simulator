@@ -24,7 +24,9 @@ import {
   createTemperatureLcdThresholdExample,
 } from '../expansion-drafts/temperature-lcd-threshold-example-v1.mjs';
 import {
-  CURRENT_MODEL_LIBRARY_LOCK, PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK,
+  CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_RETAINED_BUILD_GUARD_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_RUNTIME_DEADLINE_GRACE_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_LOCK,
@@ -294,6 +296,39 @@ test('the previous public 6ba/33ea lock remains exact migration-only data', () =
   assert.equal(sha256(manifest.implementationMembers), manifest.implementationSha256);
 });
 
+test('the preview 9242 lock remains exact migration-only data after the API history repair', () => {
+  assert.deepEqual(PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_LOCK, {
+    schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models',
+    version: '2.0.0-runtime-deadline-grace.1-current',
+    manifestSha256: '67c125f8f774246969bafc599d5176c51381851fd19d64b409335d6f313cf43d',
+    implementationSha256: '9f04cdc3614969398b0c3a5509760492fccc4b0c2dc964158bd6a82834eebd1e',
+  });
+  const resolved = resolveModelLibrary(
+    PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.role, 'pre-candidate-api-transaction-history-current-migration');
+  assert.equal(resolved.implementation.migrationOnly, true);
+  assert.equal(modelLibraryExecutionIdentity(
+    PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_LOCK,
+  ).code, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const allowed = modelLibraryExecutionIdentity(
+    PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_LOCK,
+    { allowMigrationOnly: true },
+  );
+  assert.equal(allowed.ok, true);
+  assert.equal(allowed.identity.executableAuthority, false);
+  const preview = modelLibraryMigrationPreview(
+    PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_LOCK,
+  );
+  assert.equal(preview.ok, true);
+  assert.equal(preview.migrationRequired, true);
+  assert.equal(preview.semanticChanges.length, 0);
+  assert.equal(preview.rendererChanges.length, 0);
+  assert.equal(preview.unchanged.length, 90);
+});
+
 test('the immediately preceding LCD lock reopens losslessly as migration-only data', () => {
   assert.equal(PRE_LCD_API_DUPLICATE_FIX_CURRENT_MODEL_LIBRARY_LOCK.manifestSha256,
     '1e2e94a3d88ce7bcc50a058536858897578b6cc3e13f5b4936a7a6003b11fe1f');
@@ -381,7 +416,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
   for (const [lock, expected] of [
     [RETAINED_MODEL_LIBRARY_LOCK, 'intent-mcu-model-bundle-retained-rc72@2'],
     [CURRENT_MODEL_LIBRARY_LOCK,
-      'intent-mcu-model-bundle-current-runtime-deadline-grace-1@69'],
+      'intent-mcu-model-bundle-current-candidate-api-transaction-history-1@70'],
   ]) {
     const avr = validateCircuit(DEFAULT_CIRCUIT, { modelLibraryLock: lock });
     assert.equal(avr.ok, true);
@@ -406,7 +441,7 @@ test('production electrical and runtime paths dispatch through the exact selecte
 
 test('prior current locks remain exact and data-migratable but cannot authorize execution', () => {
   const historical = historicalModelLibraryManifests();
-  assert.equal(historical.length, 59);
+  assert.equal(historical.length, 60);
   for (const manifest of historical.slice(1)) {
     const lock = { schema: 'intent-mcu-model-library-lock@2', libraryId: manifest.libraryId,
       version: manifest.version, manifestSha256: manifest.manifestSha256,

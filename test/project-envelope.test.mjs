@@ -14,6 +14,7 @@ import {
 } from '../src/project-envelope.mjs';
 import {
   CURRENT_MODEL_LIBRARY_LOCK, PRE_LCD_END_TO_END_CURRENT_MODEL_LIBRARY_LOCK,
+  PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK,
   RC111_CURRENT_MODEL_LIBRARY_LOCK,
   PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_LOCK,
@@ -70,6 +71,26 @@ test('the previous 6ba/33ea lock opens and saves byte-exact without silent migra
   assert.equal(opened.canonical, text);
   assert.deepEqual(opened.modelLibrary,
     PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_LOCK);
+  assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+  assert.equal(opened.report.modelLibrary.authoringOnly, false);
+  assert.equal(opened.report.modelLibrary.executableAuthority, false);
+  assert.equal(opened.report.modelLibrary.runtimeUnavailableCode,
+    'MODEL_LIBRARY_MIGRATION_REQUIRED');
+  const saved = canonicalProjectEnvelope(opened.profile, opened.project, adapters, opened.brief,
+    opened.scenarioTimeline, opened.modelLibrary);
+  assert.equal(saved, text);
+  assert.equal(prepareProjectEnvelope(saved, adapters).canonical, text);
+});
+
+test('the preview 9242 lock opens and saves byte-exact without silent migration', () => {
+  const text = canonicalProjectEnvelope(profile, project, adapters, emptyProjectBrief(), null,
+    PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_LOCK);
+  const opened = prepareProjectEnvelope(text, adapters);
+  assert.equal(opened.ok, true);
+  assert.equal(opened.code, 'OK');
+  assert.equal(opened.canonical, text);
+  assert.deepEqual(opened.modelLibrary,
+    PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_LOCK);
   assert.equal(opened.report.modelLibrary.migrationAvailable, true);
   assert.equal(opened.report.modelLibrary.authoringOnly, false);
   assert.equal(opened.report.modelLibrary.executableAuthority, false);

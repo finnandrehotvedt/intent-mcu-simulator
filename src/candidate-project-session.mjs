@@ -494,7 +494,8 @@ export class CandidateEditorSession {
     this.historyLimit = historyLimit;
     this.undoStack = [];
     this.redoStack = [];
-    this.apiTransaction = null;
+    this.undoTransactions = [];
+    this.redoTransactions = [];
   }
 
   get project() { return visualProject(this.accepted); }
@@ -544,7 +545,8 @@ export class CandidateEditorSession {
     return clone(createSpdtDigitalTransition(this.accepted, componentId, to, options));
   }
 
-  #accept(project, code, { runtimeDirty = false, changeRelevance = null } = {}) {
+  #accept(project, code, { runtimeDirty = false, changeRelevance = null,
+    transactionId = null } = {}) {
     let next = validateContactPersistenceDraft(project, { modelLibraryLock: this.modelLibraryLock });
     if (!next.ok) return failure(next.code, this.revision, next.details);
     if (next.reconstruction.projectionReady && !next.reconstruction.baseMatches) {
@@ -552,8 +554,13 @@ export class CandidateEditorSession {
       if (!next.ok) return failure(next.code, this.revision, next.details);
     }
     this.undoStack.push(clone(this.accepted.project));
-    if (this.undoStack.length > this.historyLimit) this.undoStack.shift();
+    this.undoTransactions.push(transactionId);
+    if (this.undoStack.length > this.historyLimit) {
+      this.undoStack.shift();
+      this.undoTransactions.shift();
+    }
     this.redoStack = [];
+    this.redoTransactions = [];
     this.accepted = next;
     this.revision += 1;
     return {
@@ -573,6 +580,8 @@ export class CandidateEditorSession {
     const undo = command.type === 'undo';
     const source = undo ? this.undoStack : this.redoStack;
     const target = undo ? this.redoStack : this.undoStack;
+    const sourceTransactions = undo ? this.undoTransactions : this.redoTransactions;
+    const targetTransactions = undo ? this.redoTransactions : this.undoTransactions;
     if (!source.length) return failure(undo ? 'EDITOR_UNDO_EMPTY' : 'EDITOR_REDO_EMPTY', this.revision);
     const beforeProjection = JSON.stringify(this.accepted.reconstruction.runtimeProjection);
     const beforeContacts = JSON.stringify(
@@ -586,7 +595,11 @@ export class CandidateEditorSession {
     }
     if (!next.ok) throw new Error(`CANDIDATE_EDITOR_HISTORY:${next.code}`);
     target.push(previous);
-    if (target.length > this.historyLimit) target.shift();
+    targetTransactions.push(sourceTransactions.pop() ?? null);
+    if (target.length > this.historyLimit) {
+      target.shift();
+      targetTransactions.shift();
+    }
     this.accepted = next;
     this.revision += 1;
     const topologyDirty = beforeProjection !== JSON.stringify(next.reconstruction.runtimeProjection);
@@ -610,15 +623,13 @@ export class CandidateEditorSession {
       return failure('EDITOR_STALE_REVISION', this.revision);
     }
     if (command.type === 'edit.undo' || command.type === 'edit.redo') {
-      if (!exactCommand(command, ['transactionId']) || command.transactionId !== this.apiTransaction?.id) {
-        return failure('API_UNDO_CONFLICT', this.revision);
-      }
       const undo = command.type === 'edit.undo';
-      const expectedRevision = undo ? this.apiTransaction.appliedRevision : this.apiTransaction.undoneRevision;
-      if (this.revision !== expectedRevision) return failure('API_UNDO_CONFLICT', this.revision);
-      const result = this.#travel({ type: undo ? 'undo' : 'redo', revision: this.revision });
-      if (result.ok) this.apiTransaction[undo ? 'undoneRevision' : 'appliedRevision'] = result.revision;
-      return result;
+      const transactions = undo ? this.undoTransactions : this.redoTransactions;
+      if (!exactCommand(command, ['transactionId']) || typeof command.transactionId !== 'string'
+          || transactions.at(-1) !== command.transactionId) {
+        return failure(undo ? 'API_UNDO_CONFLICT' : 'API_REDO_CONFLICT', this.revision);
+      }
+      return this.#travel({ type: undo ? 'undo' : 'redo', revision: this.revision });
     }
     if (command.type === 'edit.batch') {
       if (!exactCommand(command, ['transactionId', 'commands']) || typeof command.transactionId !== 'string'
@@ -632,10 +643,9 @@ export class CandidateEditorSession {
         const result = temporary.apply({ ...item, revision: temporary.revision });
         if (!result.ok) return failure(result.code, this.revision, result.details);
       }
-      const result = this.#accept(temporary.accepted.project, 'API_BATCH_APPLIED', { runtimeDirty: true });
-      if (result.ok) this.apiTransaction = { id: command.transactionId, appliedRevision: result.revision,
-        undoneRevision: null };
-      return result;
+      return this.#accept(temporary.accepted.project, 'API_BATCH_APPLIED', {
+        runtimeDirty: true, transactionId: command.transactionId,
+      });
     }
     if (command.type === 'undo' || command.type === 'redo') return this.#travel(command);
     const draft = clone(this.accepted.project);

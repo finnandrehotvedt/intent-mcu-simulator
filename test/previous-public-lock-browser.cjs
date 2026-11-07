@@ -10,13 +10,22 @@ const { chromium } = require(path.join(
 ));
 
 const base = process.env.PREVIOUS_PUBLIC_LOCK_URL || 'http://127.0.0.1:4174';
-const previousLock = Object.freeze({
-  schema: 'intent-mcu-model-library-lock@2',
-  libraryId: 'intent-mcu-public-models',
-  version: '2.0.0-runtime-deadline-grace.1-current',
-  manifestSha256: '88bc0f7643dc5512ee9c24986a4eaad033976b18e6fafd9823540abb0ca568f2',
-  implementationSha256: '01035938b2c3a9e99a04bc35c4da49fddb8af076534ec199e8bcc9f010c0d48c',
-});
+const historicalLocks = Object.freeze([
+  Object.freeze({ label: 'preview-9242', lock: Object.freeze({
+    schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models',
+    version: '2.0.0-runtime-deadline-grace.1-current',
+    manifestSha256: '67c125f8f774246969bafc599d5176c51381851fd19d64b409335d6f313cf43d',
+    implementationSha256: '9f04cdc3614969398b0c3a5509760492fccc4b0c2dc964158bd6a82834eebd1e',
+  }) }),
+  Object.freeze({ label: 'public-6ba', lock: Object.freeze({
+    schema: 'intent-mcu-model-library-lock@2',
+    libraryId: 'intent-mcu-public-models',
+    version: '2.0.0-runtime-deadline-grace.1-current',
+    manifestSha256: '88bc0f7643dc5512ee9c24986a4eaad033976b18e6fafd9823540abb0ca568f2',
+    implementationSha256: '01035938b2c3a9e99a04bc35c4da49fddb8af076534ec199e8bcc9f010c0d48c',
+  }) }),
+]);
 const profiles = [
   { id: 'board.atmega328p-16mhz-v1', open: '#project-open-input', save: '#project-save' },
   { id: 'board.rp2040-pico-v1', open: '#pico-open-input', save: '#pico-save' },
@@ -45,50 +54,53 @@ const sha256 = (text) => createHash('sha256').update(text).digest('hex');
   await page.waitForFunction(() => window.__M11_READY__ === true);
 
   const results = [];
-  for (const profile of profiles) {
-    await page.selectOption('#board-select', profile.id);
-    await page.waitForFunction((id) => document.querySelector('#board-select').value === id, profile.id);
-    const fixture = await page.evaluate(({ id, lock }) => {
-      const envelope = JSON.parse(window.__COMMON_PROJECT_FILES__.current(id));
-      envelope.modelLibrary = lock;
-      return `${JSON.stringify(envelope, null, 2)}\n`;
-    }, { id: profile.id, lock: previousLock });
+  for (const { label, lock } of historicalLocks) {
+    for (const profile of profiles) {
+      await page.selectOption('#board-select', profile.id);
+      await page.waitForFunction((id) => document.querySelector('#board-select').value === id, profile.id);
+      const fixture = await page.evaluate(({ id, lock: historicalLock }) => {
+        const envelope = JSON.parse(window.__COMMON_PROJECT_FILES__.current(id));
+        envelope.modelLibrary = historicalLock;
+        return `${JSON.stringify(envelope, null, 2)}\n`;
+      }, { id: profile.id, lock });
 
-    await page.setInputFiles(profile.open, {
-      name: `${profile.id}.intent-mcu.json`, mimeType: 'application/json', buffer: Buffer.from(fixture),
-    });
-    if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
-      await page.click('#unsaved-discard');
+      await page.setInputFiles(profile.open, {
+        name: `${profile.id}.intent-mcu.json`, mimeType: 'application/json', buffer: Buffer.from(fixture),
+      });
+      if (await page.locator('#unsaved-change-dialog').evaluate((node) => node.open)) {
+        await page.click('#unsaved-discard');
+      }
+      await page.waitForFunction(({ id, manifest }) =>
+        window.__COMMON_PROJECT_FILES__.modelLibraryLock(id).manifestSha256 === manifest,
+      { id: profile.id, manifest: lock.manifestSha256 });
+
+      const opened = await page.evaluate((id) => ({
+        text: window.__COMMON_PROJECT_FILES__.current(id),
+        lock: window.__COMMON_PROJECT_FILES__.modelLibraryLock(id),
+        report: window.__COMMON_PROJECT_FILE_STATE__.report,
+      }), profile.id);
+      assert.equal(opened.text, fixture, `${label}/${profile.id} changed canonical bytes on Open`);
+      assert.deepEqual(opened.lock, lock, `${label}/${profile.id} silently changed the old lock`);
+      assert.equal(opened.report.legacy, false);
+      assert.equal(opened.report.modelLibrary.migrationAvailable, true);
+      assert.equal(opened.report.modelLibrary.executableAuthority, false);
+      assert.equal(opened.report.modelLibrary.runtimeUnavailableCode, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
+      assert.equal(opened.report.publishedRecovery, undefined,
+        `${label}/${profile.id} used lossy published recovery instead of the finite resolver`);
+
+      const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        page.click(profile.save),
+      ]);
+      const downloadedPath = await download.path();
+      const downloaded = fs.readFileSync(downloadedPath, 'utf8');
+      assert.equal(downloaded, fixture, `${label}/${profile.id} changed bytes on Download copy`);
+      assert.deepEqual(await page.evaluate((id) =>
+        window.__COMMON_PROJECT_FILES__.modelLibraryLock(id), profile.id), lock,
+      `${label}/${profile.id} changed the lock after Download copy`);
+      results.push({ label, profile: profile.id, bytes: Buffer.byteLength(fixture),
+        sha256: sha256(fixture) });
     }
-    await page.waitForFunction(({ id, manifest }) =>
-      window.__COMMON_PROJECT_FILES__.modelLibraryLock(id).manifestSha256 === manifest,
-    { id: profile.id, manifest: previousLock.manifestSha256 });
-
-    const opened = await page.evaluate((id) => ({
-      text: window.__COMMON_PROJECT_FILES__.current(id),
-      lock: window.__COMMON_PROJECT_FILES__.modelLibraryLock(id),
-      report: window.__COMMON_PROJECT_FILE_STATE__.report,
-    }), profile.id);
-    assert.equal(opened.text, fixture, `${profile.id} changed canonical bytes on Open`);
-    assert.deepEqual(opened.lock, previousLock, `${profile.id} silently changed the old lock`);
-    assert.equal(opened.report.legacy, false);
-    assert.equal(opened.report.modelLibrary.migrationAvailable, true);
-    assert.equal(opened.report.modelLibrary.executableAuthority, false);
-    assert.equal(opened.report.modelLibrary.runtimeUnavailableCode, 'MODEL_LIBRARY_MIGRATION_REQUIRED');
-    assert.equal(opened.report.publishedRecovery, undefined,
-      `${profile.id} used lossy published recovery instead of the finite resolver`);
-
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.click(profile.save),
-    ]);
-    const downloadedPath = await download.path();
-    const downloaded = fs.readFileSync(downloadedPath, 'utf8');
-    assert.equal(downloaded, fixture, `${profile.id} changed bytes on Download copy`);
-    assert.deepEqual(await page.evaluate((id) =>
-      window.__COMMON_PROJECT_FILES__.modelLibraryLock(id), profile.id), previousLock,
-    `${profile.id} changed the lock after Download copy`);
-    results.push({ profile: profile.id, bytes: Buffer.byteLength(fixture), sha256: sha256(fixture) });
   }
 
   assert.deepEqual(outside, []);

@@ -85,6 +85,23 @@ const PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MANIFEST =
     previous.manifestSha256 = '88bc0f7643dc5512ee9c24986a4eaad033976b18e6fafd9823540abb0ca568f2';
     return previous;
   })();
+const PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_MANIFEST =
+  existingSnapshots.PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_MANIFEST
+  ?? (() => {
+    const previous = structuredClone(existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST);
+    if (previous.manifestSha256 !== '67c125f8f774246969bafc599d5176c51381851fd19d64b409335d6f313cf43d'
+        || previous.implementationSha256 !== '9f04cdc3614969398b0c3a5509760492fccc4b0c2dc964158bd6a82834eebd1e') {
+      throw new Error('PRE_CANDIDATE_API_TRANSACTION_HISTORY_SOURCE_IDENTITY');
+    }
+    const candidateSession = previous.implementationMembers.filter(
+      (member) => member.path === 'src/candidate-project-session.mjs',
+    );
+    if (candidateSession.length !== 1
+        || candidateSession[0].sha256 !== 'e562cc9d213b5ed7a0871b1260a96a4242870ba8c85f6ffcec746e85f863dd17') {
+      throw new Error('PRE_CANDIDATE_API_TRANSACTION_HISTORY_MEMBER_IDENTITY');
+    }
+    return previous;
+  })();
 const PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST =
   existingSnapshots.PRE_THUMBNAIL_ARTWORK_CURRENT_MODEL_LIBRARY_MANIFEST
   ?? existingSnapshots.CURRENT_MODEL_LIBRARY_MANIFEST;
@@ -446,16 +463,17 @@ const retained = process.argv.includes('--refresh-retained')
   ? manifest('2.0.0-rc.72-retained', 'intent-mcu-model-bundle-retained-rc72@2', retainedImplementation)
   : RETAINED_MODEL_LIBRARY_MANIFEST;
 const current = manifest(
-  '2.0.0-runtime-deadline-grace.1-current',
-  'intent-mcu-model-bundle-current-runtime-deadline-grace-1@69',
+  '2.0.0-candidate-api-transaction-history.1-current',
+  'intent-mcu-model-bundle-current-candidate-api-transaction-history-1@70',
   currentImplementation,
   {
-    priorVersion: PRE_RUNTIME_DEADLINE_GRACE_CURRENT_MODEL_LIBRARY_MANIFEST.version,
-    priorManifestSha256: PRE_RUNTIME_DEADLINE_GRACE_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
+    priorVersion: PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_MANIFEST.version,
+    priorManifestSha256:
+      PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_MANIFEST.manifestSha256,
     compatibility: 'strict-versioned-data-only migration; runtime-and-verdict-authority-cleared',
     semanticDisposition: 'preserves all ninety model cells and all firmware-visible runtime behavior',
-    presentationDisposition: 'adds bounded event-loop grace to browser worker startup and running-silence detection only',
-    baselineClosureDisposition: 'the runtime input and LCD trace @68 identity remains an immutable migration-only anchor',
+    presentationDisposition: 'preserves presentation and repairs exact browser API Undo/Redo ownership across consecutive candidate transactions',
+    baselineClosureDisposition: 'the preview 9242 candidate-session @69 identity remains an immutable migration-only anchor',
   },
 );
 const output = `// SPDX-License-Identifier: Apache-2.0
@@ -536,6 +554,7 @@ export const PRE_PCF8574_20X4_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${J
 export const PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_INPUT_LCD_TRACE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_RUNTIME_DEADLINE_GRACE_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_RUNTIME_DEADLINE_GRACE_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_NONAVR_INSPECTOR_PROPERTY_LOOP_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
+export const PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(PRE_CANDIDATE_API_TRANSACTION_HISTORY_CURRENT_MODEL_LIBRARY_MANIFEST, null, 2)});
 export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze(${JSON.stringify(current, null, 2)});
 `;
 await writeFile(new URL('../src/model-library-snapshots.mjs', import.meta.url), output);
