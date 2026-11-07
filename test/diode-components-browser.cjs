@@ -20,11 +20,26 @@ const parts = [
 ];
 const profiles = [
   { id: 'board.rp2040-pico-v1', api: '__RP2040_PUBLIC_WORKBENCH__', input: '#pico-open-input',
-    file: 'pico-diode-components.intent-mcu.json', layer: '#pico-editor-components' },
+    file: 'pico-diode-components.intent-mcu.json', layer: '#pico-editor-components', properties: '#pico-part-properties' },
   { id: 'board.esp32-c3-devmodule-v1', api: '__ESP32C3_PUBLIC_WORKBENCH__', input: '#c3-open-input',
-    file: 'esp32-c3-diode-components.intent-mcu.json', layer: '#c3-editor-components' },
+    file: 'esp32-c3-diode-components.intent-mcu.json', layer: '#c3-editor-components', properties: '#c3-part-properties' },
   { id: 'board.stm32f429zi-nucleo144-v1', api: '__STM32_PUBLIC_WORKBENCH__', input: '#stm32-open-input',
-    file: 'stm32-diode-components.intent-mcu.json', layer: '#stm32-editor-components' },
+    file: 'stm32-diode-components.intent-mcu.json', layer: '#stm32-editor-components', properties: '#stm32-part-properties' },
+];
+const expectedProperties = [
+  { id: 'diode-1', fields: {
+    nominalForwardVoltageVolts: { value: '0.7', minimum: '0.2', maximum: '1.2' },
+    maxReverseVoltageVolts: { value: '50', minimum: '1', maximum: '1000' },
+  } },
+  { id: 'schottky-1', fields: {
+    nominalForwardVoltageVolts: { value: '0.3', minimum: '0.1', maximum: '0.6' },
+    maxReverseVoltageVolts: { value: '40', minimum: '1', maximum: '200' },
+  } },
+  { id: 'zener-1', fields: {
+    nominalForwardVoltageVolts: { value: '0.7', minimum: '0.2', maximum: '1.2' },
+    zenerVoltageVolts: { value: '5.1', minimum: '1.8', maximum: '200' },
+    maxPowerWatts: { value: '0.5', minimum: '0.1', maximum: '5' },
+  } },
 ];
 
 async function discardIfRequired(page) {
@@ -157,6 +172,52 @@ async function assertArtwork(page, layer = '#component-layer') {
       assert.match(state.validation.code, /MODEL_LIBRARY_COMPONENT_UNAVAILABLE/u, profile.id);
       assert.equal(state.components, 6, profile.id);
       assert.equal(state.nets, 7, profile.id);
+      for (const expected of expectedProperties) {
+        const selected = await page.evaluate(({ api, id }) => window[api].selectCircuit({ kind: 'component', id }),
+          { api: profile.api, id: expected.id });
+        assert.deepEqual(selected.selection, { kind: 'component', id: expected.id },
+          `${profile.id}:${expected.id}:selection`);
+        await page.waitForFunction(({ api, id }) => {
+          const selection = window[api].state().circuitEditor.selection;
+          return selection.kind === 'component' && selection.id === id;
+        }, { api: profile.api, id: expected.id });
+        await page.locator(`${profile.properties} input[data-bounded-property]`).first().waitFor({ state: 'attached' });
+        const inputs = page.locator(`${profile.properties} input[data-bounded-property]`);
+        assert.equal(await inputs.count(), Object.keys(expected.fields).length,
+          `${profile.id}:${expected.id}:declared property count`);
+        for (const [key, contract] of Object.entries(expected.fields)) {
+          const input = page.locator(`${profile.properties} input[data-bounded-property="${key}"]`);
+          assert.equal(await input.count(), 1, `${profile.id}:${expected.id}:${key}:visible once`);
+          assert.equal(await input.inputValue(), contract.value, `${profile.id}:${expected.id}:${key}:value`);
+          assert.equal(await input.getAttribute('min'), contract.minimum, `${profile.id}:${expected.id}:${key}:minimum`);
+          assert.equal(await input.getAttribute('max'), contract.maximum, `${profile.id}:${expected.id}:${key}:maximum`);
+        }
+        for (const [key, contract] of Object.entries(expected.fields).slice(1)) {
+          const before = await page.evaluate(({ api }) => {
+            const value = window[api].state(); return structuredClone(value.circuit ?? value.project.circuit);
+          }, { api: profile.api });
+          const input = page.locator(`${profile.properties} input[data-bounded-property="${key}"]`);
+          await input.evaluate((node, value) => {
+            node.value = value; node.dispatchEvent(new Event('input', { bubbles: true }));
+          }, contract.minimum);
+          const apply = page.locator(`${profile.properties} [data-bounded-model-apply]`
+            + `[data-bounded-model-property="${key}"]`);
+          assert.equal(await apply.isEnabled(), true, `${profile.id}:${expected.id}:${key}:apply enabled`);
+          await apply.evaluate((node) => node.click());
+          await page.waitForFunction(({ api, id, key, value }) => {
+            const state = window[api].state(); const graph = state.circuit ?? state.project.circuit;
+            return graph.components.find((component) => component.id === id)?.properties[key] === Number(value);
+          }, { api: profile.api, id: expected.id, key, value: contract.minimum });
+          const undone = await page.evaluate(({ api }) => window[api].undoCircuit(), { api: profile.api });
+          assert.equal(undone.ok, true, `${profile.id}:${expected.id}:${key}:undo`);
+          const after = await page.evaluate(({ api }) => {
+            const value = window[api].state(); return structuredClone(value.circuit ?? value.project.circuit);
+          }, { api: profile.api });
+          assert.deepEqual(after, before, `${profile.id}:${expected.id}:${key}:exact undo restoration`);
+          await page.evaluate(({ api, id }) => window[api].selectCircuit({ kind: 'component', id }),
+            { api: profile.api, id: expected.id });
+        }
+      }
     }
 
     assert.equal(buildRequests, 0);

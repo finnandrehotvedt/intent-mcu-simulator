@@ -1793,15 +1793,98 @@ function renderBoundedComponentCatalog(options) {
     properties.replaceChildren(note, duplicate); return;
   }
 
-  const row = document.createElement('div'); row.className = 'bounded-property-row';
-  const label = document.createElement('label');
-  const limit = document.createElement('small');
-  let input;
   const authoringDefinition = PASSIVE_ENERGY_STORAGE_DEFINITIONS[selected.type]
     ?? DIODE_COMPONENT_DEFINITIONS[selected.type]
     ?? TRANSISTOR_COMPONENT_DEFINITIONS[selected.type]
     ?? CIRCUIT_PROTECTION_DEFINITIONS[selected.type]
     ?? SEMICONDUCTOR_ACTIVE_DEFINITIONS[selected.type];
+  if (authoringDefinition) {
+    const modelPanel = document.createElement('section');
+    const capturedRevision = state.circuitEditor.revision;
+    const limitation = DIODE_COMPONENT_DEFINITIONS[selected.type]
+      ? 'Authoring value only. No nonlinear I-V/reverse-breakdown model or Build/Run authority is added.'
+      : TRANSISTOR_COMPONENT_DEFINITIONS[selected.type]
+        ? 'Authoring value only. No bias/switching/current model or Build/Run authority is added.'
+        : CIRCUIT_PROTECTION_DEFINITIONS[selected.type]
+          ? 'Authoring value only. No trip/interruption/reset/thermal model, safety protection or Build/Run authority is added.'
+          : SEMICONDUCTOR_ACTIVE_DEFINITIONS[selected.type]
+            ? 'Authoring value only. No switching, optical-transfer, isolation model or Build/Run authority is added.'
+            : 'Authoring value only. No transient/frequency solver or Build/Run authority is added.';
+    for (const key of authoringDefinition.propertyKeys) {
+      const contract = authoringDefinition.propertySchema[key];
+      const currentValue = selected.properties[key];
+      const field = document.createElement('section'); field.className = 'bounded-model-property-panel';
+      const row = document.createElement('div'); row.className = 'bounded-property-row';
+      const label = document.createElement('label');
+      label.append(`${key}${contract.unit ? ` (${contract.unit})` : ''}`);
+      const limit = document.createElement('small'); limit.textContent = limitation; label.append(limit);
+      const input = document.createElement('input'); input.type = 'number';
+      input.min = String(contract.minimum); input.max = String(contract.maximum);
+      input.step = contract.kind === 'integer' ? '1' : 'any'; input.value = String(currentValue);
+      input.dataset.boundedProperty = key; input.id = `${selected.id}-${key}`; label.htmlFor = input.id;
+      row.append(label, input);
+      const modelStatus = document.createElement('p');
+      modelStatus.className = 'component-editor-invariant'; modelStatus.setAttribute('role', 'status');
+      modelStatus.dataset.boundedModelPropertyStatus = key;
+      const modelApply = document.createElement('button');
+      modelApply.type = 'button'; modelApply.textContent = 'Apply model property';
+      modelApply.dataset.boundedModelApply = selected.id; modelApply.dataset.boundedModelProperty = key;
+      const modelCancel = document.createElement('button');
+      modelCancel.type = 'button'; modelCancel.textContent = 'Cancel preview';
+      modelCancel.dataset.componentEditorCancel = 'model'; modelCancel.dataset.boundedModelProperty = key;
+      const previewValue = () => Number(input.value);
+      const modelValid = () => input.checkValidity() && Number.isFinite(previewValue())
+        && (contract.kind !== 'integer' || Number.isInteger(previewValue()));
+      const modelChanged = () => previewValue() !== currentValue;
+      const updateModel = () => {
+        const valid = modelValid(); const changed = modelChanged();
+        input.setAttribute('aria-invalid', String(!valid)); modelApply.disabled = !valid || !changed;
+        modelStatus.textContent = !valid
+          ? 'Preview rejected · enter a value inside the existing bounded model contract. No project data changed.'
+          : changed
+            ? `Model preview only · no project or runtime state has changed. Apply changes ${key}, revalidates the model property and circuit, retires current executable and runtime evidence, and requires a fresh Build before Run. Pins, anchors, named nets, drawing and source stay unchanged.`
+            : `Current model value · ${key} is unchanged. Apply is disabled.`;
+      };
+      input.addEventListener('input', updateModel); input.addEventListener('change', updateModel);
+      modelCancel.addEventListener('click', () => {
+        input.value = String(currentValue); updateModel();
+        if (document.querySelector('#workbench-inspector-dialog')?.open) input.focus({ preventScroll: true });
+      });
+      modelApply.addEventListener('click', () => {
+        if (!modelValid() || !modelChanged()) return;
+        const currentRevision = (profile === RP2040_PROFILE ? picoPublicWorkbench.snapshot()
+          : profile === ESP32C3_PROFILE ? c3PublicWorkbench.snapshot() : stm32PublicWorkbench.snapshot()).circuitEditor.revision;
+        if (currentRevision !== capturedRevision) {
+          modelStatus.textContent = 'Preview stale · the project changed. Reopen the current value before applying.';
+          modelApply.disabled = true; return;
+        }
+        const result = editCircuit('setComponentProperty', selected.id, key, previewValue());
+        if (!result?.ok) {
+          modelStatus.textContent = `Model edit rejected (${result?.code ?? 'validation failed'}). The project is unchanged.`;
+          modelApply.disabled = true;
+        }
+      });
+      const actions = document.createElement('div'); actions.className = 'component-editor-actions';
+      actions.append(modelCancel, modelApply); field.append(row, modelStatus, actions); updateModel();
+      modelPanel.append(field);
+    }
+    const duplicateStatus = document.createElement('p');
+    duplicateStatus.className = 'component-editor-invariant'; duplicateStatus.setAttribute('role', 'status');
+    const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.textContent = 'Duplicate disconnected part';
+    duplicate.dataset.boundedDuplicate = selected.id;
+    duplicate.addEventListener('click', () => {
+      const result = editCircuit('duplicateComponent', selected.id);
+      if (!result?.ok) duplicateStatus.textContent = `Duplicate rejected (${result?.code ?? 'validation failed'}). The project is unchanged.`;
+    });
+    const duplicateActions = document.createElement('div'); duplicateActions.className = 'component-editor-actions';
+    duplicateActions.append(duplicate); modelPanel.append(duplicateStatus, duplicateActions);
+    properties.replaceChildren(modelPanel); return;
+  }
+
+  const row = document.createElement('div'); row.className = 'bounded-property-row';
+  const label = document.createElement('label');
+  const limit = document.createElement('small');
+  let input;
   if (['resistor.fixed-v1', 'potentiometer.linear-3v3-v1'].includes(selected.type)) {
     label.append('Resistance (Ω)');
     limit.textContent = selected.type === 'resistor.fixed-v1'
@@ -1809,21 +1892,6 @@ function renderBoundedComponentCatalog(options) {
       : 'Authoring value only. This does not prove a powered divider, ADC runtime, loading, noise or physical tolerance.';
     input = document.createElement('input'); input.type = 'number'; input.min = '1'; input.max = '10000000';
     input.step = '1'; input.value = String(selected.properties.ohms); input.dataset.boundedProperty = 'ohms';
-  } else if (authoringDefinition) {
-    const key = authoringDefinition.propertyKeys[0]; const contract = authoringDefinition.propertySchema[key];
-    label.append(`${key} (${contract.unit})`);
-    limit.textContent = DIODE_COMPONENT_DEFINITIONS[selected.type]
-      ? 'Authoring value only. No nonlinear I-V/reverse-breakdown model or Build/Run authority is added.'
-      : TRANSISTOR_COMPONENT_DEFINITIONS[selected.type]
-        ? 'Authoring value only. No bias/switching/current model or Build/Run authority is added.'
-      : CIRCUIT_PROTECTION_DEFINITIONS[selected.type]
-        ? 'Authoring value only. No trip/interruption/reset/thermal model, safety protection or Build/Run authority is added.'
-      : SEMICONDUCTOR_ACTIVE_DEFINITIONS[selected.type]
-        ? 'Authoring value only. No switching, optical-transfer, isolation model or Build/Run authority is added.'
-        : 'Authoring value only. No transient/frequency solver or Build/Run authority is added.';
-    input = document.createElement('input'); input.type = 'number'; input.min = String(contract.minimum);
-    input.max = String(contract.maximum); input.step = 'any'; input.value = String(selected.properties[key]);
-    input.dataset.boundedProperty = key;
   } else {
     label.append('LED colour');
     limit.textContent = 'Colour selects a tested ideal forward-voltage constant; it is not a wavelength, brightness or physical-accuracy claim.';
@@ -1850,7 +1918,7 @@ function renderBoundedComponentCatalog(options) {
   const currentValue = selected.properties[input.dataset.boundedProperty];
   const previewValue = () => typeof currentValue === 'number' ? Number(input.value) : input.value;
   const modelValid = () => input.checkValidity() && (typeof currentValue !== 'number'
-    || (authoringDefinition ? Number.isFinite(previewValue()) : Number.isInteger(previewValue())));
+    || Number.isInteger(previewValue()));
   const modelChanged = () => previewValue() !== currentValue;
   const updateModel = () => {
     const valid = modelValid(); const changed = modelChanged();
@@ -1884,7 +1952,7 @@ function renderBoundedComponentCatalog(options) {
   const modelActions = document.createElement('div'); modelActions.className = 'component-editor-actions';
   modelActions.append(duplicate, modelCancel, modelApply); modelPanel.append(row, modelStatus, modelActions); updateModel();
 
-  if (selected.type === 'potentiometer.linear-3v3-v1' || authoringDefinition) {
+  if (selected.type === 'potentiometer.linear-3v3-v1') {
     properties.replaceChildren(modelPanel); return;
   }
 
