@@ -294496,7 +294496,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     },
     {
       "path": "staging/main.mjs",
-      "sha256": "8e173bfb1c98752cfdf9f13abf740f7e70e9b45badf2f817f79d154ce88bc78c"
+      "sha256": "4429b18051f605dd1bf2ade38d29572636f71edcbcd1240e8c5ef893a8e58d59"
     },
     {
       "path": "src/x48-ideal-room-plant.mjs",
@@ -294895,7 +294895,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
       "sha256": "5d88691de870d7a117b1ea340ebbb1c83871a285e2100ecfbd0b5837ce3bc798"
     }
   ],
-  "implementationSha256": "01035938b2c3a9e99a04bc35c4da49fddb8af076534ec199e8bcc9f010c0d48c",
+  "implementationSha256": "4acca2a70597a38de49b13c7ca098ed53e342917bf09c651e56cf5e72a3ab6f7",
   "libraryId": "intent-mcu-public-models",
   "lineage": {
     "baselineClosureDisposition": "the runtime input and LCD trace @68 identity remains an immutable migration-only anchor",
@@ -294905,7 +294905,7 @@ export const CURRENT_MODEL_LIBRARY_MANIFEST = Object.freeze({
     "priorVersion": "2.0.0-runtime-input-lcd-trace.1-current",
     "semanticDisposition": "preserves all ninety model cells and all firmware-visible runtime behavior"
   },
-  "manifestSha256": "88bc0f7643dc5512ee9c24986a4eaad033976b18e6fafd9823540abb0ca568f2",
+  "manifestSha256": "396a0b77c18468b2bea766ca3bdcc395d011bd110957879eb3960d7e046ec7ce",
   "runtimeContracts": [
     "avr8js@0.21.1",
     "rp2040js@1.4.0",

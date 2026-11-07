@@ -5,8 +5,8 @@
     "schema": "intent-mcu-model-library-lock@2",
     "libraryId": "intent-mcu-public-models",
     "version": "2.0.0-runtime-deadline-grace.1-current",
-    "manifestSha256": "88bc0f7643dc5512ee9c24986a4eaad033976b18e6fafd9823540abb0ca568f2",
-    "implementationSha256": "01035938b2c3a9e99a04bc35c4da49fddb8af076534ec199e8bcc9f010c0d48c"
+    "manifestSha256": "396a0b77c18468b2bea766ca3bdcc395d011bd110957879eb3960d7e046ec7ce",
+    "implementationSha256": "4acca2a70597a38de49b13c7ca098ed53e342917bf09c651e56cf5e72a3ab6f7"
   },
   "entries": [
     {
@@ -17,7 +17,7 @@
         "CMP-124"
       ],
       "file": "avr-digital-presence-sensors.intent-mcu.json",
-      "projectSha256": "1ec142bfecc96dd92392ec4bc8f5811bc79ab4da71cffbe1de9faa4ebae49b54",
+      "projectSha256": "bd4fd15869fbf393516536cb22d71de549f9b596a372214ba6a263c746e0887b",
       "sourceSha256": "e44bd12c83fce5fc59b41402a38e710e69f33c1e0f536f8c6c0741d67ecc125b",
       "expectedBehavior": "D4, D5 and D6 report independent active-high touch, motion and magnet-presence states.",
       "namedPins": {
