@@ -70,3 +70,17 @@ test('long API branch identities remain bounded and collision resistant', () => 
   assert.match(right.junctionId, /^[a-z][a-z0-9-]{0,47}$/u);
   assert.notEqual(left.junctionId, right.junctionId);
 });
+
+test('API property keys accept bounded supported long names and reject overflow or punctuation', () => {
+  const project = { profile: 'board.atmega328p-16mhz-v1', circuit: {} };
+  const operation = (key) => ({ command: 'component.property.set', component_id: 'component-1',
+    key, value: 1 });
+  const supported = 'nominalGateThresholdMagnitudeVolts';
+  assert.equal(supported.length, 34);
+  assert.equal(prepareApiBatch(project, [operation(supported)])[0].key, supported);
+  assert.equal(prepareApiBatch(project, [operation(`a${'b'.repeat(47)}`)])[0].key.length, 48);
+  assert.throws(() => prepareApiBatch(project, [operation(`a${'b'.repeat(48)}`)]),
+    Object.assign(new Error('API_PROPERTY_SHAPE'), { code: 'API_PROPERTY_SHAPE' }));
+  assert.throws(() => prepareApiBatch(project, [operation('invalid_property')]),
+    Object.assign(new Error('API_PROPERTY_SHAPE'), { code: 'API_PROPERTY_SHAPE' }));
+});

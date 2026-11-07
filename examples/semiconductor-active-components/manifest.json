@@ -111,7 +111,7 @@
       },
       "limitations": "Raw active-semiconductor authoring only. No bias/current network, nonlinear transfer, switching threshold, body diode, optical coupling, isolation proof, leakage, capacitance, thermal/breakdown, safe-operating-area, Build/Run authority, safety certification or physical equivalence.",
       "sourceSha256": "3911a5623da0e486b811c1224c3f0a83928fbfb12c1ce19a447c2fbe01f3c6d8",
-      "projectSha256": "f88ab50ef7e18b435ce68c1808a8bfbf2b7947b1df85c0bee5e537b11f714b66",
+      "projectSha256": "a09fa69f2a5e2a87d0d9d13aab981fbc4f6269644df9884854d3c508b73fe081",
       "provenance": "Original project-owned contracts, SVG artwork, canonical project data and example source."
     },
     {

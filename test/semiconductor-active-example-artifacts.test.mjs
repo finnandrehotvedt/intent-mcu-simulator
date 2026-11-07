@@ -98,3 +98,12 @@ test('all four active-semiconductor examples reopen in their owning editor and r
     }
   }
 });
+
+test('Pico active-semiconductor fixture keeps both symbols clear of its tall board', async () => {
+  const envelope = JSON.parse(await readFile(new URL(
+    'pico-semiconductor-active-components.intent-mcu.json', ROOT), 'utf8'));
+  const positions = envelope.project.circuit.layout.positions;
+  assert.deepEqual(positions['pmos-1'], { x: 0.48, y: 0.7, rotation: 0 });
+  assert.deepEqual(positions['optocoupler-1'], { x: 0.62, y: 0.7, rotation: 0 });
+  assert.deepEqual(positions['pico-1'], { x: 0.78, y: 0.52, rotation: 0 });
+});

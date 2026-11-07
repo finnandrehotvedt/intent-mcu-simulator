@@ -191,7 +191,7 @@ export function prepareApiBatch(project, operations) {
     }
     if (operation.command === 'component.property.set') {
       if (!exact(operation, ['command', 'component_id', 'key', 'value']) || !ID.test(operation.component_id)
-          || !/^[a-z][A-Za-z0-9]{0,31}$/u.test(operation.key)) fail('API_PROPERTY_SHAPE');
+          || !/^[a-z][A-Za-z0-9]{0,47}$/u.test(operation.key)) fail('API_PROPERTY_SHAPE');
       return { type: 'component.property.set', componentId: operation.component_id,
         key: operation.key, value: structuredClone(operation.value) };
     }

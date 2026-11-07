@@ -74,7 +74,8 @@ const avrProject = JSON.parse(avrSession.saveText());
 const narrow = [
   { id: 'pico', profile: 'board.rp2040-pico-v1', schema: RP2040_PUBLIC_PROJECT_SCHEMA,
     source: RP2040_PUBLIC_SOURCE, Editor: Rp2040PicoCircuitEditor, boardDefinition: RP2040_PICO_BOARD_DEFINITION,
-    normalize: normalizeRp2040PublicProject, board: 'pico-1', controls: ['GP1', 'GP2'], ground: 'GND8' },
+    normalize: normalizeRp2040PublicProject, board: 'pico-1', controls: ['GP1', 'GP2'], ground: 'GND8',
+    componentPositions: [{ x: 0.48, y: 0.7 }, { x: 0.62, y: 0.7 }] },
   { id: 'esp32-c3', profile: 'board.esp32-c3-devmodule-v1', schema: C3_PUBLIC_PROJECT_SCHEMA,
     source: C3_PUBLIC_SOURCE, Editor: Esp32C3CircuitEditor, boardDefinition: ESP32C3_BOARD_DEFINITION,
     normalize: normalizeEsp32C3PublicProject, board: 'c3-1', controls: ['GPIO3', 'GPIO0'], ground: 'GND8' },
@@ -143,8 +144,8 @@ for (const item of narrow) {
     const result = editor.deleteSelected();
     if (!result.ok) throw new Error(`SEMICONDUCTOR_ACTIVE_${item.id}_REMOVE:${result.code}`);
   }
-  TYPES.forEach((type) => {
-    const result = editor.addMissingComponent(type);
+  TYPES.forEach((type, index) => {
+    const result = editor.addMissingComponent(type, item.componentPositions?.[index] ?? null);
     if (!result.ok) throw new Error(`SEMICONDUCTOR_ACTIVE_${item.id}_ADD:${result.code}`);
   });
   for (const [from, to] of [

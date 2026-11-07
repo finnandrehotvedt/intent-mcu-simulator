@@ -128,7 +128,7 @@
       "layout": {
         "positions": {
           "optocoupler-1": {
-            "x": 0.7100000000000001,
+            "x": 0.62,
             "y": 0.7,
             "rotation": 0
           },
@@ -138,7 +138,7 @@
             "rotation": 0
           },
           "pmos-1": {
-            "x": 0.55,
+            "x": 0.48,
             "y": 0.7,
             "rotation": 0
           }

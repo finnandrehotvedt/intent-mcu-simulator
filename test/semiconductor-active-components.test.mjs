@@ -115,6 +115,49 @@ test('canonical API component.add creates complete active-semiconductor data for
   assert.equal(session.runnable.code, 'SEMICONDUCTOR_ACTIVE_MODEL_UNAVAILABLE');
 });
 
+test('canonical API batch accepts both 34-character active-semiconductor property keys', () => {
+  const session = emptyCandidateSession();
+  const project = { profile: AVR, circuit: session.visualProject.circuit };
+  for (const command of prepareApiBatch(project, TYPES.map((type, index) => ({
+    command: 'component.add', id: IDS[index], type,
+    position: { x: 0.45 + index * 0.25, y: 0.5, rotation: 0 },
+  })))) apply(session, command);
+  const before = session.saveText();
+  const operations = [
+    { command: 'component.property.set', component_id: 'pmos-1',
+      key: 'nominalGateThresholdMagnitudeVolts', value: 2.5 },
+    { command: 'component.property.set', component_id: 'optocoupler-1',
+      key: 'nominalCurrentTransferRatioPercent', value: 125 },
+  ];
+  assert.equal(operations[0].key.length, 34); assert.equal(operations[1].key.length, 34);
+  const transactionId = 'api-tx-active-semiconductor-long-properties';
+  const applied = session.apply({ type: 'edit.batch', revision: session.revision, transactionId,
+    commands: prepareApiBatch({ profile: AVR, circuit: session.visualProject.circuit }, operations) });
+  assert.equal(applied.ok, true, applied.code);
+  assert.equal(session.visualProject.circuit.components.find(({ id }) => id === 'pmos-1')
+    .properties.nominalGateThresholdMagnitudeVolts, 2.5);
+  assert.equal(session.visualProject.circuit.components.find(({ id }) => id === 'optocoupler-1')
+    .properties.nominalCurrentTransferRatioPercent, 125);
+  assert.equal(session.apply({ type: 'edit.undo', revision: session.revision, transactionId }).ok, true);
+  assert.equal(session.saveText(), before);
+  assert.equal(session.apply({ type: 'edit.redo', revision: session.revision, transactionId }).ok, true);
+  assert.equal(session.visualProject.circuit.components.find(({ id }) => id === 'pmos-1')
+    .properties.nominalGateThresholdMagnitudeVolts, 2.5);
+  assert.equal(session.visualProject.circuit.components.find(({ id }) => id === 'optocoupler-1')
+    .properties.nominalCurrentTransferRatioPercent, 125);
+  const beforeRejected = session.saveText(); const revisionBeforeRejected = session.revision;
+  const rejected = session.apply({ type: 'edit.batch', revision: session.revision,
+    transactionId: 'api-tx-active-semiconductor-unknown-property',
+    commands: prepareApiBatch({ profile: AVR, circuit: session.visualProject.circuit }, [
+      { command: 'component.property.set', component_id: 'pmos-1',
+        key: 'maxDrainCurrentAmps', value: 20 },
+      { command: 'component.property.set', component_id: 'optocoupler-1',
+        key: 'unknownButWellShapedProperty', value: 1 },
+    ]) });
+  assert.equal(rejected.ok, false); assert.equal(rejected.code, 'EDITOR_PROPERTY_UNSUPPORTED');
+  assert.equal(session.revision, revisionBeforeRejected); assert.equal(session.saveText(), beforeRejected);
+});
+
 for (const profile of [
   { name: 'Pico', Editor: Rp2040PicoCircuitEditor, board: 'pico-1', controls: ['GP1', 'GP2'], ground: 'GND8' },
   { name: 'ESP32-C3', Editor: Esp32C3CircuitEditor, board: 'c3-1', controls: ['GPIO3', 'GPIO0'], ground: 'GND8' },
